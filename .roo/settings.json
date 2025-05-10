@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0",
+  "providers": {
+    "openai": {
+      "apiKey": "54e213bdebc07398097be1653f9c85fb:92c12195cf2a3484d2f6b90d98c6c2080ec5a1f1a198c663f6d78b5e8dc97a3734c3ab522bc002b7641de327688068edd8120d363de5cbcec28f3908c7f83c1966e6681c340300fe90b07fc489209abe95cb1e5f42f24093c912902ba80ccacb8d548088e4756db92e4cb93978bb44b5f49cee2fb9bb75f224cd9b0b5c26190419a0f958ac03be488b8dfb6939458103406314fa1b780d02582cdda21b10311d437e77d6ea67f1bf8bdb84e5a1ad7227",
+      "models": [
+        "gpt-4o",
+        "gpt-4-turbo"
+      ],
+      "baseUrl": "https://api.openai.com/v1"
+    },
+    "anthropic": {
+      "apiKey": "468f7b195b6df1736c9752aa7734100c:f95b33b90d7d5f52aab3254887d12f66d8d765323bdc3a88b97688ea3951771a38a2162e87ca9b0781f863a0c0d2622f71128be0fd45d0f29c0bf699c22d8493750a9a9dc59c4f8fd21098df4977ceab95c31b5d10841fed25d34a2f06ddbfd4572dc5e84f651104bc656b67a76419a1",
+      "models": [
+        "claude-3-opus",
+        "claude-3-sonnet"
+      ],
+      "baseUrl": "https://api.anthropic.com"
+    }
+  },
+  "maxTokens": 16000,
+  "autoApprove": [
+    "read",
+    "write",
+    "terminal"
+  ],
+  "mcpSettings": {
+    "autoDetectAndUse": true,
+    "alwaysSuggestTools": true
+  }
+}

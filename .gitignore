@@ -34,8 +34,6 @@ yarn-error.log*
 coverage/
 
 # AI assistant configuration files with sensitive data
-.mcp.json.local
-.roo/mcp.json.local
 .claude/credentials.json.enc
 .roo/credentials.json.enc
 .ai-credentials/
@@ -45,3 +43,22 @@ coverage/
 .tmp/
 temp/
 *.tmp
+
+# AI Assistant files (shared configurations)
+# DO NOT ignore these files as they should be shared with the team
+# .mcp.json
+# .roo/mcp.json
+# .roo/rules/
+# CLAUDE.md
+# .roomodes
+# .roo/rules-*/
+
+# AI Assistant files (sensitive/personal configurations)
+.mcp.json.local
+.roo/mcp.json.local
+.claude/credentials.json.enc
+.roo/credentials.json.enc
+.ai-credentials/
+.ai-credentials.json
+
+**/.claude/settings.local.json

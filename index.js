@@ -20,21 +20,16 @@
  * @license MIT
  */
 
-import fs from 'fs-extra';
-import path from 'path';
-import os from 'os';
-import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import { program } from 'commander';
+import { checkbox, confirm, input, password, select } from '@inquirer/prompts';
 import chalk from 'chalk';
-import { input, password, select, confirm, checkbox } from '@inquirer/prompts';
+import { execSync } from 'child_process';
+import { program } from 'commander';
 import crypto from 'crypto';
+import fs from 'fs-extra';
+import os from 'os';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import winston from 'winston';
-import ora from 'ora';
-import ignore from 'ignore';
-import glob from 'glob';
-import micromatch from 'micromatch';
 
 // Get directory name in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -798,39 +793,46 @@ async function setupRooMcp() {
   // Check if main MCP config exists
   const mcpPath = path.join(projectRoot, '.mcp.json');
   const mcpExists = await fileExists(mcpPath);
-  
+
   let mcpConfig;
   if (mcpExists) {
     // Use main MCP config as a base
     mcpConfig = await safeReadJson(mcpPath);
     if (!mcpConfig) {
       mcpConfig = {
-        servers: ["github", "context7", "memory", "taskmaster-ai"],
-        serverConfigs: {}
+        mcpServers: {}
       };
     }
   } else {
     // Create a default config
     mcpConfig = {
-      servers: ["github", "context7", "memory", "taskmaster-ai"],
-      serverConfigs: {}
+      mcpServers: {}
     };
   }
-  
-  // Transform to Roo format
+
+  // Match Roo format to Claude format, ensuring proper formatting for memory and other servers
   const rooMcpConfig = {
-    enabled: true,
-    servers: mcpConfig.servers,
-    configs: {}
+    mcpServers: {}
   };
-  
-  // Convert server configs to Roo format
-  if (mcpConfig.serverConfigs) {
-    for (const [server, config] of Object.entries(mcpConfig.serverConfigs)) {
-      rooMcpConfig.configs[server] = { ...config };
+
+  // Clone the servers with updated formatting
+  Object.entries(mcpConfig.mcpServers).forEach(([key, server]) => {
+    // Create a base copy
+    rooMcpConfig.mcpServers[key] = {...server};
+
+    // Special handling for memory server to use compact args format
+    if (key === 'memory' && Array.isArray(server.args)) {
+      rooMcpConfig.mcpServers[key].args = ["-y", "mcp-knowledge-graph", "--memory-path", "${MEMORY_PATH}"];
     }
-  }
-  
+
+    // Ensure GitHub has proper env structure
+    if (key === 'github') {
+      rooMcpConfig.mcpServers[key].env = {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      };
+    }
+  });
+
   await safeWriteJson(rooMcpPath, rooMcpConfig);
   printSuccess('Created Roo MCP configuration');
 }
@@ -1130,8 +1132,15 @@ async function setupGitignore() {
 .roo/credentials.json.enc
 .ai-credentials/
 .ai-credentials.json
+.env
 `;
   
+  // Make sure .env.example is not ignored
+  if (gitignoreContent.includes(".env.example")) {
+    gitignoreContent = gitignoreContent.replace(/^\.env\.example$/gm, "");
+    gitignoreContent = gitignoreContent.replace(/^\.env\.\*$/gm, ".env\n!.env.example");
+  }
+
   // Check if we need to append the patterns or if they already exist
   if (!gitignoreContent.includes('# AI Assistant files')) {
     gitignoreContent += aiPatterns;
@@ -1143,10 +1152,35 @@ async function setupGitignore() {
       /# AI Assistant files(\r?\n.*?)+?(?=\r?\n\r?\n|$)/g,
       aiPatterns.trim()
     );
-    
+
     await writeTextFile(gitignorePath, newContent);
     printSuccess('.gitignore patterns for AI assistants updated.');
   }
+
+  // Create or update .env.example file
+  const envExamplePath = path.join(projectRoot, '.env.example');
+  const envExampleContent = `# AI Coding Assistants Environment Variables Example
+# This file contains examples of required environment variables
+# Make a copy of this file named .env and fill in your own values
+
+# GitHub MCP Server
+GITHUB_PERSONAL_ACCESS_TOKEN=your-github-token-here
+
+# Context7 MCP Server
+CONTEXT7_API_KEY=your-context7-key-here
+
+# Memory MCP Server
+MEMORY_PATH=/path/to/your/memory.jsonl
+
+# Anthropic API Key (for Claude Code and Task-Master AI)
+ANTHROPIC_API_KEY=your-anthropic-key-here
+
+# OpenAI API Key (optional, for Roo Code)
+OPENAI_API_KEY=your-openai-key-here
+`;
+
+  await writeTextFile(envExamplePath, envExampleContent);
+  printSuccess('Created/updated .env.example file for reference.');
 }
 
 /**
@@ -1300,43 +1334,167 @@ async function setupMcpConfig() {
     }
   }
   
-  // Build server configurations
+  // Build server configurations with proper MCP format
   const serverConfigs = {};
-  
+
+  // Save personal config values for .env or local override
+  const personalConfig = { env: {} };
+
   // Configure github
   if (selectedServers.includes('github')) {
-    serverConfigs.github = github;
+    // Shared config with placeholder
+    serverConfigs.github = {
+      command: 'docker',
+      args: [
+        'run',
+        '-i',
+        '--rm',
+        '-e',
+        'GITHUB_PERSONAL_ACCESS_TOKEN',
+        'ghcr.io/github/github-mcp-server'
+      ],
+      env: {}
+    };
+
+    // Ask for personal GitHub token if in interactive mode
+    if (!nonInteractive) {
+      const githubToken = await password({
+        message: 'Enter your GitHub Personal Access Token:',
+        validate: input => input.trim() ? true : 'Token is required for GitHub MCP server'
+      });
+
+      if (githubToken) {
+        personalConfig.env.GITHUB_PERSONAL_ACCESS_TOKEN = githubToken;
+      }
+    } else {
+      // In non-interactive mode, try to get from environment
+      const token = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+      if (token) {
+        personalConfig.env.GITHUB_PERSONAL_ACCESS_TOKEN = token;
+      }
+    }
   }
-  
+
   // Configure context7
   if (selectedServers.includes('context7')) {
-    serverConfigs.context7 = {
-      depth: 3,
-      includeTests: true
+    // Shared config with placeholder
+    serverConfigs['context7-mcp'] = {
+      command: 'npx',
+      args: [
+        '-y',
+        '@upstash/context7-mcp@latest'
+      ],
+      env: {}
+    };
+
+    // Ask for Context7 API key
+    if (!nonInteractive) {
+      const context7Key = await password({
+        message: 'Enter your Context7 API key:',
+        validate: input => input.trim() ? true : 'API key is required for Context7'
+      });
+
+      if (context7Key) {
+        personalConfig.env.CONTEXT7_API_KEY = context7Key;
+      }
+    } else {
+      const key = process.env.CONTEXT7_API_KEY;
+      if (key) {
+        personalConfig.env.CONTEXT7_API_KEY = key;
+      }
+    }
+
+    // Add the environment variable to the server config
+    serverConfigs['context7-mcp'].env = {
+      CONTEXT7_API_KEY: '${CONTEXT7_API_KEY}'
     };
   }
-  
+
   // Configure memory
   if (selectedServers.includes('memory')) {
+    // Default memory path
+    const defaultMemoryPath = path.join(os.homedir(), 'workspace/db/memory.jsonl');
+
+    // Shared config with placeholder
     serverConfigs.memory = {
-      persistence: true,
-      sessionLength: '7d',
-      compressionLevel: 'medium'
+      command: 'npx',
+      args: [
+        '-y',
+        'mcp-knowledge-graph',
+        '--memory-path',
+        '${MEMORY_PATH}'
+      ],
+      autoapprove: [
+        'create_entities',
+        'create_relations',
+        'add_observations',
+        'delete_entities',
+        'delete_observations',
+        'delete_relations',
+        'read_graph',
+        'search_nodes',
+        'open_nodes'
+      ]
     };
+
+    // Ask for custom memory path
+    if (!nonInteractive) {
+      const memoryPath = await input({
+        message: 'Enter path for memory storage:',
+        default: defaultMemoryPath
+      });
+
+      if (memoryPath) {
+        personalConfig.env.MEMORY_PATH = memoryPath;
+      }
+    } else {
+      personalConfig.env.MEMORY_PATH = process.env.MEMORY_PATH || defaultMemoryPath;
+    }
   }
-  
+
   // Configure taskmaster-ai
   if (selectedServers.includes('taskmaster-ai')) {
-    serverConfigs['taskmaster-ai'] = {
-      priority: 'high',
-      trackCompletion: true
+    // Shared config without sensitive info
+    serverConfigs['task-master-ai'] = {
+      command: 'npx',
+      args: [
+        '-y',
+        '--package=task-master-ai',
+        'task-master-ai'
+      ],
+      env: {}
+    };
+
+    // Use Anthropic API key from earlier prompt or environment
+    personalConfig.env.ANTHROPIC_API_KEY = apiKey || process.env.ANTHROPIC_API_KEY || '';
+
+    // Create personal env config for taskmaster
+    if (personalConfig.env.ANTHROPIC_API_KEY) {
+      if (!personalConfig.mcpServers) {
+        personalConfig.mcpServers = {};
+      }
+
+      if (!personalConfig.mcpServers['task-master-ai']) {
+        personalConfig.mcpServers['task-master-ai'] = {
+          env: {
+            ANTHROPIC_API_KEY: personalConfig.env.ANTHROPIC_API_KEY
+          }
+        };
+      }
+    }
+  }
+
+  // Configure fetch
+  if (selectedServers.includes('fetch')) {
+    serverConfigs.fetch = {
+      command: 'uvx',
+      args: ['mcp-server-fetch']
     };
   }
   
-  // Update MCP configuration
-  mcpConfig.servers = selectedServers;
-  mcpConfig.serverConfigs = serverConfigs;
-  
+  // Set MCP configuration directly
+  mcpConfig.mcpServers = { ...serverConfigs };
+
   await safeWriteJson(mcpPath, mcpConfig);
   printSuccess('MCP servers configured.');
   
@@ -1345,19 +1503,86 @@ async function setupMcpConfig() {
     message: 'Create local MCP override file (for personal configurations)?',
     default: true
   });
-  
+
   if (createLocalOverride) {
     const mcpLocalPath = path.join(projectRoot, '.mcp.json.local');
     const mcpLocalExists = await fileExists(mcpLocalPath);
-    
+
     if (!mcpLocalExists || forceOverwrite) {
+      // Clone the main MCP config structure for local override
       const localConfig = {
-        servers: [...selectedServers],
-        serverConfigs: { ...serverConfigs }
+        mcpServers: JSON.parse(JSON.stringify(mcpConfig.mcpServers)) // Deep clone
       };
-      
+
+      // For GitHub server, add personal token to env
+      if (selectedServers.includes('github') && personalConfig.env.GITHUB_PERSONAL_ACCESS_TOKEN) {
+        if (!localConfig.mcpServers.github) {
+          localConfig.mcpServers.github = {
+            command: 'docker',
+            args: [
+              'run',
+              '-i',
+              '--rm',
+              '-e',
+              'GITHUB_PERSONAL_ACCESS_TOKEN',
+              'ghcr.io/github/github-mcp-server'
+            ],
+            env: {}
+          };
+        }
+        localConfig.mcpServers.github.env = localConfig.mcpServers.github.env || {};
+        localConfig.mcpServers.github.env.GITHUB_PERSONAL_ACCESS_TOKEN = personalConfig.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+      }
+
+      // For Context7, set the API key directly in env
+      if (selectedServers.includes('context7') && personalConfig.env.CONTEXT7_API_KEY) {
+        if (localConfig.mcpServers['context7-mcp']) {
+          localConfig.mcpServers['context7-mcp'].env = localConfig.mcpServers['context7-mcp'].env || {};
+          localConfig.mcpServers['context7-mcp'].env.CONTEXT7_API_KEY = personalConfig.env.CONTEXT7_API_KEY;
+        }
+      }
+
+      // For Memory MCP, update the path
+      if (selectedServers.includes('memory') && personalConfig.env.MEMORY_PATH) {
+        if (localConfig.mcpServers.memory) {
+          const args = localConfig.mcpServers.memory.args;
+          const pathIndex = args.indexOf('--memory-path');
+          if (pathIndex >= 0 && pathIndex < args.length - 1) {
+            args[pathIndex + 1] = personalConfig.env.MEMORY_PATH;
+          }
+        }
+      }
+
+      // For Task-Master-AI, set the Anthropic API key
+      if (selectedServers.includes('taskmaster-ai') && personalConfig.env.ANTHROPIC_API_KEY) {
+        if (!localConfig.mcpServers['task-master-ai']) {
+          localConfig.mcpServers['task-master-ai'] = {
+            command: 'npx',
+            args: [
+              '-y',
+              '--package=task-master-ai',
+              'task-master-ai'
+            ],
+            env: {}
+          };
+        }
+        localConfig.mcpServers['task-master-ai'].env = localConfig.mcpServers['task-master-ai'].env || {};
+        localConfig.mcpServers['task-master-ai'].env.ANTHROPIC_API_KEY = personalConfig.env.ANTHROPIC_API_KEY;
+      }
+
+      // Create .env file with environment variables
+      let envContent = '';
+      for (const [key, value] of Object.entries(personalConfig.env)) {
+        envContent += `${key}=${value}\n`;
+      }
+
+      if (envContent) {
+        await writeTextFile(path.join(projectRoot, '.env'), envContent);
+        printSuccess('Created .env file with personal configuration.');
+      }
+
       await safeWriteJson(mcpLocalPath, localConfig);
-      printSuccess('Created local MCP override file.');
+      printSuccess('Created local MCP override file with personal configuration.');
     } else {
       printInfo('Local MCP override file already exists. Skipping creation.');
     }

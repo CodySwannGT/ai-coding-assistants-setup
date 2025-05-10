@@ -1,0 +1,8 @@
+{
+  "editor.inlineSuggest.enabled": true,
+  "editor.inlineSuggest.showToolbar": "always",
+  "claude.enableAutoCompletion": true,
+  "rooCode.useIgnoreFiles": true,
+  "rooCode.autoApproveReads": true,
+  "git.ignoreLimitWarning": true
+}

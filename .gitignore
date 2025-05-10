@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Test coverage
+coverage/
+
+# AI assistant configuration files with sensitive data
+.mcp.json.local
+.roo/mcp.json.local
+.claude/credentials.json.enc
+.roo/credentials.json.enc
+.ai-credentials/
+.ai-credentials.json
+
+# Temporary files
+.tmp/
+temp/
+*.tmp

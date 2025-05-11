@@ -96,11 +96,10 @@ jobs:
         with:
           node-version: "20.18.0"
           registry-url: "https://registry.npmjs.org"
-          cache: "yarn"
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
       - name: Build package
-        run: yarn build
+        run: npm run build
       - name: Check npm token
         id: check-npm-token
         run: |
@@ -112,7 +111,7 @@ jobs:
           fi
       - name: Publish to npm
         if: steps.check-npm-token.outputs.has_npm_token == 'true'
-        run: yarn publish --access public
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Notify on success

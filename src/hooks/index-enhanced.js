@@ -1,164 +1,177 @@
 /**
- * Enhanced Git Hooks System
+ * Enhanced Git Hooks Framework
  * 
- * Main entry point for the enhanced Git hooks system in the AI Coding Assistants setup.
- * This module exports all components of the enhanced hooks framework.
+ * This file serves as the main entry point for the enhanced Git hooks framework.
+ * It exports all components needed to create, configure, and use enhanced Git hooks.
  */
 
-// Export hook interfaces and lifecycle
-export { 
-  HookLifecycle, 
-  HookResultStatus, 
-  HookInterface, 
-  HookUtilityInterface 
-} from './hook-interfaces.js';
+// Core interfaces and types
+import { HookLifecycle, HookResultStatus, HookInterface, HookUtilityInterface } from './hook-interfaces.js';
 
-// Export enhanced base hook
-export { default as EnhancedBaseHook } from './enhanced-base-hook.js';
+// Enhanced base hook implementation
+import EnhancedBaseHook from './enhanced-base-hook.js';
 
-// Export enhanced hook registry
-export { default as EnhancedHookRegistry } from './enhanced-hook-registry.js';
+// Hook implementations
+import EnhancedPrepareCommitMsgHook from './enhanced-prepare-commit-msg-hook.js';
+import EnhancedCommitMsgHook from './enhanced-commit-msg-hook.js';
 
-// Export middleware components
-export { 
-  CommonMiddleware,
-  ClaudeMiddleware,
-  GitMiddleware,
-  MiddlewareFactory,
-  createMiddlewarePipeline,
-  registerCommonMiddleware
-} from './hook-middleware.js';
+// Backward compatibility layer
+import { adaptLegacyHook, wrapEnhancedHook } from './hook-compatibility.js';
 
-// Export configuration components
-export {
-  BaseHookSchema,
-  HookSchemas,
-  validateConfig,
-  applyDefaults,
-  loadHookConfig,
+// Configuration system
+import { 
+  validateHookConfig, 
+  applyDefaultConfig,
+  loadHookConfig, 
   saveHookConfig,
-  createConfigMiddleware,
-  registerConfigMiddleware
+  getHookConfigSchema
 } from './hook-config.js';
 
-// Export discovery components
-export {
-  HookLocationType,
-  discoverCoreHooks,
-  discoverProjectHooks,
-  discoverPluginHooks,
-  discoverUserHooks,
-  discoverAllHooks,
-  loadHookModule,
-  loadAllHookModules,
-  registerDiscoveredHooks,
-  createHookDiscoveryMiddleware,
-  registerHookDiscoveryMiddleware
+// Registry and discovery
+import EnhancedHookRegistry from './enhanced-hook-registry.js';
+import { 
+  discoverHooks, 
+  loadHookModule, 
+  registerBuiltinHooks 
 } from './hook-discovery.js';
 
-// Export compatibility components
-export {
-  createEnhancedWrapper,
-  createLegacyWrapper,
-  adaptLegacyHookClass,
-  isEnhancedCompatible,
-  ensureEnhancedCompatible
-} from './hook-compatibility.js';
+// Middleware system
+import { 
+  createMiddleware, 
+  composeMiddleware, 
+  loggerMiddleware, 
+  errorHandlerMiddleware, 
+  configMiddleware,
+  gitInfoMiddleware,
+  claudeMiddleware
+} from './hook-middleware.js';
 
-// Export utility functions
-export {
-  GitUtils,
-  FileUtils,
-  EnvUtils,
-  ResultUtils
+// Utilities
+import {
+  createHookResult,
+  isValidHookName,
+  formatGitDiff,
+  executeGitCommand,
+  loadPromptTemplates,
+  formatPrompt
 } from './hook-utils.js';
 
-// Import existing hooks from original hooks module
-import originalHooksModule from './index.js';
-
 /**
- * Get an enhanced hook registry for the specified project root
- * @param {Object} config Configuration object
- * @param {string} config.projectRoot Project root path
- * @param {Object} config.logger Logger instance
- * @param {boolean} config.dryRun Whether to perform a dry run
- * @returns {EnhancedHookRegistry} Enhanced hook registry instance
+ * Create a new enhanced hook registry
+ * @param {Object} options Options for creating the registry
+ * @param {string} options.projectRoot Project root directory
+ * @param {Object} options.logger Logger instance
+ * @param {boolean} options.loadBuiltins Whether to load builtin hooks
+ * @returns {EnhancedHookRegistry} The hook registry
  */
-export function getEnhancedHookRegistry(config) {
-  // Import needed modules
-  const EnhancedHookRegistry = require('./enhanced-hook-registry.js').default;
-  const hookDiscovery = require('./hook-discovery.js');
+function createRegistry(options = {}) {
+  const registry = new EnhancedHookRegistry({
+    projectRoot: options.projectRoot,
+    logger: options.logger
+  });
   
-  // Create enhanced registry
-  const registry = new EnhancedHookRegistry(config);
-  
-  // Auto-discover hooks
-  hookDiscovery.discoverAllHooks(config.projectRoot, config.logger)
-    .then(hookModules => {
-      hookDiscovery.registerDiscoveredHooks(registry, hookModules);
-    })
-    .catch(err => {
-      if (config.logger) {
-        config.logger.error(`Failed to discover hooks: ${err.message}`);
-      }
-    });
+  if (options.loadBuiltins !== false) {
+    registerBuiltinHooks(registry);
+  }
   
   return registry;
 }
 
 /**
- * Initialize enhanced hooks system
- * @param {Object} config Configuration object
- * @param {string} config.projectRoot Project root path
- * @param {Object} config.logger Logger instance
- * @param {boolean} config.dryRun Whether to perform a dry run
- * @returns {Promise<Object>} Enhanced hook registry and utilities
+ * Register built-in hooks with the registry
+ * @param {EnhancedHookRegistry} registry The hook registry
  */
-export async function initializeEnhancedHooks(config) {
-  const registry = getEnhancedHookRegistry(config);
+function registerBuiltins(registry) {
+  // Register the built-in hooks
+  registry.register('prepare-commit-msg', EnhancedPrepareCommitMsgHook);
+  registry.register('commit-msg', EnhancedCommitMsgHook);
+  // Additional hooks will be registered here as they are implemented
+}
+
+// Create and export middleware factories for common use cases
+const middleware = {
+  logger: loggerMiddleware,
+  error: errorHandlerMiddleware,
+  config: configMiddleware,
+  git: gitInfoMiddleware,
+  claude: claudeMiddleware,
   
-  // Load existing configuration
-  await registry.loadConfig();
+  // Factory function to create custom middleware
+  create: createMiddleware,
   
-  return {
-    registry,
-    GitUtils,
-    FileUtils,
-    EnvUtils,
-    ResultUtils,
-    HookLifecycle,
-    HookResultStatus
-  };
-}
+  // Utility to compose multiple middleware functions
+  compose: composeMiddleware
+};
 
-/**
- * Setup enhanced hooks based on user selection
- * Same interface as the original setupHooks function for compatibility
- */
-export async function setupEnhancedHooks(config) {
-  const { registry } = await initializeEnhancedHooks(config);
-  return registry.setupHooks();
-}
+// Export utility functions
+const utils = {
+  createHookResult,
+  isValidHookName,
+  formatGitDiff,
+  executeGitCommand,
+  loadPromptTemplates,
+  formatPrompt,
+  
+  // Configuration utilities
+  validateHookConfig,
+  applyDefaultConfig,
+  loadHookConfig,
+  saveHookConfig,
+  getHookConfigSchema,
+  
+  // Discovery utilities
+  discoverHooks,
+  loadHookModule
+};
 
-/**
- * Remove enhanced hooks
- * Same interface as the original removeHooks function for compatibility
- */
-export async function removeEnhancedHooks(config) {
-  const { registry } = await initializeEnhancedHooks(config);
-  return registry.removeHooks();
-}
+// Export backward compatibility utilities
+const compatibility = {
+  adaptLegacyHook,
+  wrapEnhancedHook
+};
 
-// Default export with both enhanced and original exports
+// Export main components
+export {
+  // Core interfaces and types
+  HookLifecycle,
+  HookResultStatus,
+  HookInterface,
+  HookUtilityInterface,
+  
+  // Base implementation
+  EnhancedBaseHook,
+  
+  // Hook implementations
+  EnhancedPrepareCommitMsgHook,
+  EnhancedCommitMsgHook,
+  
+  // Registry and factory
+  EnhancedHookRegistry,
+  createRegistry,
+  registerBuiltins,
+  
+  // Middleware
+  middleware,
+  
+  // Utilities
+  utils,
+  
+  // Backward compatibility
+  compatibility
+};
+
+// Default export for convenient importing
 export default {
-  // Enhanced exports
+  HookLifecycle,
+  HookResultStatus,
   EnhancedBaseHook,
   EnhancedHookRegistry,
-  getEnhancedHookRegistry,
-  initializeEnhancedHooks,
-  setupEnhancedHooks,
-  removeEnhancedHooks,
-  
-  // Original exports (for backwards compatibility)
-  ...originalHooksModule
+  createRegistry,
+  middleware,
+  utils,
+  compatibility,
+  hooks: {
+    EnhancedPrepareCommitMsgHook,
+    EnhancedCommitMsgHook
+  }
 };

@@ -13,6 +13,8 @@ import HookRegistry from './hook-registry.js';
 import PreCommitHook from './pre-commit-hook.js';
 import PrepareCommitMsgHook from './prepare-commit-msg-hook.js';
 import CommitMsgHook from './commit-msg-hook.js';
+import PrePushHook from './pre-push-hook.js';
+import PostMergeHook from './post-merge-hook.js';
 
 /**
  * Hook descriptions for display in the setup UI
@@ -97,6 +99,27 @@ export function getHookRegistry(config) {
     checkGrammar: true,
     maxLength: { subject: 72, body: 100 },
     suggestImprovements: true
+  });
+
+  // Register pre-push hook
+  registry.registerHook('pre-push', PrePushHook, {
+    enabled: false, // Default to disabled
+    blockingMode: false,
+    auditTypes: ['security', 'credentials', 'sensitive-data', 'dependencies'],
+    excludePatterns: ['node_modules/**', 'dist/**', 'build/**', '**/*.lock'],
+    maxCommits: 10,
+    maxDiffSize: 100000
+  });
+
+  // Register post-merge hook
+  registry.registerHook('post-merge', PostMergeHook, {
+    enabled: false, // Default to disabled
+    summaryFormat: 'detailed', // 'concise' or 'detailed'
+    includeStats: true,
+    includeDependencies: true,
+    includeBreakingChanges: true,
+    notifyMethod: 'terminal', // 'terminal', 'file', or 'notification'
+    maxDiffSize: 100000
   });
 
   return registry;
@@ -294,11 +317,142 @@ export async function setupHooks(config) {
       hook.checkSpelling = checkSpelling;
       hook.checkGrammar = checkGrammar;
     }
+
+    // Configure pre-push hook
+    else if (hookId === 'pre-push') {
+      const { blockingMode, auditTypes } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'blockingMode',
+          message: 'Block pushes with critical security issues?',
+          default: false
+        },
+        {
+          type: 'checkbox',
+          name: 'auditTypes',
+          message: 'What should Claude check for?',
+          choices: [
+            { name: 'Security vulnerabilities', value: 'security', checked: true },
+            { name: 'Credentials or API keys', value: 'credentials', checked: true },
+            { name: 'Sensitive data', value: 'sensitive-data', checked: true },
+            { name: 'Dependency vulnerabilities', value: 'dependencies', checked: true }
+          ]
+        }
+      ]);
+
+      hook.blockingMode = blockingMode;
+      hook.auditTypes = auditTypes;
+
+      // Ask about excluded patterns if the user wants to customize them
+      const { customizeExcludes } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'customizeExcludes',
+          message: 'Do you want to customize file patterns to exclude from security checks?',
+          default: false
+        }
+      ]);
+
+      if (customizeExcludes) {
+        const { excludePatterns } = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'excludePatterns',
+            message: 'Enter comma-separated patterns to exclude (e.g., node_modules/**,dist/**):',
+            default: hook.excludePatterns.join(','),
+            filter: value => value.split(',').map(p => p.trim()).filter(p => p)
+          }
+        ]);
+
+        hook.excludePatterns = excludePatterns;
+      }
+    }
+
+    // Configure post-merge hook
+    else if (hookId === 'post-merge') {
+      const { summaryFormat, includeStats, notifyMethod } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'summaryFormat',
+          message: 'How detailed should merge summaries be?',
+          choices: [
+            { name: 'Concise - Short overview of changes', value: 'concise' },
+            { name: 'Detailed - Comprehensive explanation of changes', value: 'detailed' }
+          ],
+          default: 'detailed'
+        },
+        {
+          type: 'confirm',
+          name: 'includeStats',
+          message: 'Include statistics in merge summaries?',
+          default: true
+        },
+        {
+          type: 'list',
+          name: 'notifyMethod',
+          message: 'How should merge summaries be delivered?',
+          choices: [
+            { name: 'Terminal output', value: 'terminal' },
+            { name: 'Write to file', value: 'file' },
+            { name: 'System notification (where supported)', value: 'notification' }
+          ],
+          default: 'terminal'
+        }
+      ]);
+
+      hook.summaryFormat = summaryFormat;
+      hook.includeStats = includeStats;
+      hook.notifyMethod = notifyMethod;
+
+      // If the user wants to write to a file, ask for the output file
+      if (notifyMethod === 'file') {
+        const { outputFile } = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'outputFile',
+            message: 'File to write merge summaries to:',
+            default: hook.outputFile
+          }
+        ]);
+
+        hook.outputFile = outputFile;
+      }
+
+      // Ask about advanced options
+      const { configureAdvanced } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'configureAdvanced',
+          message: 'Configure advanced options for merge summaries?',
+          default: false
+        }
+      ]);
+
+      if (configureAdvanced) {
+        const { includeDependencies, includeBreakingChanges } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'includeDependencies',
+            message: 'Highlight dependency changes in summaries?',
+            default: hook.includeDependencies
+          },
+          {
+            type: 'confirm',
+            name: 'includeBreakingChanges',
+            message: 'Highlight potential breaking changes in summaries?',
+            default: hook.includeBreakingChanges
+          }
+        ]);
+
+        hook.includeDependencies = includeDependencies;
+        hook.includeBreakingChanges = includeBreakingChanges;
+      }
+    }
   }
-  
+
   // Save the configuration
   await registry.saveConfig();
-  
+
   // Set up the hooks
   return registry.setupHooks();
 }

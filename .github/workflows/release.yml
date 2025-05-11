@@ -12,8 +12,6 @@ on:
         default: "dev"
         type: choice
         options:
-          - dev
-          - staging
           - main
 
 jobs:

@@ -67,6 +67,43 @@ export async function setupClaudeMd(options) {
     }
   }
 
+  // Check for available Roo modes
+  const roomodesPath = path.join(projectRoot, '.roomodes');
+  let availableRooModes = [];
+
+  if (await fileExists(roomodesPath)) {
+    try {
+      const roomodes = await safeReadJson(roomodesPath);
+      if (roomodes?.customModes && Array.isArray(roomodes.customModes)) {
+        availableRooModes = roomodes.customModes.map(mode => ({
+          slug: mode.slug,
+          name: mode.name
+        }));
+      }
+    } catch (err) {
+      printInfo(`Could not read Roo modes: ${err.message}`);
+    }
+  }
+
+  // Generate mode sections based on available Roo modes
+  const generateModeSection = async (mode) => {
+    const modePath = path.join(projectRoot, '.roo', `rules-${mode.slug}`, '01-instructions.md');
+    const modeExists = await fileExists(modePath);
+
+    if (modeExists) {
+      return `## ${mode.name} Mode
+When the user requests ${mode.slug.replace('tdd', 'test-driven development').replace('docs', 'documentation')} related tasks, use these instructions:
+@/.roo/rules-${mode.slug}/01-instructions.md to ./CLAUDE.md
+`;
+    }
+    return '';
+  };
+
+  // Generate mode sections
+  const modeInstructions = await Promise.all(
+    availableRooModes.map(mode => generateModeSection(mode))
+  );
+
   // Create basic CLAUDE.md content
   const claudeMdContent = `# ${projectName} Project
 
@@ -91,7 +128,7 @@ ${isMonorepoProject && await fileExists(path.join(projectRoot, 'turbo.json')) ? 
 ## Architecture Guide
 @/.roo/rules/02-architecture-guide.md to ./CLAUDE.md
 
-${testFirstEnabled ? `
+${testFirstEnabled && !modeInstructions.some(s => s.includes('TDD Developer')) ? `
 ## Test-First Development
 This project uses test-first development practices:
 - Always ask if the user wants to write tests first for new code
@@ -99,6 +136,8 @@ This project uses test-first development practices:
 - Prioritize test coverage for all new features and bug fixes
 - When implementing a feature, first discuss the testing approach
 ` : ''}
+
+${modeInstructions.join('\n')}
 
 ${copilotInstalled ? `
 ## GitHub Copilot Compatibility

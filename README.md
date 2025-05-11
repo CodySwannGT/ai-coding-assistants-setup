@@ -6,6 +6,8 @@
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./contributing.md)
+[![CI](https://github.com/CodySwannGT/ai-coding-assistants-setup/actions/workflows/ci.yml/badge.svg)](https://github.com/CodySwannGT/ai-coding-assistants-setup/actions/workflows/ci.yml)
+[![Documentation](https://github.com/CodySwannGT/ai-coding-assistants-setup/actions/workflows/docs.yml/badge.svg)](https://github.com/CodySwannGT/ai-coding-assistants-setup/actions/workflows/docs.yml)
 
 **Seamless setup of Claude Code and Roo Code AI assistants for JavaScript projects**
 

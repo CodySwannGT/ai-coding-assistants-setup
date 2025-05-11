@@ -11,13 +11,15 @@
 
 **Seamless setup of Claude Code and Roo Code AI assistants for JavaScript projects**
 
-[Features](#key-features) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [How It Works](#how-it-works) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
+[Features](#key-features) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [How It Works](#how-it-works) • [Tool Comparison](./docs/ai-tools-comparison.md) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
 
 </div>
 
 ## 🎯 Overview
 
 This utility script automates the setup and configuration of Claude Code and Roo Code AI coding assistants within VS Code for JavaScript projects. It handles everything from API keys to MCP server configuration, ensuring both assistants work consistently across your team.
+
+It also helps manage GitHub Copilot if installed, providing options for how these AI tools can work together or separately. See our [AI Tools Comparison](./docs/ai-tools-comparison.md) for details on when to use each assistant.
 
 ## ✨ Key Features
 

@@ -11,7 +11,7 @@
 
 **Seamless setup of Claude Code and Roo Code AI assistants for JavaScript projects**
 
-[Features](#key-features) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [How It Works](#how-it-works) • [Tool Comparison](./docs/ai-tools-comparison.md) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
+[Features](#key-features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [How It Works](#how-it-works) • [Tool Comparison](./docs/ai-tools-comparison.md) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
 
 </div>
 
@@ -20,6 +20,80 @@
 This utility script automates the setup and configuration of Claude Code and Roo Code AI coding assistants within VS Code for JavaScript projects. It handles everything from API keys to MCP server configuration, ensuring both assistants work consistently across your team.
 
 It also helps manage GitHub Copilot if installed, providing options for how these AI tools can work together or separately. See our [AI Tools Comparison](./docs/ai-tools-comparison.md) for details on when to use each assistant.
+
+## 📋 Prerequisites
+
+Before using this setup script, ensure your environment meets the following requirements:
+
+### System Requirements
+
+- **Node.js**: Version 18.0.0 or higher
+- **npm**: Version 7.0.0 or higher
+- **Disk Space**: At least 100MB free space for dependencies and configurations
+- **Memory**: Minimum 4GB RAM recommended for optimal AI assistant operation
+
+### Required Software
+
+- **VS Code**: Version 1.60.0 or higher
+- **Git**: Version 2.30.0 or higher for Git hooks functionality
+
+### Required API Keys
+
+- **Anthropic API Key**: For Claude Code integration (can be obtained during setup)
+- **Roo API Key**: For Roo Code integration (can be obtained during setup)
+- *Optional*: GitHub Personal Access Token (for GitHub MCP integration)
+- *Optional*: Context7 API Key (for Context7 MCP integration)
+
+### Required Permissions
+
+- File system access to create and modify configuration files
+- Permission to install VS Code extensions
+- *Optional*: Admin permissions for global installations
+- *Optional*: Docker access for certain MCP servers
+
+### Optional Dependencies
+
+- **Docker**: For running containerized MCP servers
+- **Python**: Version 3.8+ for certain AI tool extensions
+- **GraphViz**: For visualization capabilities with the Memory MCP
+
+### Compatibility
+
+#### Operating System Compatibility
+
+| OS | Status | Notes |
+|---|---|---|
+| **Windows 10/11** | ✅ Full Support | Works best with PowerShell |
+| **macOS** | ✅ Full Support | Tested on macOS 12+ |
+| **Linux (Ubuntu/Debian)** | ✅ Full Support | Tested on Ubuntu 20.04+ |
+| **Linux (Other Distros)** | ⚠️ Partial Support | May require manual path configuration |
+| **WSL** | ⚠️ Partial Support | VS Code integration requires additional setup |
+
+#### Known Environment Issues
+
+- **Corporate Proxies**: May require additional network configuration
+- **Restricted Environments**: API access might be limited in certain corporate networks
+- **VS Code Remote**: Some features have limited functionality in remote workspaces
+- **VS Code Web**: Not currently supported in web-based VS Code instances
+
+#### VS Code Extension Compatibility
+
+| Extension | Compatibility | Notes |
+|---|---|---|
+| **GitHub Copilot** | ⚠️ Configurable | Can be disabled or configured to work alongside Claude/Roo |
+| **GitLens** | ✅ Compatible | Works well with AI assistant git integrations |
+| **ESLint/Prettier** | ✅ Compatible | No known conflicts |
+| **Remote Development** | ⚠️ Partial | Some local file integrations may be limited |
+| **Live Share** | ⚠️ Partial | AI assistants work independently for each participant |
+
+### Troubleshooting Common Issues
+
+- **API Connection Errors**: Ensure your API keys are valid and network allows API access
+- **Permission Denied**: Run with elevated permissions or check file system access
+- **VS Code Extension Not Found**: Manually install extensions if automatic installation fails
+- **MCP Server Errors**: Check network access and API key validity
+- **Configuration Conflicts**: Use the `--force` flag to override existing configurations
+- **Authentication Issues**: Regenerate API keys and update `.env` file
 
 ## ✨ Key Features
 
@@ -177,6 +251,21 @@ For optimal VS Code experience:
 ## 📊 MCP Server Configuration
 
 The script provides flexible MCP server configuration at multiple levels:
+
+### Task Master AI Integration
+
+When using Task Master AI, this script automatically adds the proper configuration to your `.gitignore` file to ensure that task files aren't committed to version control:
+
+```
+# Task Master AI files
+.taskmasterconfig
+tasks/*.txt
+tasks/task_*.txt
+# Allow tracking tasks.json for project structure but not individual task files
+!tasks/tasks.json
+```
+
+This prevents cluttering your repository with individual task files while still allowing you to track the main task configuration file (`tasks.json`) for project structure and task organization.
 
 ### Global MCP Servers
 

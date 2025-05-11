@@ -205,6 +205,23 @@ export async function setupGitignore(options) {
     }
   }
   
+  // Check for Task Master AI patterns that might already exist
+  const taskMasterPatterns = [
+    '.taskmasterconfig',
+    'tasks/*.txt',
+    'tasks/task_*.txt',
+    'tasks/'
+  ];
+
+  // Check for and remove existing Task Master patterns that might be defined elsewhere in the gitignore
+  for (const pattern of taskMasterPatterns) {
+    const regex = new RegExp(`^${pattern.replace(/\*/g, '\\*')}$`, 'gm');
+    if (regex.test(gitignoreContent)) {
+      printInfo(`Found existing Task Master pattern: ${pattern}`);
+      gitignoreContent = gitignoreContent.replace(regex, '');
+    }
+  }
+
   // Check for patterns that might expose sensitive files
   const sensitivePatterns = [
     '!.env',
@@ -282,6 +299,13 @@ export async function setupGitignore(options) {
 .ai-credentials/
 .ai-credentials.json
 .env
+
+# Task Master AI files
+.taskmasterconfig
+tasks/*.txt
+tasks/task_*.txt
+# Allow tracking tasks.json for project structure but not individual task files
+!tasks/tasks.json
 `;
   
   // Make sure .env.example is not ignored

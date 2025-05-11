@@ -1287,6 +1287,14 @@ CONTEXT7_API_KEY=your-context7-key-here
 # Memory MCP Server
 MEMORY_PATH=/path/to/your/memory.jsonl
 
+# StackOverflow MCP Server
+STACKEXCHANGE_API_KEY=your-stackexchange-key-here
+
+# Command Shell MCP Server
+ALLOWED_COMMANDS=git,npm,node,yarn,ls,cat,echo
+BLOCKED_COMMANDS=rm,sudo,chmod,chown,dd,mkfs,mount,umount,reboot,shutdown
+COMMAND_TIMEOUT_MS=5000
+
 # Anthropic API Key (for Claude Code and Task-Master AI)
 ANTHROPIC_API_KEY=your-anthropic-key-here
 
@@ -1559,7 +1567,7 @@ async function setupMcpConfig() {
   }
   
   // Default servers
-  const defaultServers = ['github', 'context7', 'memory', 'taskmaster-ai'];
+  const defaultServers = ['github', 'context7', 'memory', 'taskmaster-ai', 'stackoverflow', 'command-shell'];
   
   // Available servers
   const availableServers = [
@@ -1567,6 +1575,8 @@ async function setupMcpConfig() {
     { name: 'context7 (Code understanding)', value: 'context7' },
     { name: 'memory (Knowledge persistence)', value: 'memory' },
     { name: 'taskmaster-ai (Task management)', value: 'taskmaster-ai' },
+    { name: 'stackoverflow (Knowledge search)', value: 'stackoverflow' },
+    { name: 'command-shell (Shell command execution)', value: 'command-shell' },
     { name: 'jira (Task integration)', value: 'jira' },
     { name: 'playwright (Testing automation)', value: 'playwright' },
     { name: 'fetch (API communication)', value: 'fetch' },
@@ -1785,7 +1795,141 @@ async function setupMcpConfig() {
       args: ['mcp-server-fetch']
     };
   }
-  
+
+  // Configure StackOverflow MCP
+  if (selectedServers.includes('stackoverflow')) {
+    // Add NPM package via npx
+    serverConfigs.stackoverflow = {
+      command: 'npx',
+      args: [
+        '-y',
+        'stackoverflow-mcp-server'
+      ],
+      env: {}
+    };
+
+    // Ask for StackExchange API key (optional)
+    if (!nonInteractive) {
+      const stackApiKey = await password({
+        message: 'Enter your StackExchange API key (optional, press Enter to skip):',
+      });
+
+      if (stackApiKey && stackApiKey.trim()) {
+        personalConfig.env.STACKEXCHANGE_API_KEY = stackApiKey.trim();
+
+        // Add environment variable to server config
+        serverConfigs.stackoverflow.env = {
+          STACKEXCHANGE_API_KEY: '${STACKEXCHANGE_API_KEY}'
+        };
+      }
+    } else {
+      // In non-interactive mode, try to get from environment
+      const apiKey = process.env.STACKEXCHANGE_API_KEY;
+      if (apiKey) {
+        personalConfig.env.STACKEXCHANGE_API_KEY = apiKey;
+
+        // Add environment variable to server config
+        serverConfigs.stackoverflow.env = {
+          STACKEXCHANGE_API_KEY: '${STACKEXCHANGE_API_KEY}'
+        };
+      }
+    }
+  }
+
+  // Configure Command Shell MCP
+  if (selectedServers.includes('command-shell')) {
+    // Add NPM package via npx
+    serverConfigs['command-shell'] = {
+      command: 'npx',
+      args: [
+        '-y',
+        'command-shell-mcp-server'
+      ],
+      env: {}
+    };
+
+    // Configure security settings
+    if (!nonInteractive) {
+      printWarning('⚠️  SECURITY WARNING: The Command Shell MCP allows AI assistants to execute shell commands.');
+      printWarning('⚠️  Only enable this MCP if you trust the AI assistant and understand the security implications.');
+
+      const enableMCP = await confirm({
+        message: 'Are you sure you want to enable the Command Shell MCP?',
+        default: false
+      });
+
+      if (!enableMCP) {
+        delete serverConfigs['command-shell'];
+        const index = selectedServers.indexOf('command-shell');
+        if (index !== -1) {
+          selectedServers.splice(index, 1);
+        }
+        printInfo('Command Shell MCP has been disabled.');
+      } else {
+        // Get allowed commands
+        const allowedCommandsInput = await input({
+          message: 'Enter allowed shell commands (comma-separated, empty for all non-blocked commands):',
+          default: ''
+        });
+
+        const allowedCommands = allowedCommandsInput.split(',')
+          .map(cmd => cmd.trim())
+          .filter(Boolean);
+
+        // Get blocked commands
+        const blockedCommandsInput = await input({
+          message: 'Enter blocked shell commands (comma-separated):',
+          default: 'rm,sudo,chmod,chown,dd,mkfs,mount,umount,reboot,shutdown'
+        });
+
+        const blockedCommands = blockedCommandsInput.split(',')
+          .map(cmd => cmd.trim())
+          .filter(Boolean);
+
+        // Get command timeout
+        const timeout = await input({
+          message: 'Enter command execution timeout (in milliseconds):',
+          default: '5000'
+        });
+
+        // Save to personal config for local override
+        personalConfig.commandShellConfig = {
+          allowedCommands,
+          blockedCommands,
+          timeoutMs: parseInt(timeout, 10)
+        };
+
+        // Add environment variables to server config
+        serverConfigs['command-shell'].env = {
+          ALLOWED_COMMANDS: allowedCommands.length > 0 ? allowedCommands.join(',') : '',
+          BLOCKED_COMMANDS: blockedCommands.join(','),
+          COMMAND_TIMEOUT_MS: timeout
+        };
+      }
+    } else {
+      // In non-interactive mode, use defaults or environment variables
+      const allowedCommands = process.env.ALLOWED_COMMANDS ? process.env.ALLOWED_COMMANDS.split(',') : [];
+      const blockedCommands = process.env.BLOCKED_COMMANDS ?
+        process.env.BLOCKED_COMMANDS.split(',') :
+        ['rm', 'sudo', 'chmod', 'chown', 'dd', 'mkfs', 'mount', 'umount', 'reboot', 'shutdown'];
+      const timeout = process.env.COMMAND_TIMEOUT_MS || '5000';
+
+      // Add environment variables to server config
+      serverConfigs['command-shell'].env = {
+        ALLOWED_COMMANDS: allowedCommands.join(','),
+        BLOCKED_COMMANDS: blockedCommands.join(','),
+        COMMAND_TIMEOUT_MS: timeout
+      };
+
+      // Save to personal config for local override
+      personalConfig.commandShellConfig = {
+        allowedCommands,
+        blockedCommands,
+        timeoutMs: parseInt(timeout, 10)
+      };
+    }
+  }
+
   // Set MCP configuration directly
   mcpConfig.mcpServers = { ...serverConfigs };
 
@@ -1862,6 +2006,43 @@ async function setupMcpConfig() {
         }
         localConfig.mcpServers['task-master-ai'].env = localConfig.mcpServers['task-master-ai'].env || {};
         localConfig.mcpServers['task-master-ai'].env.ANTHROPIC_API_KEY = personalConfig.env.ANTHROPIC_API_KEY;
+      }
+
+      // For StackOverflow MCP, set the StackExchange API key
+      if (selectedServers.includes('stackoverflow') && personalConfig.env.STACKEXCHANGE_API_KEY) {
+        if (!localConfig.mcpServers['stackoverflow']) {
+          localConfig.mcpServers['stackoverflow'] = {
+            command: 'npx',
+            args: [
+              '-y',
+              'stackoverflow-mcp-server'
+            ],
+            env: {}
+          };
+        }
+        localConfig.mcpServers['stackoverflow'].env = localConfig.mcpServers['stackoverflow'].env || {};
+        localConfig.mcpServers['stackoverflow'].env.STACKEXCHANGE_API_KEY = personalConfig.env.STACKEXCHANGE_API_KEY;
+      }
+
+      // For Command Shell MCP, set the configuration
+      if (selectedServers.includes('command-shell') && personalConfig.commandShellConfig) {
+        if (!localConfig.mcpServers['command-shell']) {
+          localConfig.mcpServers['command-shell'] = {
+            command: 'npx',
+            args: [
+              '-y',
+              'command-shell-mcp-server'
+            ],
+            env: {}
+          };
+        }
+
+        const { allowedCommands, blockedCommands, timeoutMs } = personalConfig.commandShellConfig;
+
+        localConfig.mcpServers['command-shell'].env = localConfig.mcpServers['command-shell'].env || {};
+        localConfig.mcpServers['command-shell'].env.ALLOWED_COMMANDS = allowedCommands.length > 0 ? allowedCommands.join(',') : '';
+        localConfig.mcpServers['command-shell'].env.BLOCKED_COMMANDS = blockedCommands.join(',');
+        localConfig.mcpServers['command-shell'].env.COMMAND_TIMEOUT_MS = timeoutMs.toString();
       }
 
       // Create .env file with environment variables

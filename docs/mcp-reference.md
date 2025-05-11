@@ -14,8 +14,8 @@ Model Context Protocols (MCPs) are standardized interfaces that enable AI assist
 | **Context7** | Provides up-to-date documentation and code understanding for thousands of libraries. Helps Claude/Roo access documentation without using tokens for common libraries. | NPX package installation capability | Context7 API Key | Free tier: 100 req/day; Paid tiers available for higher usage | ```json<br>{ "mcpServers": { "context7-mcp": { "command": "npx", "args": ["-y", "@upstash/context7-mcp@latest"], "env": { "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}" } } } }``` | ```Looking up React documentation: @context7-mcp resolve-library-id --libraryName "react"``` |
 | **Memory** | Provides persistent memory between sessions for Claude/Roo, allowing knowledge to persist across sessions in a knowledge graph. | Storage location accessible for writing | None | Storage limited by file system capacity | ```json<br>{ "mcpServers": { "memory": { "command": "npx", "args": ["-y", "mcp-knowledge-graph", "--memory-path", "${MEMORY_PATH}"], "autoapprove": ["create_entities", "create_relations", "add_observations", "delete_entities", "delete_observations", "delete_relations", "read_graph", "search_nodes", "open_nodes"] } } }``` | ```Storing information for later: @memory create_entities --entities '[{"name": "Project Structure", "entityType": "Documentation", "observations": ["The project uses a modular architecture with separate components for frontend and backend"]}]'``` |
 | **Task Master AI** | Provides task management, tracking, and subtask organization capabilities. Helps systematically manage complex project tasks. | Storage location for tasks | Anthropic API Key (for generating tasks) | Costs based on token usage with Anthropic API | ```json<br>{ "mcpServers": { "task-master-ai": { "command": "npx", "args": ["-y", "--package=task-master-ai", "task-master-ai"], "env": { "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}" } } } }``` | ```Creating a new task: @task-master-ai add_task --projectRoot "/path/to/project" --prompt "Implement user authentication with JWT"``` |
-| **StackOverflow** | Searches StackOverflow for answers to programming questions. Helps Claude/Roo provide more accurate answers to common coding problems. | None (StackExchange API key optional) | StackExchange API Key (optional) | Without API key: 300 req/day; With API key: 10,000 req/day | ```json<br>{ "mcpServers": { "stackoverflow": { "command": "npx", "args": ["-y", "stackoverflow-mcp-server"], "env": { "STACKEXCHANGE_API_KEY": "${STACKEXCHANGE_API_KEY}" } } } }``` | ```Searching for solutions: @stackoverflow search --query "How to handle React useEffect cleanup" --limit 5``` |
-| **Command Shell** | Executes shell commands on behalf of Claude/Roo. ⚠️ Security caution: gives AI ability to run system commands. | Command allow/block list configuration | None | Limited by system resources and timeout parameter | ```json<br>{ "mcpServers": { "command-shell": { "command": "npx", "args": ["-y", "command-shell-mcp-server"], "env": { "ALLOWED_COMMANDS": "git,npm,node,yarn", "BLOCKED_COMMANDS": "rm,sudo,chmod,chown", "COMMAND_TIMEOUT_MS": "5000" } } } }``` | ```Running a git command: @command-shell execute --command "git status"``` |
+| **StackOverflow** | Searches StackOverflow for answers to programming questions. Helps Claude/Roo provide more accurate answers to common coding problems. | None (StackExchange API key optional) | StackExchange API Key (optional) | Without API key: 300 req/day; With API key: 10,000 req/day | ```json<br>{ "mcpServers": { "stackoverflow": { "command": "npx", "args": ["-y", "stackoverflow-mcp-server"], "env": { "STACKEXCHANGE_API_KEY": "${STACKEXCHANGE_API_KEY}", "MAX_SEARCH_RESULTS": "5", "SEARCH_TIMEOUT_MS": "5000", "INCLUDE_CODE_SNIPPETS": "true", "PREFER_ACCEPTED_ANSWERS": "true" } } } }``` | ```Searching for solutions: @stackoverflow search --query "How to handle React useEffect cleanup" --limit 5``` |
+| **Command Shell** | Executes shell commands on behalf of Claude/Roo. ⚠️ Security caution: gives AI ability to run system commands. | Command allow/block list configuration | None | Limited by system resources and timeout parameter | ```json<br>{ "mcpServers": { "command-shell": { "command": "npx", "args": ["-y", "command-shell-mcp-server"], "env": { "ALLOWED_COMMANDS": "git,npm,node,yarn", "BLOCKED_COMMANDS": "rm,sudo,chmod,chown,dd,mkfs,mount,umount,reboot,shutdown", "COMMAND_TIMEOUT_MS": "5000", "LOG_COMMANDS": "true", "ENABLE_ENVIRONMENT_VARIABLES": "false" } } } }``` | ```Running a git command: @command-shell execute --command "git status"``` |
 | **Fetch** | Retrieves content from web URLs, allowing Claude/Roo to access internet resources. | None | None | Subject to remote server rate limits | ```json<br>{ "mcpServers": { "fetch": { "command": "uvx", "args": ["mcp-server-fetch"] } } }``` | ```Fetching documentation: @fetch fetch --url "https://docs.example.com/api-reference" --max_length 5000``` |
 | **Playwright** | Enables browser automation and web testing via Playwright. | Playwright installation | None | Limited by system resources | ```json<br>{ "mcpServers": { "playwright": { "command": "npx", "args": ["-y", "@playwright/browser-mcp", "start"] } } }``` | ```Taking a screenshot: @playwright browser_take_screenshot``` |
 | **Browser** | Provides web browsing capabilities to Claude/Roo. | None | None | Subject to remote server rate limits | ```json<br>{ "mcpServers": { "browser": { "command": "npx", "args": ["-y", "@anthropic/browser-mcp"] } } }``` | ```Navigating to a URL: @browser navigate --url "https://example.com"``` |
@@ -45,7 +45,21 @@ MEMORY_PATH=/path/to/your/memory/file.jsonl
 
 # StackOverflow MCP
 STACKEXCHANGE_API_KEY=your-key-here
+SO_MAX_SEARCH_RESULTS=5
+SO_SEARCH_TIMEOUT_MS=5000
+SO_INCLUDE_CODE_SNIPPETS=true
+SO_PREFER_ACCEPTED_ANSWERS=true
+
+# Command Shell MCP
+ALLOWED_COMMANDS=git,npm,node,yarn,ls,cat,echo
+BLOCKED_COMMANDS=rm,sudo,chmod,chown,dd,mkfs,mount,umount,reboot,shutdown
+COMMAND_TIMEOUT_MS=5000
+COMMAND_WORKING_DIRECTORY=
+COMMAND_LOG_COMMANDS=true
+COMMAND_ENABLE_ENV_VARS=false
 ```
+
+See the [MCP Configuration Examples](./mcp-config-examples.md) for detailed examples of each MCP server configuration.
 
 ## Custom MCP Implementations
 

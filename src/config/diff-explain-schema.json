@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Claude Diff Explain Configuration",
+  "description": "Configuration schema for the Claude diff-explain command",
+  "type": "object",
+  "properties": {
+    "verbosity": {
+      "type": "string",
+      "enum": ["brief", "detailed"],
+      "default": "detailed",
+      "description": "The level of detail in explanations"
+    },
+    "focusAreas": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["functionality", "security", "performance", "readability"]
+      },
+      "default": ["functionality", "security", "performance", "readability"],
+      "description": "Areas to focus on in the explanation"
+    },
+    "maxTokens": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 10000,
+      "default": 4000,
+      "description": "Maximum tokens to generate in Claude response"
+    },
+    "maxDiffSize": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 500000,
+      "default": 100000,
+      "description": "Maximum diff size to process (in characters)"
+    },
+    "model": {
+      "type": "string",
+      "default": "claude-3-opus-20240229",
+      "description": "Claude model to use"
+    },
+    "temperature": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.7,
+      "description": "Temperature for generation"
+    },
+    "outputFormat": {
+      "type": "string",
+      "enum": ["inline", "side-by-side", "summary-only"],
+      "default": "inline",
+      "description": "Format for displaying the explanation"
+    },
+    "highlightIssues": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to highlight potential issues"
+    },
+    "includeSuggestions": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to include suggestions for improvements"
+    },
+    "includeSummary": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to include a summary of changes"
+    },
+    "preferCli": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to prefer Claude CLI over API when available"
+    }
+  },
+  "additionalProperties": false
+}

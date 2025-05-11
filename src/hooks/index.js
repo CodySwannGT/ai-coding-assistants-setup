@@ -20,6 +20,7 @@ import PostRewriteHook from './post-rewrite-hook.js';
 import PreRebaseHook from './pre-rebase-hook.js';
 import BranchStrategyHook from './branch-strategy-hook.js';
 import TestFirstDevelopmentHook from './test-first-development-hook.js';
+import DiffExplainHook from './diff-explain-hook.js';
 
 /**
  * Hook descriptions for display in the setup UI
@@ -29,6 +30,11 @@ const HOOK_DESCRIPTIONS = {
     title: 'Pre-Commit Code Review',
     description: 'Uses Claude to review staged changes before they are committed',
     details: 'This hook analyzes your staged changes for bugs, security issues, and code quality problems before you commit them. It can be configured to either block commits with critical issues or just provide advisory warnings.'
+  },
+  'diff-explain': {
+    title: 'AI-Enhanced Git Diff Explanation',
+    description: 'Uses Claude to explain code changes in natural language',
+    details: 'This enables the `diff-explain` command that provides AI-enhanced git diff output with natural language explanations, context, and potential issue identification. It helps you understand code changes more easily and spot potential problems.'
   },
   'prepare-commit-msg': {
     title: 'Commit Message Generation',
@@ -211,6 +217,20 @@ export function getHookRegistry(config) {
     testDirectories: ['test', 'tests', '__tests__', 'spec'], // Directories where tests should be located
     suggestWithClaude: true, // Whether to use Claude for test suggestions
     testFramework: 'auto', // Auto-detect test framework
+    preferCli: useClaudeCli
+  });
+
+  // Register diff-explain feature
+  registry.registerHook('diff-explain', DiffExplainHook, {
+    enabled: false, // Default to disabled
+    verbosity: 'detailed', // 'detailed' or 'brief'
+    focusAreas: ['functionality', 'security', 'performance', 'readability'],
+    outputFormat: 'inline', // 'inline', 'summary-only', 'side-by-side'
+    maxTokens: 4000,
+    maxDiffSize: 100000,
+    highlightIssues: true,
+    includeSuggestions: true,
+    includeSummary: true,
     preferCli: useClaudeCli
   });
 
@@ -955,6 +975,105 @@ export async function setupHooks(config) {
         console.log(chalk.blue('\nFor custom branching strategies, you can define rules in .claude/branch-strategy.json'));
         console.log(chalk.gray('Example rules include branch naming patterns, target branch restrictions, and file checks.'));
         console.log(chalk.gray('See documentation for more details on custom rule configuration.'));
+      }
+    }
+
+    // Configure diff-explain feature
+    else if (hookId === 'diff-explain') {
+      const { verbosity, outputFormat, focusAreas } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'verbosity',
+          message: 'How detailed should explanations be?',
+          choices: [
+            { name: 'Detailed - Comprehensive explanations with context', value: 'detailed' },
+            { name: 'Brief - Concise explanations focused on key points', value: 'brief' }
+          ],
+          default: 'detailed'
+        },
+        {
+          type: 'list',
+          name: 'outputFormat',
+          message: 'How should explanations be displayed?',
+          choices: [
+            { name: 'Inline - Explanations with the original diff', value: 'inline' },
+            { name: 'Summary Only - Just the explanations without the diff', value: 'summary-only' },
+            { name: 'Side-by-Side - Explanations next to the diff (experimental)', value: 'side-by-side' }
+          ],
+          default: 'inline'
+        },
+        {
+          type: 'checkbox',
+          name: 'focusAreas',
+          message: 'Which aspects should explanations focus on?',
+          choices: [
+            { name: 'Functionality - Purpose and behavior of changes', value: 'functionality', checked: true },
+            { name: 'Security - Security implications and vulnerabilities', value: 'security', checked: true },
+            { name: 'Performance - Efficiency and resource considerations', value: 'performance', checked: true },
+            { name: 'Readability - Code quality and maintainability', value: 'readability', checked: true }
+          ],
+          validate: input => input.length > 0 ? true : 'Please select at least one focus area'
+        }
+      ]);
+
+      hook.verbosity = verbosity;
+      hook.outputFormat = outputFormat;
+
+      if (focusAreas && focusAreas.length > 0) {
+        hook.focusAreas = focusAreas;
+      }
+
+      // Ask about advanced options
+      const { configureAdvanced } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'configureAdvanced',
+          message: 'Configure advanced options for diff explanations?',
+          default: false
+        }
+      ]);
+
+      if (configureAdvanced) {
+        const { maxTokens, maxDiffSize, highlightIssues, includeSuggestions, includeSummary } = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'maxTokens',
+            message: 'Maximum tokens for Claude response:',
+            default: hook.maxTokens.toString(),
+            validate: input => /^\d+$/.test(input) && parseInt(input) >= 1000 ? true : 'Please enter a number of at least 1000'
+          },
+          {
+            type: 'input',
+            name: 'maxDiffSize',
+            message: 'Maximum diff size to process (in characters):',
+            default: hook.maxDiffSize.toString(),
+            validate: input => /^\d+$/.test(input) && parseInt(input) >= 1000 ? true : 'Please enter a number of at least 1000'
+          },
+          {
+            type: 'confirm',
+            name: 'highlightIssues',
+            message: 'Highlight potential issues in explanations?',
+            default: hook.highlightIssues
+          },
+          {
+            type: 'confirm',
+            name: 'includeSuggestions',
+            message: 'Include suggestions for improvements?',
+            default: hook.includeSuggestions
+          },
+          {
+            type: 'confirm',
+            name: 'includeSummary',
+            message: 'Include summary of overall changes?',
+            default: hook.includeSummary
+          }
+        ]);
+
+        hook.maxTokens = parseInt(maxTokens, 10);
+        hook.maxDiffSize = parseInt(maxDiffSize, 10);
+        hook.highlightIssues = highlightIssues;
+        hook.includeSuggestions = includeSuggestions;
+        hook.includeSummary = includeSummary;
       }
     }
 

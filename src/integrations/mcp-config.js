@@ -279,15 +279,9 @@ export async function setupMcpConfig(options) {
 
   // Configure StackOverflow MCP
   if (selectedServers.includes('stackoverflow')) {
-    // Add NPM package via npx
-    serverConfigs.stackoverflow = {
-      command: 'npx',
-      args: [
-        '-y',
-        'stackoverflow-mcp-server'
-      ],
-      env: {}
-    };
+    // Get default configuration from schema
+    const { getDefaultStackOverflowMcpConfig } = await import('../config/mcp-config-schema.js');
+    serverConfigs.stackoverflow = getDefaultStackOverflowMcpConfig();
 
     // Ask for StackExchange API key (optional)
     if (!nonInteractive) {
@@ -299,35 +293,75 @@ export async function setupMcpConfig(options) {
         personalConfig.env.STACKEXCHANGE_API_KEY = stackApiKey.trim();
 
         // Add environment variable to server config
-        serverConfigs.stackoverflow.env = {
-          STACKEXCHANGE_API_KEY: '${STACKEXCHANGE_API_KEY}'
-        };
+        serverConfigs.stackoverflow.env.STACKEXCHANGE_API_KEY = '${STACKEXCHANGE_API_KEY}';
+      }
+
+      // Advanced StackOverflow configuration options
+      const configureAdvanced = await confirm({
+        message: 'Configure advanced StackOverflow search options?',
+        default: false
+      });
+
+      if (configureAdvanced) {
+        // Max search results
+        const maxResults = await input({
+          message: 'Maximum number of search results (1-20):',
+          default: '5',
+          validate: value =>
+            /^\d+$/.test(value) && parseInt(value) >= 1 && parseInt(value) <= 20
+              ? true
+              : 'Please enter a number between 1 and 20'
+        });
+
+        // Search timeout
+        const timeout = await input({
+          message: 'Search timeout in milliseconds:',
+          default: '5000',
+          validate: value =>
+            /^\d+$/.test(value) && parseInt(value) >= 1000
+              ? true
+              : 'Please enter a number of at least 1000'
+        });
+
+        // Include code snippets
+        const includeSnippets = await confirm({
+          message: 'Include code snippets in search results?',
+          default: true
+        });
+
+        // Prefer accepted answers
+        const preferAccepted = await confirm({
+          message: 'Prioritize accepted answers in results?',
+          default: true
+        });
+
+        // Update config
+        serverConfigs.stackoverflow.env.MAX_SEARCH_RESULTS = maxResults;
+        serverConfigs.stackoverflow.env.SEARCH_TIMEOUT_MS = timeout;
+        serverConfigs.stackoverflow.env.INCLUDE_CODE_SNIPPETS = includeSnippets.toString();
+        serverConfigs.stackoverflow.env.PREFER_ACCEPTED_ANSWERS = preferAccepted.toString();
       }
     } else {
       // In non-interactive mode, try to get from environment
       const apiKey = getEnvValue('STACKEXCHANGE_API_KEY', env);
       if (apiKey) {
         personalConfig.env.STACKEXCHANGE_API_KEY = apiKey;
-
-        // Add environment variable to server config
-        serverConfigs.stackoverflow.env = {
-          STACKEXCHANGE_API_KEY: '${STACKEXCHANGE_API_KEY}'
-        };
+        serverConfigs.stackoverflow.env.STACKEXCHANGE_API_KEY = '${STACKEXCHANGE_API_KEY}';
       }
+
+      // Get other configuration from environment or use defaults
+      serverConfigs.stackoverflow.env.MAX_SEARCH_RESULTS = getEnvValue('SO_MAX_SEARCH_RESULTS', env, '5');
+      serverConfigs.stackoverflow.env.SEARCH_TIMEOUT_MS = getEnvValue('SO_SEARCH_TIMEOUT_MS', env, '5000');
+      serverConfigs.stackoverflow.env.INCLUDE_CODE_SNIPPETS = getEnvValue('SO_INCLUDE_CODE_SNIPPETS', env, 'true');
+      serverConfigs.stackoverflow.env.PREFER_ACCEPTED_ANSWERS = getEnvValue('SO_PREFER_ACCEPTED_ANSWERS', env, 'true');
     }
   }
 
   // Configure Command Shell MCP
   if (selectedServers.includes('command-shell')) {
-    // Add NPM package via npx
-    serverConfigs['command-shell'] = {
-      command: 'npx',
-      args: [
-        '-y',
-        'command-shell-mcp-server'
-      ],
-      env: {}
-    };
+    // Get default configuration from schema
+    const { getDefaultCommandShellMcpConfig } = await import('../config/mcp-config-schema.js');
+    serverConfigs['command-shell'] = getDefaultCommandShellMcpConfig();
 
     // Configure security settings
     if (!nonInteractive) {
@@ -370,41 +404,89 @@ export async function setupMcpConfig(options) {
         // Get command timeout
         const timeout = await input({
           message: 'Enter command execution timeout (in milliseconds):',
-          default: '5000'
+          default: '5000',
+          validate: value =>
+            /^\d+$/.test(value) && parseInt(value) >= 1000
+              ? true
+              : 'Please enter a number of at least 1000'
         });
+
+        // Advanced configuration
+        const configureAdvanced = await confirm({
+          message: 'Configure advanced Command Shell options?',
+          default: false
+        });
+
+        if (configureAdvanced) {
+          // Working directory
+          const workingDir = await input({
+            message: 'Enter working directory for command execution (empty for current directory):',
+            default: ''
+          });
+
+          // Logging
+          const logCommands = await confirm({
+            message: 'Log executed commands?',
+            default: true
+          });
+
+          // Environment variables
+          const enableEnvVars = await confirm({
+            message: 'Allow custom environment variables in commands?',
+            default: false
+          });
+
+          // Update config
+          if (workingDir) {
+            serverConfigs['command-shell'].env.WORKING_DIRECTORY = workingDir;
+          }
+          serverConfigs['command-shell'].env.LOG_COMMANDS = logCommands.toString();
+          serverConfigs['command-shell'].env.ENABLE_ENVIRONMENT_VARIABLES = enableEnvVars.toString();
+        }
 
         // Save to personal config for local override
         personalConfig.commandShellConfig = {
           allowedCommands,
           blockedCommands,
-          timeoutMs: parseInt(timeout, 10)
+          timeoutMs: parseInt(timeout, 10),
+          logCommands: serverConfigs['command-shell'].env.LOG_COMMANDS === 'true',
+          enableEnvVars: serverConfigs['command-shell'].env.ENABLE_ENVIRONMENT_VARIABLES === 'true'
         };
 
-        // Add environment variables to server config
-        serverConfigs['command-shell'].env = {
-          ALLOWED_COMMANDS: allowedCommands.length > 0 ? allowedCommands.join(',') : '',
-          BLOCKED_COMMANDS: blockedCommands.join(','),
-          COMMAND_TIMEOUT_MS: timeout
-        };
+        // Set environment variables in server config
+        serverConfigs['command-shell'].env.ALLOWED_COMMANDS = allowedCommands.length > 0 ? allowedCommands.join(',') : '';
+        serverConfigs['command-shell'].env.BLOCKED_COMMANDS = blockedCommands.join(',');
+        serverConfigs['command-shell'].env.COMMAND_TIMEOUT_MS = timeout;
       }
     } else {
       // In non-interactive mode, use defaults or environment variables
       const allowedCommands = getEnvValue('ALLOWED_COMMANDS', env, '').split(',').filter(Boolean);
       const blockedCommands = getEnvValue('BLOCKED_COMMANDS', env, 'rm,sudo,chmod,chown,dd,mkfs,mount,umount,reboot,shutdown').split(',').filter(Boolean);
       const timeout = getEnvValue('COMMAND_TIMEOUT_MS', env, '5000');
+      const workingDir = getEnvValue('COMMAND_WORKING_DIRECTORY', env, '');
+      const logCommands = getEnvValue('COMMAND_LOG_COMMANDS', env, 'true');
+      const enableEnvVars = getEnvValue('COMMAND_ENABLE_ENV_VARS', env, 'false');
 
-      // Add environment variables to server config
-      serverConfigs['command-shell'].env = {
-        ALLOWED_COMMANDS: allowedCommands.join(','),
-        BLOCKED_COMMANDS: blockedCommands.join(','),
-        COMMAND_TIMEOUT_MS: timeout
-      };
+      // Update environment variables in server config
+      serverConfigs['command-shell'].env.ALLOWED_COMMANDS = allowedCommands.join(',');
+      serverConfigs['command-shell'].env.BLOCKED_COMMANDS = blockedCommands.join(',');
+      serverConfigs['command-shell'].env.COMMAND_TIMEOUT_MS = timeout;
+
+      if (workingDir) {
+        serverConfigs['command-shell'].env.WORKING_DIRECTORY = workingDir;
+      }
+
+      serverConfigs['command-shell'].env.LOG_COMMANDS = logCommands;
+      serverConfigs['command-shell'].env.ENABLE_ENVIRONMENT_VARIABLES = enableEnvVars;
 
       // Save to personal config for local override
       personalConfig.commandShellConfig = {
         allowedCommands,
         blockedCommands,
-        timeoutMs: parseInt(timeout, 10)
+        timeoutMs: parseInt(timeout, 10),
+        workingDir: workingDir || undefined,
+        logCommands: logCommands === 'true',
+        enableEnvVars: enableEnvVars === 'true'
       };
     }
   }

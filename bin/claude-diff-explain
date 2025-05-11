@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+
+/**
+ * Claude Git Diff Explain
+ * 
+ * CLI command for AI-enhanced git diff explanations
+ */
+
+require('../src/commands/diff-explain.js');

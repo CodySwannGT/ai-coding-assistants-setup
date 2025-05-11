@@ -70,6 +70,9 @@ async function main() {
       .option('--remove', 'Remove all configurations and settings created by this script', false)
       .option('--remove-all', 'Remove all AI assistant configurations, including VS Code settings', false)
       .option('--list-files', 'List all AI assistant files and directories without removing them', false)
+      .option('--diff-explain', 'Run the diff-explain command with default options (uses staged changes)', false)
+      .option('--diff-explain-commit <hash>', 'Run diff-explain on a specific commit')
+      .option('--diff-explain-branch <name>', 'Run diff-explain on a branch compared to current')
       .parse(process.argv);
 
     const options = program.opts();
@@ -157,6 +160,32 @@ async function main() {
         includeVSCode: options.removeAll
       });
       return;
+    }
+
+    // Check if we're running diff-explain
+    if (options.diffExplain || options.diffExplainCommit || options.diffExplainBranch) {
+      try {
+        // Import the diff-explain module dynamically
+        const { explainDiff } = await import('./integrations/diff-explain.js');
+
+        // Call the explainDiff function with appropriate options
+        const explanation = await explainDiff({
+          commit: options.diffExplainCommit,
+          branch: options.diffExplainBranch,
+          staged: options.diffExplain && !options.diffExplainCommit && !options.diffExplainBranch,
+          projectRoot
+        });
+
+        // Print the explanation
+        console.log(explanation);
+        return;
+      } catch (err) {
+        printError(`Error explaining diff: ${err.message}`);
+        if (logger) {
+          logger.error(err.stack);
+        }
+        process.exit(1);
+      }
     }
     
     // Load environment variables

@@ -11,7 +11,7 @@
 
 **Seamless setup of Claude Code and Roo Code AI assistants for JavaScript projects**
 
-[Features](#key-features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [How It Works](#how-it-works) • [Tool Comparison](./docs/ai-tools-comparison.md) • [MCP Reference](./docs/mcp-reference.md) • [Git Hooks](./docs/hooks.md) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
+[Features](#key-features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [How It Works](#how-it-works) • [Tool Comparison](./docs/ai-tools-comparison.md) • [MCP Reference](./docs/mcp-reference.md) • [Git Hooks](./docs/hooks.md) • [Diff Explain](./docs/diff-explain.md) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
 
 </div>
 
@@ -106,6 +106,7 @@ Before using this setup script, ensure your environment meets the following requ
 - 🔍 **Intelligent Ignore Patterns**: Properly configure which files AI assistants should ignore
 - ⚙️ **VS Code Optimization**: Configure editor settings for the best AI experience
 - 🔄 **Git Hook Integration**: AI-powered Git hooks for code review, commit messages, and more
+- 🔮 **AI-Enhanced Git Diff**: Explain code changes in natural language with context and issue detection
 
 ## 🚀 Installation
 
@@ -164,6 +165,11 @@ npx ai-coding-assistants-setup --list-files              # List all AI assistant
 npx ai-coding-assistants-setup --remove --dry-run        # Show what would be removed (no actual changes)
 npx ai-coding-assistants-setup --remove                  # Remove AI assistant configuration files
 npx ai-coding-assistants-setup --remove-all              # Remove config files + VS Code settings
+
+# AI-Enhanced Git Diff
+npx ai-coding-assistants-setup --diff-explain            # Explain staged changes
+npx ai-coding-assistants-setup --diff-explain-commit abc1234  # Explain specific commit
+npx ai-coding-assistants-setup --diff-explain-branch main      # Compare current branch with main
 ```
 
 ### Setup Options

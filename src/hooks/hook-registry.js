@@ -302,6 +302,20 @@ class HookRegistry {
           hookConfig.maxDiffSize = hook.maxDiffSize;
         }
 
+        // Add branch strategy specific configurations
+        if (id === 'branch-strategy') {
+          hookConfig.strategyType = hook.strategyType;
+          hookConfig.blockingMode = hook.blockingMode;
+          hookConfig.branchPrefixes = hook.branchPrefixes;
+          hookConfig.mainBranches = hook.mainBranches;
+          hookConfig.protectedBranches = hook.protectedBranches;
+          hookConfig.releasePattern = hook.releasePattern;
+          hookConfig.validateWithClaude = hook.validateWithClaude;
+          hookConfig.jiraIntegration = hook.jiraIntegration;
+          hookConfig.jiraPattern = hook.jiraPattern;
+          hookConfig.customRules = hook.customRules;
+        }
+
         config.hooks[id] = hookConfig;
       });
 
@@ -458,6 +472,49 @@ class HookRegistry {
 
               if (hookConfig.maxDiffSize) {
                 hook.maxDiffSize = hookConfig.maxDiffSize;
+              }
+            }
+
+            // Apply branch strategy specific configurations
+            if (id === 'branch-strategy') {
+              if (hookConfig.strategyType) {
+                hook.strategyType = hookConfig.strategyType;
+              }
+
+              if (hookConfig.blockingMode) {
+                hook.blockingMode = hookConfig.blockingMode;
+              }
+
+              if (hookConfig.branchPrefixes) {
+                hook.branchPrefixes = hookConfig.branchPrefixes;
+              }
+
+              if (hookConfig.mainBranches) {
+                hook.mainBranches = hookConfig.mainBranches;
+              }
+
+              if (hookConfig.protectedBranches) {
+                hook.protectedBranches = hookConfig.protectedBranches;
+              }
+
+              if (hookConfig.releasePattern) {
+                hook.releasePattern = hookConfig.releasePattern;
+              }
+
+              if (hookConfig.validateWithClaude !== undefined) {
+                hook.validateWithClaude = hookConfig.validateWithClaude;
+              }
+
+              if (hookConfig.jiraIntegration !== undefined) {
+                hook.jiraIntegration = hookConfig.jiraIntegration;
+              }
+
+              if (hookConfig.jiraPattern) {
+                hook.jiraPattern = hookConfig.jiraPattern;
+              }
+
+              if (hookConfig.customRules) {
+                hook.customRules = hookConfig.customRules;
               }
             }
           }

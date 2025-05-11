@@ -18,6 +18,7 @@ import PostMergeHook from './post-merge-hook.js';
 import PostCheckoutHook from './post-checkout-hook.js';
 import PostRewriteHook from './post-rewrite-hook.js';
 import PreRebaseHook from './pre-rebase-hook.js';
+import BranchStrategyHook from './branch-strategy-hook.js';
 
 /**
  * Hook descriptions for display in the setup UI
@@ -62,6 +63,11 @@ const HOOK_DESCRIPTIONS = {
     title: 'Conflict Prediction',
     description: 'Uses Claude to predict potential merge conflicts before rebasing',
     details: 'This hook runs before a rebase operation and analyzes the branches to predict potential merge conflicts. It helps you plan for conflict resolution before starting a rebase.'
+  },
+  'branch-strategy': {
+    title: 'Branching Strategy Enforcement',
+    description: 'Enforces branch naming conventions and workflow rules',
+    details: 'This hook validates that your branches follow the chosen branching strategy (GitFlow, Trunk-based, GitHub Flow, or custom). It checks branch naming conventions, workflow rules, and can use Claude to validate branch purpose based on its name and commits.'
   }
 };
 
@@ -158,6 +164,25 @@ export function getHookRegistry(config) {
     checkDependencies: true,
     blockOnSeverity: 'high', // 'critical', 'high', 'medium', 'low', 'none'
     maxDiffSize: 100000
+  });
+
+  // Register branch strategy hook
+  registry.registerHook('branch-strategy', BranchStrategyHook, {
+    enabled: false, // Default to disabled
+    strategyType: 'gitflow', // 'gitflow', 'trunk', 'github-flow', or 'custom'
+    blockingMode: 'warn', // 'block', 'warn', or 'none'
+    branchPrefixes: {
+      feature: 'feature/',
+      bugfix: 'bugfix/',
+      hotfix: 'hotfix/',
+      release: 'release/',
+      support: 'support/'
+    },
+    mainBranches: ['main', 'master', 'develop'],
+    protectedBranches: ['main', 'master', 'develop', 'release/*'],
+    releasePattern: '^release\\/v?(\\d+\\.\\d+\\.\\d+)$',
+    validateWithClaude: true,
+    jiraIntegration: false
   });
 
   return registry;
@@ -727,6 +752,180 @@ export async function setupHooks(config) {
         ]);
 
         hook.blockOnSeverity = blockOnSeverity;
+      }
+    }
+
+    // Configure branch strategy hook
+    else if (hookId === 'branch-strategy') {
+      const { strategyType, blockingMode, validateWithClaude } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'strategyType',
+          message: 'Select branching strategy to enforce:',
+          choices: [
+            { name: 'GitFlow - Feature/release/hotfix branches with develop and main branches', value: 'gitflow' },
+            { name: 'Trunk-based - Short-lived feature branches merged frequently to trunk', value: 'trunk' },
+            { name: 'GitHub Flow - Feature branches merged directly to main', value: 'github-flow' },
+            { name: 'Custom - Define your own branching strategy rules', value: 'custom' }
+          ],
+          default: 'gitflow'
+        },
+        {
+          type: 'list',
+          name: 'blockingMode',
+          message: 'How should the hook respond to strategy violations?',
+          choices: [
+            { name: 'Block - Prevent push if violations are detected', value: 'block' },
+            { name: 'Warn - Show warnings but allow push to proceed', value: 'warn' },
+            { name: 'None - Just provide information, no warnings', value: 'none' }
+          ],
+          default: 'warn'
+        },
+        {
+          type: 'confirm',
+          name: 'validateWithClaude',
+          message: 'Use Claude AI to validate branch purposes?',
+          default: true
+        }
+      ]);
+
+      hook.strategyType = strategyType;
+      hook.blockingMode = blockingMode;
+      hook.validateWithClaude = validateWithClaude;
+
+      // If GitFlow is selected, configure branch prefixes
+      if (strategyType === 'gitflow') {
+        const { configurePrefixes } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'configurePrefixes',
+            message: 'Configure GitFlow branch prefixes?',
+            default: false
+          }
+        ]);
+
+        if (configurePrefixes) {
+          const { feature, bugfix, hotfix, release, support } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'feature',
+              message: 'Feature branch prefix:',
+              default: hook.branchPrefixes.feature
+            },
+            {
+              type: 'input',
+              name: 'bugfix',
+              message: 'Bugfix branch prefix:',
+              default: hook.branchPrefixes.bugfix
+            },
+            {
+              type: 'input',
+              name: 'hotfix',
+              message: 'Hotfix branch prefix:',
+              default: hook.branchPrefixes.hotfix
+            },
+            {
+              type: 'input',
+              name: 'release',
+              message: 'Release branch prefix:',
+              default: hook.branchPrefixes.release
+            },
+            {
+              type: 'input',
+              name: 'support',
+              message: 'Support branch prefix:',
+              default: hook.branchPrefixes.support
+            }
+          ]);
+
+          hook.branchPrefixes = {
+            feature,
+            bugfix,
+            hotfix,
+            release,
+            support
+          };
+        }
+
+        // Ask about main branches
+        const { configureMainBranches } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'configureMainBranches',
+            message: 'Configure main branches?',
+            default: false
+          }
+        ]);
+
+        if (configureMainBranches) {
+          const { mainBranches } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'mainBranches',
+              message: 'Main branches (comma-separated list):',
+              default: hook.mainBranches.join(','),
+              filter: value => value.split(',').map(b => b.trim()).filter(b => b)
+            }
+          ]);
+
+          hook.mainBranches = mainBranches;
+        }
+
+        // Ask about protected branches
+        const { configureProtectedBranches } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'configureProtectedBranches',
+            message: 'Configure protected branches?',
+            default: false
+          }
+        ]);
+
+        if (configureProtectedBranches) {
+          const { protectedBranches } = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'protectedBranches',
+              message: 'Protected branches (comma-separated list, can include wildcards):',
+              default: hook.protectedBranches.join(','),
+              filter: value => value.split(',').map(b => b.trim()).filter(b => b)
+            }
+          ]);
+
+          hook.protectedBranches = protectedBranches;
+        }
+      }
+
+      // Ask about JIRA integration
+      const { jiraIntegration } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'jiraIntegration',
+          message: 'Enforce JIRA ticket IDs in branch names?',
+          default: hook.jiraIntegration
+        }
+      ]);
+
+      hook.jiraIntegration = jiraIntegration;
+
+      if (jiraIntegration) {
+        const { jiraPattern } = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'jiraPattern',
+            message: 'JIRA ticket ID pattern (regex):',
+            default: hook.jiraPattern || '[A-Z]+-\\d+'
+          }
+        ]);
+
+        hook.jiraPattern = jiraPattern;
+      }
+
+      // Ask about custom rules if using custom strategy
+      if (strategyType === 'custom') {
+        console.log(chalk.blue('\nFor custom branching strategies, you can define rules in .claude/branch-strategy.json'));
+        console.log(chalk.gray('Example rules include branch naming patterns, target branch restrictions, and file checks.'));
+        console.log(chalk.gray('See documentation for more details on custom rule configuration.'));
       }
     }
   }

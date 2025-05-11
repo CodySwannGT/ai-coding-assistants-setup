@@ -98,39 +98,15 @@
       "subtasks": []
     },
     {
-      "id": 6,
-      "title": "Implement Database Query MCP",
-      "description": "Create a Model Context Protocol for executing database queries and integrating results into AI responses.",
-      "details": "Implement a new MCP module for database queries:\n\n```javascript\nclass DatabaseQueryMCP {\n  constructor(config) {\n    this.connections = {};\n    this.initializeConnections(config.connections || {});\n    this.queryTimeout = config.queryTimeout || 10000;\n    this.maxRows = config.maxRows || 100;\n  }\n\n  async initializeConnections(connectionConfigs) {\n    for (const [name, config] of Object.entries(connectionConfigs)) {\n      try {\n        this.connections[name] = await this.createConnection(config);\n      } catch (error) {\n        console.error(`Failed to initialize database connection ${name}:`, error);\n      }\n    }\n  }\n\n  async createConnection(config) {\n    switch (config.type.toLowerCase()) {\n      case 'mysql':\n        return this.createMySQLConnection(config);\n      case 'postgres':\n        return this.createPostgresConnection(config);\n      case 'sqlite':\n        return this.createSQLiteConnection(config);\n      default:\n        throw new Error(`Unsupported database type: ${config.type}`);\n    }\n  }\n\n  async executeQuery(connectionName, query, params = []) {\n    const connection = this.connections[connectionName];\n    if (!connection) {\n      throw new Error(`Database connection not found: ${connectionName}`);\n    }\n    \n    // Implement query execution based on connection type\n    // Include timeout and row limit\n    // Return results in a standardized format\n  }\n\n  // Implement specific connection creators and query executors for each DB type\n}\n```\n\nAdd configuration options in the setup wizard for database connections. Include security warnings about exposing database access to AI. Update the MCP registry.",
-      "testStrategy": "Create unit tests with mocked database drivers. Test connection handling, query execution, and error scenarios. Test with various database types and query patterns. Verify timeout and row limit enforcement.",
-      "priority": "medium",
-      "dependencies": [],
-      "status": "pending",
-      "subtasks": []
-    },
-    {
-      "id": 7,
-      "title": "Implement Embedding Search MCP",
-      "description": "Create a Model Context Protocol for searching vector databases like Weaviate or Chroma and integrating results into AI responses.",
-      "details": "Implement a new MCP module for embedding search:\n\n```javascript\nclass EmbeddingSearchMCP {\n  constructor(config) {\n    this.dbType = config.dbType; // 'weaviate' or 'chroma'\n    this.endpoint = config.endpoint;\n    this.apiKey = config.apiKey;\n    this.client = this.initializeClient();\n  }\n\n  initializeClient() {\n    switch (this.dbType.toLowerCase()) {\n      case 'weaviate':\n        return this.initializeWeaviate();\n      case 'chroma':\n        return this.initializeChroma();\n      default:\n        throw new Error(`Unsupported embedding database: ${this.dbType}`);\n    }\n  }\n\n  initializeWeaviate() {\n    // Initialize Weaviate client with endpoint and API key\n  }\n\n  initializeChroma() {\n    // Initialize Chroma client with endpoint and API key\n  }\n\n  async search(query, options = {}) {\n    // Convert query to embedding using appropriate service\n    const embedding = await this.getEmbedding(query);\n    \n    // Search the vector database\n    const results = await this.searchWithEmbedding(embedding, options);\n    \n    // Format results for AI context\n    return this.formatResults(results);\n  }\n\n  async getEmbedding(text) {\n    // Use OpenAI or other embedding service\n  }\n\n  async searchWithEmbedding(embedding, options) {\n    // Implement search based on database type\n  }\n\n  formatResults(results) {\n    // Transform results into a format suitable for AI context\n  }\n}\n```\n\nAdd configuration options in the setup wizard for vector database connections. Update the MCP registry to include this new protocol.",
-      "testStrategy": "Create unit tests with mocked vector database responses. Test embedding generation, search functionality, and result formatting. Test with various query types and database configurations.",
-      "priority": "medium",
-      "dependencies": [],
-      "status": "pending",
-      "subtasks": []
-    },
-    {
       "id": 8,
       "title": "Update Configuration Files for New MCPs",
       "description": "Update configuration files and documentation to include the new Model Context Protocols.",
-      "details": "Update the following configuration files and documentation:\n\n1. Update `config-schema.json` to include schemas for the new MCPs:\n   - Add StackOverflow Search MCP schema\n   - Add Command Shell MCP schema\n   - Add Database Query MCP schema\n   - Add Embedding Search MCP schema\n\n2. Update default configuration templates:\n   - Add default configurations for each new MCP\n   - Include commented examples\n\n3. Update the configuration generator in the CLI:\n   - Add prompts for each new MCP\n   - Include validation for inputs\n\n4. Create example configuration files for each MCP\n\nEnsure all configuration options are properly documented with descriptions and default values.",
+      "details": "Update the following configuration files and documentation:\n\n1. Update `config-schema.json` to include schemas for the new MCPs:\n   - Add StackOverflow Search MCP schema\n   - Add Command Shell MCP schema\n\n2. Update default configuration templates:\n   - Add default configurations for each new MCP\n   - Include commented examples\n\n3. Update the configuration generator in the CLI:\n   - Add prompts for each new MCP\n   - Include validation for inputs\n\n4. Create example configuration files for each MCP\n\nEnsure all configuration options are properly documented with descriptions and default values.",
       "testStrategy": "Validate all JSON schema files for correctness. Test configuration generation with various input combinations. Verify that generated configurations are valid according to the schema.",
       "priority": "medium",
       "dependencies": [
         4,
-        5,
-        6,
-        7
+        5
       ],
       "status": "pending",
       "subtasks": []
@@ -240,14 +216,12 @@
       "id": 13,
       "title": "Create MCP Documentation Table",
       "description": "Create a comprehensive table of all supported MCPs including purpose and requirements.",
-      "details": "Create a comprehensive MCP documentation table:\n\n1. Create a new markdown file `docs/mcp-reference.md`\n2. Include a table with the following columns:\n   - MCP Name\n   - Purpose/Description\n   - Configuration Requirements\n   - API Keys/Credentials Needed\n   - Rate Limits/Usage Considerations\n   - Example Configuration\n   - Example Usage\n\n3. Include detailed information for each MCP:\n   - Existing MCPs\n   - New MCPs (StackOverflow, Command Shell, Database Query, Embedding Search)\n\n4. Add a section on extending MCPs with custom implementations\n\n5. Update the main README.md to link to this reference\n\nEnsure the documentation is clear, accurate, and helpful for users trying to configure and use MCPs.",
+      "details": "Create a comprehensive MCP documentation table:\n\n1. Create a new markdown file `docs/mcp-reference.md`\n2. Include a table with the following columns:\n   - MCP Name\n   - Purpose/Description\n   - Configuration Requirements\n   - API Keys/Credentials Needed\n   - Rate Limits/Usage Considerations\n   - Example Configuration\n   - Example Usage\n\n3. Include detailed information for each MCP:\n   - Existing MCPs\n   - New MCPs (StackOverflow, Command Shell)\n\n4. Add a section on extending MCPs with custom implementations\n\n5. Update the main README.md to link to this reference\n\nEnsure the documentation is clear, accurate, and helpful for users trying to configure and use MCPs.",
       "testStrategy": "Have multiple contributors review the documentation for accuracy and completeness. Verify all example configurations by testing them in a real environment. Ensure all MCPs are properly documented.",
       "priority": "medium",
       "dependencies": [
         4,
         5,
-        6,
-        7,
         8
       ],
       "status": "completed",

@@ -2,15 +2,14 @@ name: Documentation
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main]
     paths:
-      - '**/*.md'
-      - '.github/workflows/docs.yml'
+      - "**/*.md"
+      - ".github/workflows/docs.yml"
   pull_request:
-    branches: [ main, develop ]
     paths:
-      - '**/*.md'
-      - '.github/workflows/docs.yml'
+      - "**/*.md"
+      - ".github/workflows/docs.yml"
 
 jobs:
   markdown-lint:
@@ -19,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
       - name: Install markdownlint-cli
         run: npm install -g markdownlint-cli
       - name: Lint Markdown files

@@ -200,7 +200,7 @@ export async function setupHooks(config) {
     
     // Configure pre-commit hook
     if (hookId === 'pre-commit') {
-      const { strictness, blockingMode } = await inquirer.prompt([
+      const { strictness, blockingMode, reviewTypes, blockOnSeverity } = await inquirer.prompt([
         {
           type: 'list',
           name: 'strictness',
@@ -213,15 +213,50 @@ export async function setupHooks(config) {
           default: 'medium'
         },
         {
+          type: 'checkbox',
+          name: 'reviewTypes',
+          message: 'Select areas to focus on during review:',
+          choices: [
+            { name: 'Bugs - Logical errors, edge cases, and exceptions', value: 'bugs', checked: true },
+            { name: 'Security - Vulnerabilities and sensitive data exposure', value: 'security', checked: true },
+            { name: 'Performance - Efficiency and resource usage', value: 'performance', checked: false },
+            { name: 'Best Practices - Design patterns and maintainability', value: 'best-practices', checked: true },
+            { name: 'Style - Formatting, naming conventions, and readability', value: 'style', checked: false }
+          ],
+          validate: input => input.length > 0 ? true : 'Please select at least one area'
+        },
+        {
           type: 'confirm',
           name: 'blockingMode',
-          message: 'Block commits with critical issues?',
+          message: 'Enable blocking mode for commits with issues?',
           default: false
+        },
+        {
+          type: 'list',
+          name: 'blockOnSeverity',
+          message: 'Block commits with issues at or above which severity level?',
+          choices: [
+            { name: 'None - Never block commits', value: 'none' },
+            { name: 'Critical - Only block commits with critical issues', value: 'critical' },
+            { name: 'High - Block commits with high or critical issues', value: 'high' },
+            { name: 'Medium - Block commits with medium to critical issues', value: 'medium' },
+            { name: 'Low - Block commits with any issues', value: 'low' }
+          ],
+          default: 'none',
+          when: answers => answers.blockingMode
         }
       ]);
 
       hook.setStrictness(strictness);
       hook.blockingMode = blockingMode;
+
+      if (reviewTypes && reviewTypes.length > 0) {
+        hook.reviewTypes = reviewTypes;
+      }
+
+      if (blockingMode && blockOnSeverity) {
+        hook.blockOnSeverity = blockOnSeverity;
+      }
     }
 
     // Configure prepare-commit-msg hook

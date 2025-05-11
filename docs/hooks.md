@@ -37,9 +37,20 @@ When a Git operation triggers a hook, the hook script calls the Claude API to an
 The pre-commit hook reviews your staged changes before they are committed.
 
 Options:
-- **Strictness**: Low, Medium, or High
-- **Blocking Mode**: Whether to block commits with critical issues
-- **Review Focus**: Bugs, security, best practices, etc.
+- **Strictness**: Low (critical issues only), Medium (common issues), or High (thorough review)
+- **Review Focus**: Select specific areas to focus on during review:
+  - Bugs: Logical errors, edge cases, and exceptions
+  - Security: Vulnerabilities and sensitive data exposure
+  - Performance: Efficiency and resource usage
+  - Best Practices: Design patterns and maintainability
+  - Style: Formatting, naming conventions, and readability
+- **Blocking Mode**: Whether to block commits based on issues found
+- **Block on Severity**: Configure which severity levels should block commits:
+  - None: Never block commits (advisory only)
+  - Critical: Only block commits with critical issues
+  - High: Block commits with high or critical issues
+  - Medium: Block commits with medium to critical issues
+  - Low: Block commits with any issues
 
 ### Prepare-Commit-Msg Hook
 

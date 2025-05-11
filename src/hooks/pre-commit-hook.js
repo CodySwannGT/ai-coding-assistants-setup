@@ -24,6 +24,7 @@ class PreCommitHook extends BaseHook {
     this.includePatterns = config.includePatterns || ['*.js', '*.jsx', '*.ts', '*.tsx', '*.py', '*.rb']; // Files to include
     this.excludePatterns = config.excludePatterns || ['**/node_modules/**', '**/dist/**', '**/build/**']; // Files to exclude
     this.maxDiffSize = config.maxDiffSize || 50000; // Maximum diff size to review
+    this.blockOnSeverity = config.blockOnSeverity || 'none'; // Block commits with issues at or above this severity
   }
 
   /**
@@ -95,8 +96,8 @@ exit $?
       this.outputReview(review);
       
       // Block commit if necessary
-      if (this.blockingMode && review.issues.some(issue => issue.severity === 'critical')) {
-        this.error('Critical issues found, blocking commit');
+      if (this.blockingMode && this.shouldBlockCommit(review.issues)) {
+        this.error(`Issues with severity ${this.blockOnSeverity} or higher found, blocking commit`);
         process.exit(1);
       }
     } catch (err) {
@@ -177,11 +178,37 @@ exit $?
       medium: 'Focus on bugs, security issues, and clear code quality problems',
       high: 'Be thorough and point out all potential issues including style and best practices'
     }[this.strictness] || 'Focus on bugs, security issues, and clear code quality problems';
-    
+
+    // Build more detailed instructions based on focus areas
+    const focusInstructions = [];
+
+    if (this.reviewTypes.includes('bugs')) {
+      focusInstructions.push('- Look for logical errors, edge cases, and potential runtime exceptions');
+    }
+
+    if (this.reviewTypes.includes('security')) {
+      focusInstructions.push('- Check for security vulnerabilities like injection risks, unvalidated inputs, and exposure of sensitive data');
+    }
+
+    if (this.reviewTypes.includes('performance')) {
+      focusInstructions.push('- Identify performance issues like inefficient algorithms, unnecessary computations, or memory leaks');
+    }
+
+    if (this.reviewTypes.includes('best-practices')) {
+      focusInstructions.push('- Evaluate adherence to coding best practices, design patterns, and maintainability concerns');
+    }
+
+    if (this.reviewTypes.includes('style')) {
+      focusInstructions.push('- Check code style, formatting, naming conventions, and overall code readability');
+    }
+
+    const focusDetails = focusInstructions.length > 0 ?
+      `\nSpecifically:\n${focusInstructions.join('\n')}` : '';
+
     return `You are an expert code reviewer. Please review the following Git diff and provide feedback.
 
 Strictness level: ${this.strictness} - ${strictnessLevel}
-Focus areas: ${this.reviewTypes.join(', ')}
+Focus areas: ${this.reviewTypes.join(', ')}${focusDetails}
 
 # Git Diff
 \`\`\`diff
@@ -245,6 +272,32 @@ Format your response as JSON with the following structure:
         issues: []
       };
     }
+  }
+
+  /**
+   * Determine whether to block the commit based on issue severity
+   * @param {Array<Object>} issues Review issues
+   * @returns {boolean} Whether to block the commit
+   */
+  shouldBlockCommit(issues) {
+    if (this.blockOnSeverity === 'none') {
+      return false;
+    }
+
+    const severityLevels = {
+      'critical': 4,
+      'high': 3,
+      'medium': 2,
+      'low': 1,
+      'none': 0
+    };
+
+    const thresholdLevel = severityLevels[this.blockOnSeverity] || 0;
+
+    return issues.some(issue => {
+      const issueSeverityLevel = severityLevels[issue.severity] || 0;
+      return issueSeverityLevel >= thresholdLevel;
+    });
   }
 
   /**

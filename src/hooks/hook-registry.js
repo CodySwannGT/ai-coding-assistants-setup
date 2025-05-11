@@ -251,12 +251,24 @@ class HookRegistry {
 
       // Add hook configurations
       Object.entries(this.hooks).forEach(([id, hook]) => {
-        config.hooks[id] = {
+        const hookConfig = {
           name: hook.name,
           gitHookName: hook.gitHookName,
           enabled: hook.enabled,
           strictness: hook.strictness
         };
+
+        // Add pre-commit specific configurations
+        if (id === 'pre-commit') {
+          hookConfig.blockingMode = hook.blockingMode;
+          hookConfig.reviewTypes = hook.reviewTypes;
+          hookConfig.blockOnSeverity = hook.blockOnSeverity;
+          hookConfig.maxDiffSize = hook.maxDiffSize;
+          hookConfig.includePatterns = hook.includePatterns;
+          hookConfig.excludePatterns = hook.excludePatterns;
+        }
+
+        config.hooks[id] = hookConfig;
       });
 
       // Write config file
@@ -286,9 +298,36 @@ class HookRegistry {
             } else {
               hook.disable();
             }
-            
+
             if (hookConfig.strictness) {
               hook.setStrictness(hookConfig.strictness);
+            }
+
+            // Apply pre-commit specific configurations
+            if (id === 'pre-commit') {
+              if (hookConfig.blockingMode !== undefined) {
+                hook.blockingMode = hookConfig.blockingMode;
+              }
+
+              if (hookConfig.reviewTypes) {
+                hook.reviewTypes = hookConfig.reviewTypes;
+              }
+
+              if (hookConfig.blockOnSeverity) {
+                hook.blockOnSeverity = hookConfig.blockOnSeverity;
+              }
+
+              if (hookConfig.maxDiffSize) {
+                hook.maxDiffSize = hookConfig.maxDiffSize;
+              }
+
+              if (hookConfig.includePatterns) {
+                hook.includePatterns = hookConfig.includePatterns;
+              }
+
+              if (hookConfig.excludePatterns) {
+                hook.excludePatterns = hookConfig.excludePatterns;
+              }
             }
           }
         });

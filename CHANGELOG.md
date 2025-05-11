@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.1.2](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.1...v1.1.2) (2025-05-11)
+## [1.1.2](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.1...v1.1.2) (2025-05-11)
 
 
 ### Bug Fixes
@@ -10,10 +10,10 @@ All notable changes to this project will be documented in this file. See [standa
 * **ci:** resolve linting errors and add CI workflow improvements ([d8f09ed](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/d8f09ed18e63c77dce51352e852f3e43534f75fe))
 * linter errors ([698b27b](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/698b27bb88aaad6b783334c5b1374d1740a27de0))
 
-### [1.1.1](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.0...v1.1.1) (2025-05-11)
+## [1.1.1](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.0...v1.1.1) (2025-05-11)
 
 
-### Bug Fixes
+### Fixes
 
 * **tests:** configure Jest for ES Modules compatibility ([a5061d6](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/a5061d635598a05d4f40aec46fb169f324069f7e))
 

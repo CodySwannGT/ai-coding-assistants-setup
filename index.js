@@ -30,6 +30,7 @@ import os from 'os';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import winston from 'winston';
+import { setupHooks, removeHooks } from './src/hooks/index.js';
 
 // Get directory name in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -1298,6 +1299,122 @@ OPENAI_API_KEY=your-openai-key-here
 }
 
 /**
+ * Setup Git hooks with Claude integration
+ */
+async function setupGitHooks() {
+  printHeader('Setting up Git Hooks with Claude Integration');
+
+  // Check if .git directory exists
+  const gitDir = path.join(projectRoot, '.git');
+  if (!await fileExists(gitDir)) {
+    printWarning('No .git directory found. Skipping Git hooks setup.');
+    return;
+  }
+
+  // Get Claude API key if available
+  const environmentVars = await loadEnvironmentVars();
+  const claudeApiKey = environmentVars.ANTHROPIC_API_KEY;
+
+  if (!claudeApiKey) {
+    printWarning('No Anthropic API key found. Claude-based Git hooks require an API key.');
+
+    if (!nonInteractive) {
+      const setupAnyway = await confirm({
+        message: 'Would you like to set up Git hooks anyway? (You can add the API key later)',
+        default: false
+      });
+
+      if (!setupAnyway) {
+        printInfo('Skipping Git hooks setup.');
+        return;
+      }
+    } else {
+      printInfo('Skipping Git hooks setup in non-interactive mode due to missing API key.');
+      return;
+    }
+  }
+
+  // Confirm hooks setup
+  let setupConfirmed = true;
+  if (!nonInteractive) {
+    printInfo('Claude can enhance your Git workflow with AI-powered hooks:');
+    printInfo('- Pre-commit code review');
+    printInfo('- Commit message generation and validation');
+    printInfo('- Security audits before pushing');
+    printInfo('- Summaries of merged changes');
+    printInfo('- Branch context when switching branches');
+    printInfo('- And more...');
+
+    setupConfirmed = await confirm({
+      message: 'Would you like to set up Git hooks with Claude integration?',
+      default: true
+    });
+  }
+
+  if (!setupConfirmed) {
+    printInfo('Skipping Git hooks setup.');
+    return;
+  }
+
+  try {
+    // Setup hooks
+    const results = await setupHooks({
+      projectRoot,
+      logger,
+      dryRun,
+      nonInteractive
+    });
+
+    // Report results
+    if (results.success && results.success.length > 0) {
+      printSuccess(`Successfully set up ${results.success.length} Git hooks:`);
+      results.success.forEach(hook => {
+        printInfo(`- ${hook}`);
+      });
+    }
+
+    if (results.failed && results.failed.length > 0) {
+      printWarning(`Failed to set up ${results.failed.length} Git hooks:`);
+      results.failed.forEach(hook => {
+        printWarning(`- ${hook}`);
+      });
+    }
+  } catch (err) {
+    printError(`Failed to set up Git hooks: ${err.message}`);
+  }
+}
+
+/**
+ * Load environment variables from .env file
+ * @returns {Promise<Object>} Environment variables
+ */
+async function loadEnvironmentVars() {
+  const envPath = path.join(projectRoot, '.env');
+  if (!await fileExists(envPath)) {
+    return {};
+  }
+
+  try {
+    const envContent = await fs.readFile(envPath, 'utf8');
+    const env = {};
+
+    envContent.split('\n').forEach(line => {
+      const match = line.match(/^([^=]+)=(.*)$/);
+      if (match) {
+        const key = match[1].trim();
+        const value = match[2].trim();
+        env[key] = value;
+      }
+    });
+
+    return env;
+  } catch (err) {
+    printWarning(`Failed to load .env file: ${err.message}`);
+    return {};
+  }
+}
+
+/**
  * Setup VS Code settings for AI assistants
  */
 async function setupVSCodeSettings() {
@@ -1770,12 +1887,112 @@ async function setupMcpConfig() {
 }
 
 /**
+ * Remove all configurations created by this script
+ */
+async function uninstall() {
+  printHeader('Removing AI Coding Assistants Configuration');
+
+  // Ask for confirmation unless in non-interactive mode
+  if (!nonInteractive) {
+    const confirmation = await confirm({
+      message: chalk.red('WARNING: This will remove all configurations and settings created by this script. Continue?'),
+      default: false
+    });
+
+    if (!confirmation) {
+      printInfo('Uninstall cancelled.');
+      return;
+    }
+  }
+
+  try {
+    // Remove Git hooks
+    printInfo('Removing Git hooks...');
+    const hooksResult = await removeHooks({
+      projectRoot,
+      logger,
+      dryRun
+    });
+
+    if (hooksResult.success && hooksResult.success.length > 0) {
+      printSuccess(`Successfully removed ${hooksResult.success.length} Git hooks`);
+    }
+
+    if (hooksResult.failed && hooksResult.failed.length > 0) {
+      printWarning(`Failed to remove ${hooksResult.failed.length} Git hooks`);
+    }
+
+    // Remove .claude directory
+    const claudeDir = path.join(projectRoot, '.claude');
+    if (await fileExists(claudeDir)) {
+      if (dryRun) {
+        printDebug(`Would remove directory: ${claudeDir}`);
+      } else {
+        await fs.remove(claudeDir);
+        printSuccess(`Removed directory: ${claudeDir}`);
+      }
+    }
+
+    // Remove .roo directory
+    const rooDir = path.join(projectRoot, '.roo');
+    if (await fileExists(rooDir)) {
+      if (dryRun) {
+        printDebug(`Would remove directory: ${rooDir}`);
+      } else {
+        await fs.remove(rooDir);
+        printSuccess(`Removed directory: ${rooDir}`);
+      }
+    }
+
+    // Remove .mcp.json file
+    const mcpPath = path.join(projectRoot, '.mcp.json');
+    if (await fileExists(mcpPath)) {
+      if (dryRun) {
+        printDebug(`Would remove file: ${mcpPath}`);
+      } else {
+        await fs.remove(mcpPath);
+        printSuccess(`Removed file: ${mcpPath}`);
+      }
+    }
+
+    // Remove .roomodes file
+    const roomodesPath = path.join(projectRoot, '.roomodes');
+    if (await fileExists(roomodesPath)) {
+      if (dryRun) {
+        printDebug(`Would remove file: ${roomodesPath}`);
+      } else {
+        await fs.remove(roomodesPath);
+        printSuccess(`Removed file: ${roomodesPath}`);
+      }
+    }
+
+    // Remove CLAUDE.md file
+    const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
+    if (await fileExists(claudeMdPath)) {
+      if (dryRun) {
+        printDebug(`Would remove file: ${claudeMdPath}`);
+      } else {
+        await fs.remove(claudeMdPath);
+        printSuccess(`Removed file: ${claudeMdPath}`);
+      }
+    }
+
+    printSuccess('All AI coding assistant configuration files have been removed.');
+    printInfo('Note: VS Code settings were not modified to avoid disrupting your editor configuration.');
+    printInfo('If desired, you can manually remove AI assistant settings from your VS Code settings.json.');
+  } catch (err) {
+    printError(`Error during uninstall: ${err.message}`);
+    process.exit(1);
+  }
+}
+
+/**
  * Main function to run the setup
  */
 async function main() {
   try {
     console.log(chalk.bold.green('\nAI Coding Assistants Setup Script\n'));
-    
+
     // Process command line arguments
     program
       .name('ai-assistant-setup')
@@ -1785,22 +2002,23 @@ async function main() {
       .option('-v, --verbose [level]', 'Verbosity level (0-3)', (val) => parseInt(val) || 1, 1)
       .option('-n, --non-interactive', 'Run in non-interactive mode with defaults', false)
       .option('-f, --force', 'Force overwrite of existing configurations', false)
+      .option('--remove', 'Remove all configurations and settings created by this script', false)
       .parse(process.argv);
-    
+
     const options = program.opts();
     dryRun = options.dryRun;
     verbose = options.verbose;
     nonInteractive = options.nonInteractive;
     forceOverwrite = options.force;
-    
+
     if (dryRun) {
       printInfo('Running in dry-run mode. No changes will be made.');
     }
-    
+
     if (nonInteractive) {
       printInfo('Running in non-interactive mode with defaults.');
     }
-    
+
     // Find project root
     projectRoot = await findProjectRoot();
     printInfo(`Found project at: ${projectRoot}`);
@@ -1808,11 +2026,17 @@ async function main() {
     // Detect if this is a monorepo
     const isMonorepoProject = await isMonorepo(projectRoot);
     printInfo(`Detected project type: ${isMonorepoProject ? 'Monorepo' : 'Standard Repository'}`);
-    
+
+    // Check if we're removing configuration
+    if (options.remove) {
+      await uninstall();
+      return;
+    }
+
     // Setup logging
     const logsDir = path.join(projectRoot, '.ai-assistants', 'logs');
     await ensureDirectory(logsDir);
-    
+
     if (!dryRun) {
       logger.add(
         new winston.transports.File({
@@ -1856,7 +2080,10 @@ async function main() {
     
     // Setup VS Code settings
     await setupVSCodeSettings();
-    
+
+    // Setup Git hooks
+    await setupGitHooks();
+
     printHeader('Setup Complete!');
     console.log(chalk.green('Your project is now configured to use AI coding assistants.'));
     console.log(chalk.blue('\nManual steps required:'));

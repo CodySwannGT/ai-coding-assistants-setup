@@ -15,6 +15,7 @@ The AI Coding Assistants Setup includes a comprehensive Git hook system that use
 - **Post-Rewrite**: Explains changes after rebases or amends
 - **Pre-Rebase**: Predicts potential conflicts before rebasing
 - **Branch-Strategy**: Enforces branch naming conventions and workflow rules
+- **Test-First Development**: Detects new files without tests and suggests test cases
 
 ## Setup
 
@@ -171,6 +172,18 @@ Options:
 - **Validate with Claude**: Whether to use Claude for validation
 - **JIRA Integration**: Whether to enforce JIRA ticket references
 
+### Test-First Development Hook
+
+This hook promotes test-first development by detecting when new files are added without corresponding test files.
+
+Options:
+- **Blocking Mode**: How to handle missing tests ('block', 'warn', 'none')
+- **File Extensions**: Which file types should require tests (.js, .ts, etc.)
+- **Test Directories**: Where test files should be located
+- **Test Framework**: Testing framework to use for test suggestions (auto-detect, Jest, Mocha, etc.)
+- **Suggest with Claude**: Whether to use Claude to suggest test cases
+- **Exclusion Patterns**: Patterns to exclude from test checks
+
 ## Enabling/Disabling Hooks Temporarily
 
 You can temporarily disable hooks using Git's `--no-verify` flag:
@@ -197,6 +210,7 @@ Available skip environment variables:
 - `CLAUDE_SKIP_POST_REWRITE=true`
 - `CLAUDE_SKIP_PRE_REBASE=true`
 - `CLAUDE_SKIP_BRANCH_STRATEGY=true`
+- `CLAUDE_SKIP_TEST_FIRST_DEVELOPMENT=true`
 
 ## Troubleshooting
 

@@ -81,12 +81,55 @@ export async function setupGitHooks(options) {
     printInfo('- Security audits before pushing');
     printInfo('- Summaries of merged changes');
     printInfo('- Branch context when switching branches');
+    printInfo('- Test-first development enforcement');
+    printInfo('- Branch strategy enforcement');
     printInfo('- And more...');
 
     setupConfirmed = await confirm({
       message: 'Would you like to set up Git hooks with Claude integration?',
       default: true
     });
+
+    // Create shared settings file for Claude and Roo
+    if (setupConfirmed) {
+      const enableTestFirst = await confirm({
+        message: 'Would you like to promote test-first development in your project?',
+        default: true
+      });
+
+      if (enableTestFirst) {
+        // Create or update shared preferences file
+        const sharedPrefsDir = path.join(projectRoot, '.ai-assistants');
+        await fs.ensureDir(sharedPrefsDir);
+
+        const sharedPrefsPath = path.join(sharedPrefsDir, 'shared-preferences.json');
+        let sharedPrefs = {};
+
+        // Check if the file already exists
+        if (await fileExists(sharedPrefsPath)) {
+          try {
+            sharedPrefs = JSON.parse(await fs.readFile(sharedPrefsPath, 'utf8'));
+          } catch (err) {
+            printWarning(`Could not read shared preferences: ${err.message}`);
+          }
+        }
+
+        // Update preferences
+        sharedPrefs.codingPreferences = {
+          ...sharedPrefs.codingPreferences,
+          testFirstDevelopment: true,
+          askAboutTestsWhenCoding: true
+        };
+
+        // Save preferences
+        if (!dryRun) {
+          await fs.writeJson(sharedPrefsPath, sharedPrefs, { spaces: 2 });
+          printSuccess('Updated shared AI assistant preferences for test-first development.');
+        } else {
+          printInfo('[DRY RUN] Would update shared AI assistant preferences.');
+        }
+      }
+    }
   }
 
   if (!setupConfirmed) {

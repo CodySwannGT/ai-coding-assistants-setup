@@ -54,6 +54,19 @@ export async function setupClaudeMd(options) {
   // Check if Copilot is installed
   const { installed: copilotInstalled } = await detectGitHubCopilot();
 
+  // Check for test-first development preference
+  const sharedPrefsPath = path.join(projectRoot, '.ai-assistants', 'shared-preferences.json');
+  let testFirstEnabled = false;
+
+  if (await fileExists(sharedPrefsPath)) {
+    try {
+      const sharedPrefs = await safeReadJson(sharedPrefsPath);
+      testFirstEnabled = sharedPrefs?.codingPreferences?.testFirstDevelopment === true;
+    } catch (err) {
+      printInfo(`Could not read shared preferences: ${err.message}`);
+    }
+  }
+
   // Create basic CLAUDE.md content
   const claudeMdContent = `# ${projectName} Project
 
@@ -77,6 +90,15 @@ ${isMonorepoProject && await fileExists(path.join(projectRoot, 'turbo.json')) ? 
 
 ## Architecture Guide
 @/.roo/rules/02-architecture-guide.md to ./CLAUDE.md
+
+${testFirstEnabled ? `
+## Test-First Development
+This project uses test-first development practices:
+- Always ask if the user wants to write tests first for new code
+- Suggest writing failing tests before implementation code
+- Prioritize test coverage for all new features and bug fixes
+- When implementing a feature, first discuss the testing approach
+` : ''}
 
 ${copilotInstalled ? `
 ## GitHub Copilot Compatibility
@@ -205,6 +227,23 @@ export async function setupClaudeCode(options) {
       preferMcpOverInternal: true
     }
   };
+
+  // Check for shared preferences to include
+  const sharedPrefsPath = path.join(projectRoot, '.ai-assistants', 'shared-preferences.json');
+  if (await fileExists(sharedPrefsPath)) {
+    try {
+      const sharedPrefs = await safeReadJson(sharedPrefsPath);
+      if (sharedPrefs?.codingPreferences?.testFirstDevelopment) {
+        projectSettings.codingPreferences = {
+          ...projectSettings.codingPreferences,
+          testFirstDevelopment: true,
+          askAboutTestsWhenCoding: true
+        };
+      }
+    } catch (err) {
+      printInfo(`Could not read shared preferences: ${err.message}`);
+    }
+  }
 
   await safeWriteJson(path.join(projectClaudeDir, 'settings.json'), projectSettings, dryRun);
 

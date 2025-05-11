@@ -19,6 +19,7 @@ import PostCheckoutHook from './post-checkout-hook.js';
 import PostRewriteHook from './post-rewrite-hook.js';
 import PreRebaseHook from './pre-rebase-hook.js';
 import BranchStrategyHook from './branch-strategy-hook.js';
+import TestFirstDevelopmentHook from './test-first-development-hook.js';
 
 /**
  * Hook descriptions for display in the setup UI
@@ -68,6 +69,11 @@ const HOOK_DESCRIPTIONS = {
     title: 'Branching Strategy Enforcement',
     description: 'Enforces branch naming conventions and workflow rules',
     details: 'This hook validates that your branches follow the chosen branching strategy (GitFlow, Trunk-based, GitHub Flow, or custom). It checks branch naming conventions, workflow rules, and can use Claude to validate branch purpose based on its name and commits.'
+  },
+  'test-first-development': {
+    title: 'Test-First Development Enforcement',
+    description: 'Detects new files without tests and suggests test cases',
+    details: 'This hook promotes test-first development by checking for new files that lack corresponding test files. It can suggest appropriate test cases using Claude and optionally block commits until tests are created.'
   }
 };
 
@@ -194,6 +200,17 @@ export function getHookRegistry(config) {
     releasePattern: '^release\\/v?(\\d+\\.\\d+\\.\\d+)$',
     validateWithClaude: true,
     jiraIntegration: false,
+    preferCli: useClaudeCli
+  });
+
+  // Register test-first development hook
+  registry.registerHook('test-first-development', TestFirstDevelopmentHook, {
+    enabled: false, // Default to disabled
+    blockingMode: 'warn', // 'block', 'warn', or 'none'
+    fileExtensions: ['.js', '.jsx', '.ts', '.tsx', '.py', '.rb'], // File extensions to check
+    testDirectories: ['test', 'tests', '__tests__', 'spec'], // Directories where tests should be located
+    suggestWithClaude: true, // Whether to use Claude for test suggestions
+    testFramework: 'auto', // Auto-detect test framework
     preferCli: useClaudeCli
   });
 
@@ -938,6 +955,111 @@ export async function setupHooks(config) {
         console.log(chalk.blue('\nFor custom branching strategies, you can define rules in .claude/branch-strategy.json'));
         console.log(chalk.gray('Example rules include branch naming patterns, target branch restrictions, and file checks.'));
         console.log(chalk.gray('See documentation for more details on custom rule configuration.'));
+      }
+    }
+
+    // Configure test-first development hook
+    else if (hookId === 'test-first-development') {
+      const { blockingMode, fileExtensions, testFramework, suggestWithClaude } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'blockingMode',
+          message: 'How should the hook respond when files are missing tests?',
+          choices: [
+            { name: 'Block - Prevent commit until tests are created', value: 'block' },
+            { name: 'Warn - Show warnings but allow commit to proceed', value: 'warn' },
+            { name: 'None - Just provide suggestions, no warnings', value: 'none' }
+          ],
+          default: 'warn'
+        },
+        {
+          type: 'checkbox',
+          name: 'fileExtensions',
+          message: 'Which file types should require tests?',
+          choices: [
+            { name: 'JavaScript (.js)', value: '.js', checked: true },
+            { name: 'TypeScript (.ts)', value: '.ts', checked: true },
+            { name: 'JSX React (.jsx)', value: '.jsx', checked: true },
+            { name: 'TSX React (.tsx)', value: '.tsx', checked: true },
+            { name: 'Python (.py)', value: '.py', checked: true },
+            { name: 'Ruby (.rb)', value: '.rb', checked: false }
+          ],
+          validate: input => input.length > 0 ? true : 'Please select at least one file type'
+        },
+        {
+          type: 'list',
+          name: 'testFramework',
+          message: 'Which test framework are you using?',
+          choices: [
+            { name: 'Auto-detect from project', value: 'auto' },
+            { name: 'Jest', value: 'jest' },
+            { name: 'Mocha', value: 'mocha' },
+            { name: 'Pytest', value: 'pytest' },
+            { name: 'Jasmine', value: 'jasmine' },
+            { name: 'Vitest', value: 'vitest' },
+            { name: 'React Testing Library', value: 'rtl' }
+          ],
+          default: 'auto'
+        },
+        {
+          type: 'confirm',
+          name: 'suggestWithClaude',
+          message: 'Use Claude to suggest test cases for new files?',
+          default: true
+        }
+      ]);
+
+      hook.blockingMode = blockingMode;
+      hook.fileExtensions = fileExtensions;
+      hook.testFramework = testFramework;
+      hook.suggestWithClaude = suggestWithClaude;
+
+      // Ask about test directories and patterns
+      const { customizeTestLocations } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'customizeTestLocations',
+          message: 'Do you want to customize where tests should be located?',
+          default: false
+        }
+      ]);
+
+      if (customizeTestLocations) {
+        const { testDirectories } = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'testDirectories',
+            message: 'Enter comma-separated list of test directories:',
+            default: hook.testDirectories.join(','),
+            filter: value => value.split(',').map(d => d.trim()).filter(d => d)
+          }
+        ]);
+
+        hook.testDirectories = testDirectories;
+      }
+
+      // Ask about excluded patterns
+      const { customizeExcludes } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'customizeExcludes',
+          message: 'Do you want to customize patterns to exclude from test checks?',
+          default: false
+        }
+      ]);
+
+      if (customizeExcludes) {
+        const { excludePatterns } = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'excludePatterns',
+            message: 'Enter comma-separated exclude patterns (e.g., node_modules/**,dist/**):',
+            default: hook.excludePatterns ? hook.excludePatterns.join(',') : '**/node_modules/**,**/dist/**,**/build/**,**/coverage/**,**/.git/**',
+            filter: value => value.split(',').map(p => p.trim()).filter(p => p)
+          }
+        ]);
+
+        hook.excludePatterns = excludePatterns;
       }
     }
   }

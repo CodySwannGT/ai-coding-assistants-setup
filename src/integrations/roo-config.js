@@ -493,6 +493,54 @@ export async function setupRooModes(options) {
       .filter(mode => selectedModes.includes(mode.value))
       .map(mode => mode.config)
   };
+
+  // Check for shared preferences to incorporate
+  const sharedPrefsPath = path.join(projectRoot, '.ai-assistants', 'shared-preferences.json');
+  if (await fileExists(sharedPrefsPath)) {
+    try {
+      const sharedPrefs = await safeReadJson(sharedPrefsPath);
+      if (sharedPrefs?.codingPreferences?.testFirstDevelopment) {
+        // Add or modify coding preferences in the modes configuration
+        modes.codingPreferences = {
+          ...(modes.codingPreferences || {}),
+          testFirstDevelopment: true,
+          askAboutTestsWhenCoding: true
+        };
+
+        // Ensure TDD mode is part of the selected modes if test-first is enabled
+        if (!selectedModes.includes('tdd')) {
+          const tddMode = availableModes.find(m => m.value === 'tdd');
+          if (tddMode) {
+            modes.customModes.push(tddMode.config);
+            printInfo('Added TDD mode to support test-first development preference');
+
+            // Also create the TDD mode rules directory
+            const tddRulesDir = path.join(projectRoot, '.roo', 'rules-tdd');
+            await ensureDirectory(tddRulesDir, dryRun);
+
+            const instructionsContent = `# 🧪 TDD Developer Mode Instructions
+
+Follow the test-driven development workflow:
+1. Write a failing test first
+2. Write minimal code to make the test pass
+3. Refactor while keeping tests green
+
+## Mode-Specific Guidelines
+
+1. Always ask about writing tests first for new features
+2. Suggest test cases before implementation
+3. Focus on test coverage and meaningful assertions
+4. Use appropriate testing frameworks for the project
+`;
+
+            await writeTextFile(path.join(tddRulesDir, '01-instructions.md'), instructionsContent, dryRun);
+          }
+        }
+      }
+    } catch (err) {
+      printInfo(`Could not read shared preferences: ${err.message}`);
+    }
+  }
   
   await safeWriteJson(roomodesPath, modes, dryRun);
   printSuccess('Created Roo custom modes configuration');

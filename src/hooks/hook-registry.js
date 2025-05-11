@@ -317,6 +317,18 @@ class HookRegistry {
           hookConfig.customRules = hook.customRules;
         }
 
+        // Add test-first development specific configurations
+        if (id === 'test-first-development') {
+          hookConfig.blockingMode = hook.blockingMode;
+          hookConfig.fileExtensions = hook.fileExtensions;
+          hookConfig.testDirectories = hook.testDirectories;
+          hookConfig.testPatterns = hook.testPatterns;
+          hookConfig.excludePatterns = hook.excludePatterns;
+          hookConfig.testFramework = hook.testFramework;
+          hookConfig.suggestWithClaude = hook.suggestWithClaude;
+          hookConfig.maxFileSize = hook.maxFileSize;
+        }
+
         config.hooks[id] = hookConfig;
       });
 
@@ -521,6 +533,41 @@ class HookRegistry {
 
               if (hookConfig.customRules) {
                 hook.customRules = hookConfig.customRules;
+              }
+            }
+
+            // Apply test-first development specific configurations
+            if (id === 'test-first-development') {
+              if (hookConfig.blockingMode) {
+                hook.blockingMode = hookConfig.blockingMode;
+              }
+
+              if (hookConfig.fileExtensions) {
+                hook.fileExtensions = hookConfig.fileExtensions;
+              }
+
+              if (hookConfig.testDirectories) {
+                hook.testDirectories = hookConfig.testDirectories;
+              }
+
+              if (hookConfig.testPatterns) {
+                hook.testPatterns = hookConfig.testPatterns;
+              }
+
+              if (hookConfig.excludePatterns) {
+                hook.excludePatterns = hookConfig.excludePatterns;
+              }
+
+              if (hookConfig.testFramework) {
+                hook.testFramework = hookConfig.testFramework;
+              }
+
+              if (hookConfig.suggestWithClaude !== undefined) {
+                hook.suggestWithClaude = hookConfig.suggestWithClaude;
+              }
+
+              if (hookConfig.maxFileSize) {
+                hook.maxFileSize = hookConfig.maxFileSize;
               }
             }
           }

@@ -5,21 +5,38 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
+[![NPM Downloads](https://img.shields.io/npm/dm/ai-coding-assistants-setup.svg)](https://www.npmjs.com/package/ai-coding-assistants-setup)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./contributing.md)
 [![CI](https://github.com/CodySwannGT/ai-coding-assistants-setup/actions/workflows/ci.yml/badge.svg)](https://github.com/CodySwannGT/ai-coding-assistants-setup/actions/workflows/ci.yml)
 [![Documentation](https://github.com/CodySwannGT/ai-coding-assistants-setup/actions/workflows/docs.yml/badge.svg)](https://github.com/CodySwannGT/ai-coding-assistants-setup/actions/workflows/docs.yml)
 
 **Seamless setup of Claude Code and Roo Code AI assistants for JavaScript projects**
 
-[Features](#key-features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [How It Works](#how-it-works) • [Tool Comparison](./docs/ai-tools-comparison.md) • [MCP Reference](./docs/mcp-reference.md) • [Git Hooks](./docs/hooks.md) • [Diff Explain](./docs/diff-explain.md) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
+[Features](#key-features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [Git Hooks](#git-hooks) • [MCP Servers](#mcp-server-configuration) • [Examples](#example-scenarios) • [CLI Reference](#command-line-reference) • [Documentation](./docs/) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
+
+---
+
+🔄 **Automate Configuration** • 🔒 **Secure Credentials** • 🧩 **MCP Integration**
+🪝 **Smart Git Hooks** • 📝 **Code Quality Checks** • ⚙️ **Team Consistency**
 
 </div>
 
 ## 🎯 Overview
 
-This utility script automates the setup and configuration of Claude Code and Roo Code AI coding assistants within VS Code for JavaScript projects. It handles everything from API keys to MCP server configuration, ensuring both assistants work consistently across your team.
+AI Coding Assistants Setup is a comprehensive tool for streamlining the integration of modern AI coding assistants (Claude Code and Roo Code) into your JavaScript development workflow. With a single command, it handles everything from API credentials management to MCP server configuration, Git hooks integration, and project-specific settings, ensuring consistent experiences across your entire development team.
 
-It also helps manage GitHub Copilot if installed, providing options for how these AI tools can work together or separately. See our [AI Tools Comparison](./docs/ai-tools-comparison.md) for details on when to use each assistant.
+The tool enables developers to:
+
+- Configure AI assistants with secure, encrypted credentials
+- Set up intelligent Git hooks for AI-powered code review, commit messages, and diffs
+- Integrate code quality checks for TypeScript, linting, and formatting
+- Define customized AI assistant roles for specialized development tasks
+- Configure MCP servers for enhanced AI capabilities
+- Manage GitHub Copilot integration alongside other AI tools
+
+By standardizing AI assistant configurations across your team, this tool eliminates setup inconsistencies, reduces onboarding time, and creates a consistent collaborative environment for AI-assisted development.
+
+[📚 View detailed documentation](./docs/)
 
 ## 📋 Prerequisites
 
@@ -106,6 +123,7 @@ Before using this setup script, ensure your environment meets the following requ
 - 🔍 **Intelligent Ignore Patterns**: Properly configure which files AI assistants should ignore
 - ⚙️ **VS Code Optimization**: Configure editor settings for the best AI experience
 - 🔄 **Git Hook Integration**: AI-powered Git hooks for code review, commit messages, and more
+- 🎯 **Enhanced Code Quality Hooks**: TypeScript type checking, linting, and formatting integration
 - 🔮 **AI-Enhanced Git Diff**: Explain code changes in natural language with context and issue detection
 
 ## 🚀 Installation
@@ -132,7 +150,7 @@ npx ai-assistant-setup
 
 ## 📋 Usage
 
-### Basic Usage
+### Quick Start
 
 Run from your project's root directory:
 
@@ -140,48 +158,90 @@ Run from your project's root directory:
 npx ai-coding-assistants-setup
 ```
 
-Follow the interactive prompts to configure both AI assistants.
+This will launch the interactive wizard that guides you through the setup process. The wizard detects your project structure, offers appropriate configuration options, and handles all the necessary file creation and modification.
 
-### Command Line Options
+### Common Workflows
 
-```bash
-# Show help
-npx ai-coding-assistants-setup --help
+| Task | Command |
+|------|---------|
+| **Initial Setup** | `npx ai-coding-assistants-setup` |
+| **Update Existing Config** | `npx ai-coding-assistants-setup` (select "Update" option) |
+| **Claude-Only Setup** | `npx ai-coding-assistants-setup` (select "Claude Code only") |
+| **Roo-Only Setup** | `npx ai-coding-assistants-setup` (select "Roo Code only") |
+| **Try Without Changes** | `npx ai-coding-assistants-setup --dry-run` |
+| **Unattended Setup** | `npx ai-coding-assistants-setup --non-interactive` |
+| **Explain Git Changes** | `npx ai-coding-assistants-setup --diff-explain` |
+| **Uninstall All** | `npx ai-coding-assistants-setup --remove-all` |
 
-# Dry run (show what would happen without making changes)
-npx ai-coding-assistants-setup --dry-run
+### Setup Process
 
-# Non-interactive mode (use defaults)
-npx ai-coding-assistants-setup --non-interactive
+The interactive wizard will guide you through these steps:
 
-# Force overwrite existing configurations
-npx ai-coding-assistants-setup --force
+1. **Setup Type Selection**
+   - Complete setup (Claude and Roo)
+   - Claude Code only
+   - Roo Code only
+   - Update existing configurations
 
-# Set verbosity level (0-3)
-npx ai-coding-assistants-setup --verbose=2
+2. **MCP Server Configuration**
+   - GitHub integration
+   - Context7 documentation access
+   - Memory graph capabilities
+   - Custom MCP servers
 
-# Uninstall/Removal options
-npx ai-coding-assistants-setup --list-files              # List all AI assistant files without removing
-npx ai-coding-assistants-setup --remove --dry-run        # Show what would be removed (no actual changes)
-npx ai-coding-assistants-setup --remove                  # Remove AI assistant configuration files
-npx ai-coding-assistants-setup --remove-all              # Remove config files + VS Code settings
+3. **Claude Code Configuration**
+   - API key setup
+   - Memory limits
+   - Context settings
+   - Project-specific configurations
 
-# AI-Enhanced Git Diff
-npx ai-coding-assistants-setup --diff-explain            # Explain staged changes
-npx ai-coding-assistants-setup --diff-explain-commit abc1234  # Explain specific commit
-npx ai-coding-assistants-setup --diff-explain-branch main      # Compare current branch with main
-```
+4. **Roo Code Configuration**
+   - Provider selection
+   - Token limits
+   - Custom modes
+   - Auto-approval settings
 
-### Setup Options
+5. **Git Hooks Setup**
+   - AI-powered code review
+   - Commit message assistance
+   - Code quality integration
+   - Branch strategy enforcement
 
-The script provides several setup options:
+## Command Line Reference
 
-- **Complete Setup**: Configure both Claude Code and Roo Code
-- **Single Assistant**: Configure only Claude Code or only Roo Code
-- **Update Configuration**: Update existing configurations
-- **MCP Servers Only**: Configure only the MCP server integration
-- **VS Code Settings**: Update only VS Code editor settings
-- **Uninstall**: Remove AI assistant configurations
+AI Coding Assistants Setup offers a comprehensive set of command-line options for various workflows:
+
+### General Options
+
+| Option | Description | Example |
+|--------|-------------|---------|
+| `--help` | Display help information | `npx ai-coding-assistants-setup --help` |
+| `--version` | Show version information | `npx ai-coding-assistants-setup --version` |
+| `--dry-run` | Show what would change without making changes | `npx ai-coding-assistants-setup --dry-run` |
+| `--non-interactive` | Run with default settings without prompts | `npx ai-coding-assistants-setup --non-interactive` |
+| `--force` | Override existing configurations | `npx ai-coding-assistants-setup --force` |
+| `--verbose=<level>` | Set verbosity (0-3) | `npx ai-coding-assistants-setup --verbose=2` |
+
+### Git Diff Explanation
+
+| Option | Description | Example |
+|--------|-------------|---------|
+| `--diff-explain` | Explain staged changes | `npx ai-coding-assistants-setup --diff-explain` |
+| `--diff-explain-commit <hash>` | Explain specific commit | `npx ai-coding-assistants-setup --diff-explain-commit 8fe3a97` |
+| `--diff-explain-branch <name>` | Compare branch with current | `npx ai-coding-assistants-setup --diff-explain-branch main` |
+
+### Uninstallation Options
+
+| Option | Description | Example |
+|--------|-------------|---------|
+| `--list-files` | List all AI assistant files | `npx ai-coding-assistants-setup --list-files` |
+| `--remove` | Remove AI assistant configurations | `npx ai-coding-assistants-setup --remove` |
+| `--remove --dry-run` | Preview files to be removed | `npx ai-coding-assistants-setup --remove --dry-run` |
+| `--remove-all` | Remove all, including VS Code settings | `npx ai-coding-assistants-setup --remove-all` |
+
+### Example Usage Scenarios
+
+See the [Example Scenarios](#example-scenarios) section below for real-world usage examples.
 
 ## ⚙️ Configuration
 
@@ -201,115 +261,194 @@ The script provides several setup options:
 | `.vscode/settings.json` | VS Code settings | Editor settings for AI assistants |
 | `.env.example` | Environment variables | Template for required env variables |
 
-## 🔧 How It Works
+## 🔧 Technical Architecture
 
-### 1. Project Detection
+AI Coding Assistants Setup employs a modular architecture with specialized components for different aspects of the configuration process:
 
-The script first identifies your project type (standard or monorepo) by:
-- Checking for `package.json` workspaces property
-- Detecting `pnpm-workspace.yaml` or `turbo.json`
-- Analyzing directory structure
+```
+┌───────────────────────┐      ┌─────────────────────┐
+│ Project Detection     │─────▶│ Configuration       │
+│                       │      │ Generation          │
+└───────────────────────┘      └─────────────────────┘
+                                          │
+                                          ▼
+┌───────────────────────┐      ┌─────────────────────┐
+│ Credential Management │◀────▶│ MCP Server Setup    │
+└───────────────────────┘      └─────────────────────┘
+                                          │
+                                          ▼
+┌───────────────────────┐      ┌─────────────────────┐
+│ Git Hooks Integration │◀────▶│ VS Code Integration │
+└───────────────────────┘      └─────────────────────┘
+```
 
-This allows it to adapt the configuration to your specific project structure.
+### Core Components
 
-### 2. Claude Code Configuration
+1. **Project Detection Engine**
+   - Analyzes project structure to identify type (standard/monorepo)
+   - Detects `package.json` workspace configurations
+   - Identifies monorepo tools (`pnpm-workspace.yaml`, `lerna.json`, `turbo.json`)
+   - Scans for capability markers (TypeScript, linting tools, formatters)
+   - Adapts configuration strategy based on detected project type
 
-For Claude Code, the script:
-- Configures the memory limits based on project size
-- Sets up API key encryption for security
-- Creates project-specific settings in `.claude/settings.json`
-- Generates the `CLAUDE.md` file for project context
-- Configures proper ignore patterns
+2. **Configuration Generator**
+   - Creates standardized settings for both Claude and Roo Code
+   - Handles differences between monorepo and standard setups
+   - Generates project context in `CLAUDE.md`
+   - Creates specialized rules in `.roo/rules/`
+   - Sets up proper ignore patterns for both assistants
 
-### 3. Roo Code Configuration
+3. **Secure Credential Manager**
+   - Implements AES-256-CBC encryption for API keys
+   - Uses machine-specific encryption keys
+   - Stores encrypted credentials in isolated files
+   - Creates environment variable templates
+   - Ensures sensitive data never enters version control
 
-For Roo Code, the script:
-- Sets up AI provider configurations (OpenAI, Anthropic)
-- Configures token limits and operation auto-approvals
-- Creates standard rules in `.roo/rules/` directory
-- Sets up `.rooignore` file for proper file exclusion
-- Configures custom modes for specialized AI roles
+4. **MCP Server Integration Layer**
+   - Configures multiple MCP server types
+   - Handles environment variables for authentication
+   - Sets up Docker-based and local MCP servers
+   - Configures autoapprove lists for safe operations
+   - Supports both global and project-level MCP configurations
 
-### 4. MCP Server Integration
+5. **Git Hooks Orchestrator**
+   - Sets up AI-powered code review hooks
+   - Installs commit message assistance
+   - Integrates code quality checks (TypeScript, linting, formatting)
+   - Configures branch strategy enforcement
+   - Adds AI-enhanced diff explanations
 
-The script provides flexible MCP server configuration:
-- Configures GitHub, Context7, Memory, and other servers
-- Synchronizes server settings between Claude and Roo
-- Sets up appropriate environment variables
-- Creates templates for sensitive configuration
-- Supports local override files for personal settings
+6. **VS Code Integration Module**
+   - Configures editor settings optimized for AI assistants
+   - Sets up extension recommendations
+   - Customizes keyboard shortcuts
+   - Creates consistent development environment
+   - Manages Copilot integration if present
 
-### 5. Git Integration
+### Security Considerations
 
-For proper version control integration:
-- Updates `.gitignore` with appropriate patterns
-- Ensures shared configurations are NOT ignored
-- Makes sure sensitive files ARE ignored
-- Creates `.env.example` with required variables
+- **Key Isolation**: API keys are never stored in plain text
+- **Environment Separation**: Local overrides for sensitive configurations
+- **Access Control**: MCP servers configured with minimal required permissions
+- **No Credential Sharing**: Each developer maintains their own encrypted keys
+- **Template Guidance**: `.env.example` demonstrates correct setup without exposing keys
 
-### 6. VS Code Integration
+## 🪝 Git Hooks
 
-For optimal VS Code experience:
-- Configures editor settings for AI assistants
-- Recommends required extensions
-- Sets up keyboard shortcuts optimizations
-- Ensures consistent experience across the team
+AI Coding Assistants Setup provides a comprehensive Git hooks system that enhances your development workflow with AI-powered features and code quality checks.
+
+### Available Git Hooks
+
+| Hook Type | Description | Capabilities |
+|-----------|-------------|--------------|
+| **pre-commit** | Runs before commit is created | Code review, type checking, linting, formatting |
+| **prepare-commit-msg** | Generates/edits commit message | AI-generated commit messages, conventional commits |
+| **commit-msg** | Validates commit message | Format validation, spell checking, suggestions |
+| **pre-push** | Runs before pushing changes | Security auditing, credential scanning |
+| **post-merge** | Runs after merge/pull | Summary of merged changes, dependency analysis |
+| **post-checkout** | Runs after switching branches | Branch context summaries, environment setup |
+| **pre-rebase** | Runs before rebasing | Conflict prediction, breaking change detection |
+| **branch-strategy** | Enforces branch naming | Rule enforcement, workflow validation |
+
+### Code Quality Detection & Integration
+
+The setup automatically detects your project's capabilities:
+
+| Tool Type | Detected Tools | Integration |
+|-----------|----------------|-------------|
+| **Type Checking** | TypeScript | Auto-detects or creates `types:check` script |
+| **Linting** | ESLint, TSLint, Standard | Integrates existing scripts or creates optimized ones |
+| **Formatting** | Prettier, ESLint+Prettier | Uses existing scripts or suggests appropriate configs |
+| **Commit Validation** | commitlint | Integrates with commit-msg hook |
+
+### Intelligent Workflow Features
+
+- **AI Code Review**: Claude analyzes staged changes for bugs, performance issues, and security vulnerabilities
+- **Context-Aware Commit Messages**: Generates descriptive commit messages based on actual code changes
+- **Diff Explanations**: Provides natural language explanations of code changes
+- **Test-First Development**: Encourages creating tests before implementation code
+- **Branch Strategy Enforcement**: Maintains consistent branch naming and workflow
+
+### Configuration Options
+
+Each hook can be configured with fine-grained settings:
+
+```json
+{
+  "hooks": {
+    "pre-commit": {
+      "enabled": true,
+      "blockingMode": "warn",
+      "strictness": "medium",
+      "reviewTypes": ["bugs", "security", "best-practices"],
+      "typeCheck": {
+        "enabled": true,
+        "scriptName": "types:check"
+      },
+      "linting": {
+        "enabled": true,
+        "linter": "eslint",
+        "scriptName": "lint"
+      }
+    }
+  }
+}
+```
+
+For complete reference and examples, see the [Git Hooks Documentation](./docs/hooks.md) and [Enhanced Hooks Documentation](./docs/enhanced-hooks.md).
 
 ## 📊 MCP Server Configuration
 
-The script provides flexible MCP server configuration at multiple levels:
+Modular Capability Providers (MCPs) extend AI assistants with specialized capabilities like GitHub access, documentation search, and more. This tool provides comprehensive MCP configuration at multiple levels:
 
-### Task Master AI Integration
+### Supported MCP Servers
 
-When using Task Master AI, this script automatically adds the proper configuration to your `.gitignore` file to ensure that task files aren't committed to version control:
+| Server Type | Capabilities | Authentication |
+|------------|--------------|----------------|
+| **GitHub** | Repository access, PRs, issues, code search | GitHub PAT |
+| **Context7** | Documentation lookup, library references | Context7 API Key |
+| **Memory** | Knowledge graph for context persistence | Local path or API |
+| **StackOverflow** | Question lookup, code examples | StackExchange API Key |
+| **Shell** | Secure command execution | Allowlist configuration |
+| **Task Master** | Project management, task organization | Anthropic API Key |
+| **Filesystem** | Secure file operations | Path restrictions |
+| **Browser** | Web search, interaction simulation | None required |
 
-```
-# Task Master AI files
-.taskmasterconfig
-tasks/*.txt
-tasks/task_*.txt
-# Allow tracking tasks.json for project structure but not individual task files
-!tasks/tasks.json
-```
+### Configuration Hierarchy
 
-This prevents cluttering your repository with individual task files while still allowing you to track the main task configuration file (`tasks.json`) for project structure and task organization.
+The system employs a multi-level configuration approach:
 
-### MCP Server Documentation
+1. **Global Configuration**:
+   - System-wide MCP settings available to all projects
+   - Default MCP capabilities and limitations
+   - Located in user configuration directories
 
-For a comprehensive reference of all supported MCP servers including their purpose, configuration requirements, API key needs, rate limits, and example usage, please see our [MCP Reference Documentation](./docs/mcp-reference.md).
+2. **Project Configuration**:
+   - Committed to version control for team sharing
+   - Located in `.mcp.json` (Claude) and `.roo/mcp.json` (Roo)
+   - Defines project-specific MCP capabilities
 
-### Global MCP Servers
+3. **Local Overrides**:
+   - Personal configurations not committed to version control
+   - Located in `.mcp.json.local` and `.roo/mcp.json.local`
+   - Contains sensitive authentication information
 
-These servers are configured at the system level and available across all projects.
-
-### Project MCP Servers
-
-These are configured at the project level in `.mcp.json` and `.roo/mcp.json` and are committed to the repository for team sharing:
+### Example MCP Configuration
 
 ```json
-// .mcp.json (for Claude Code)
 {
   "mcpServers": {
     "github": {
       "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "ghcr.io/github/github-mcp-server"
-      ],
+      "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
       }
     },
     "context7-mcp": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp@latest"
-      ],
+      "args": ["-y", "@upstash/context7-mcp@latest"],
       "env": {
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       }
@@ -318,41 +457,179 @@ These are configured at the project level in `.mcp.json` and `.roo/mcp.json` and
       "command": "npx",
       "args": ["-y", "mcp-knowledge-graph", "--memory-path", "${MEMORY_PATH}"],
       "autoapprove": [
-        "create_entities",
-        "create_relations",
-        "add_observations",
-        "delete_entities",
-        "delete_observations",
-        "delete_relations",
-        "read_graph",
-        "search_nodes",
-        "open_nodes"
+        "create_entities", "create_relations", "add_observations",
+        "delete_entities", "delete_observations", "delete_relations",
+        "read_graph", "search_nodes", "open_nodes"
       ]
     }
   }
 }
 ```
 
-### Local MCP Server Overrides
+### Task Master Integration
 
-For personalized or sensitive configurations, the script creates:
+The tool provides specialized integration with Task Master AI for project management:
 
-1. **`.mcp.json.local`**: Personal Claude Code MCP servers (gitignored)
-2. **`.roo/mcp.json.local`**: Personal Roo Code MCP servers (gitignored)
+```
+# .gitignore configuration for Task Master
+.taskmasterconfig
+tasks/*.txt
+tasks/task_*.txt
+# Keep project structure while ignoring individual task files
+!tasks/tasks.json
+```
 
-These override files use the same format as their non-local counterparts but are excluded from version control, allowing for:
+### Security & Permissions
 
-- Personal API keys
-- Developer-specific tool configurations
-- Testing experimental MCP servers
-- Environment-specific settings
+Each MCP server can be configured with granular permissions:
 
-## 🔧 Custom Modes for Roo Code
+- **Auto-approval Lists**: Specific operations that don't require user confirmation
+- **Environment Variables**: Secure credential management
+- **Path Restrictions**: Limit filesystem access to specific directories
+- **Command Allowlists**: Restrict allowed shell commands for security
 
-The script helps you set up specialized AI roles for different tasks:
+For a comprehensive reference including all supported servers, configuration options, authentication methods, and usage examples, see our [MCP Reference Documentation](./docs/mcp-reference.md).
+
+## 🚀 Example Scenarios
+
+Below are real-world scenarios demonstrating how to use AI Coding Assistants Setup effectively in different development contexts.
+
+### Scenario 1: Team Onboarding for a React Project
+
+**Goal**: Configure AI assistants for a team starting a new React project with TypeScript.
+
+```bash
+# Initial setup by team lead
+npx ai-coding-assistants-setup
+
+# Select complete setup (Claude and Roo)
+# Configure GitHub MCP with team repository access
+# Enable enhanced Git hooks
+# Create custom roles for Architecture and TDD
+```
+
+**Benefits**:
+- Every team member gets identical configurations
+- Shared MCP servers avoid duplicate setups
+- Custom modes ensure consistent development practices
+- Enhanced hooks enforce code quality standards
+- `.env.example` provides clear credential requirements for new members
+
+### Scenario 2: Solo Developer with TypeScript Monorepo
+
+**Goal**: Optimize AI assistant setup for a solo developer working on a complex TypeScript monorepo.
+
+```bash
+# Navigate to monorepo root
+cd my-monorepo-project
+
+# Run setup with detection
+npx ai-coding-assistants-setup
+
+# Select Claude-only mode for simplicity
+# Configure Memory MCP for project knowledge persistence
+# Enable TypeScript type checking in hooks
+# Configure workspace-aware settings
+```
+
+**Benefits**:
+- Monorepo structure automatically detected
+- Workspace-aware configurations applied
+- TypeScript integration enhances code quality
+- Memory MCP enables persistent knowledge across coding sessions
+
+### Scenario 3: Open Source Maintainer
+
+**Goal**: Set up AI assistance for managing an open source project with contributors.
+
+```bash
+# Setup with minimal configuration
+npx ai-coding-assistants-setup
+
+# Select full setup with Roo custom modes
+# Configure GitHub MCP for PR reviews
+# Set up enhanced commit-msg hook for message standards
+# Add example prompts to CONTRIBUTING.md
+```
+
+**Benefits**:
+- Standardized commit messages improve project history
+- AI-assisted PR reviews for consistency
+- Custom AI roles help maintain project standards
+- Onboarding new contributors becomes easier
+
+### Scenario 4: Legacy Code Migration
+
+**Goal**: Configure AI assistance for a team migrating a legacy JavaScript project to TypeScript.
+
+```bash
+# Run setup with specialized configuration
+npx ai-coding-assistants-setup
+
+# Select both Claude and Roo
+# Configure git diff-explain for code understanding
+# Set up Context7 MCP for TypeScript documentation access
+# Create migration-specific custom modes
+```
+
+**Benefits**:
+- Git diff-explain helps understand complex changes
+- Context7 provides up-to-date TypeScript documentation
+- Custom modes optimize AI for migration tasks
+- Enhanced hooks ensure migrated code meets quality standards
+
+### Scenario 5: Enterprise Setup with Security Requirements
+
+**Goal**: Configure AI assistants for an enterprise team with strict security requirements.
+
+```bash
+# Run setup with security focus
+npx ai-coding-assistants-setup
+
+# Select complete setup
+# Configure secure credential storage
+# Restrict MCP permissions with minimal access
+# Set up Security Auditor custom mode
+# Enable enhanced pre-push hook with security scanning
+```
+
+**Benefits**:
+- Encrypted credential storage meets security requirements
+- Restricted MCP permissions minimize security risks
+- Security-focused hooks prevent sensitive data commits
+- Audit trails for AI assistant usage
+
+For more detailed examples and prompt templates, see our [Example Prompts Documentation](./docs/example-prompts.md).
+
+## 🎭 Custom AI Roles
+
+AI Coding Assistants Setup enables the creation of specialized AI roles with precisely defined capabilities and constraints, particularly through Roo Code custom modes.
+
+### Role-Based AI Assistants
+
+Custom modes define specialized AI personas for specific development tasks:
+
+| Role | Purpose | Specialized Capabilities |
+|------|---------|--------------------------|
+| **Architect** | System design and planning | Architecture patterns, interface design |
+| **TDD Developer** | Test-driven development | Writing tests first, minimal implementation |
+| **Code Reviewer** | Quality assurance | Best practices, problem detection |
+| **Security Auditor** | Security assessment | Vulnerability detection, secure coding |
+| **Refactoring Expert** | Code improvement | Pattern recognition, maintainability improvements |
+| **Documentation Writer** | Creating docs | Clear explanations, JSDoc/TSDoc |
+
+### Permission Control System
+
+Each role can have granular access permissions:
+
+- **Read Access**: What files the assistant can read
+- **Edit Access**: What files the assistant can modify
+- **Command Access**: What system operations are available
+- **File Pattern Restrictions**: RegEx-based file access control
+
+### Example Custom Mode Configuration
 
 ```json
-// .roomodes
 {
   "customModes": [
     {
@@ -367,17 +644,26 @@ The script helps you set up specialized AI roles for different tasks:
       "name": "🧪 TDD Developer",
       "roleDefinition": "You are a test-driven development specialist who follows a strict red-green-refactor workflow. You always write tests before implementation code.",
       "groups": [
-        "read", 
-        ["edit", { 
-          "fileRegex": "\\.(test|spec)\\.(js|ts|jsx|tsx)$", 
-          "description": "Test files only" 
+        "read",
+        ["edit", {
+          "fileRegex": "\\.(test|spec)\\.(js|ts|jsx|tsx)$",
+          "description": "Test files only"
         }]
       ],
       "customInstructions": "Follow the TDD workflow: 1) Write a failing test, 2) Write minimal code to make the test pass, 3) Refactor while keeping tests green. Never write implementation before tests."
+    },
+    {
+      "slug": "security",
+      "name": "🔒 Security Auditor",
+      "roleDefinition": "You are a cybersecurity expert specialized in identifying and remediating security vulnerabilities in code. You have deep knowledge of OWASP Top 10, secure coding practices, and common attack vectors.",
+      "groups": ["read"],
+      "customInstructions": "Focus on identifying potential security issues including: injection vulnerabilities, authentication problems, sensitive data exposure, XML vulnerabilities, access control issues, security misconfigurations, XSS, insecure deserialization, components with known vulnerabilities, and insufficient logging/monitoring."
     }
   ]
 }
 ```
+
+These modes are created in the `.roomodes` file and automatically configured by the setup tool based on your project's specific needs.
 
 ## 🧹 Uninstalling
 

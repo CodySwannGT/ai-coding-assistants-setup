@@ -1,12 +1,13 @@
 /**
  * Pre-Commit Hook
- * 
+ *
  * Implements a pre-commit hook for Git that uses Claude to review staged changes
  * before they are committed. It can block commits that don't meet quality standards.
  */
 
-import fs from 'fs-extra';
+// fs-extra is used in the parent class
 import path from 'path';
+import chalk from 'chalk';
 import { BaseHook } from './base-hook.js';
 
 class PreCommitHook extends BaseHook {
@@ -57,10 +58,10 @@ exit $?
 
   /**
    * Execute the pre-commit hook logic
-   * @param {Array<string>} args Command-line arguments
+   * @param {Array<string>} _args Command-line arguments (unused)
    * @returns {Promise<void>}
    */
-  async execute(args) {
+  async execute(_args) {
     this.info('Executing pre-commit hook...');
     
     try {

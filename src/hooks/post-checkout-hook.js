@@ -7,7 +7,7 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import chalk from 'chalk';
+import _chalk from 'chalk';
 import { BaseHook } from './base-hook.js';
 
 class PostCheckoutHook extends BaseHook {
@@ -431,7 +431,7 @@ ${dependencySection}
         console.log('\n' + summary + '\n');
         break;
 
-      case 'file':
+      case 'file': {
         // Write to file
         const outputPath = path.join(this.projectRoot, this.outputFile);
         try {
@@ -439,10 +439,9 @@ ${dependencySection}
           this.success(`Branch summary written to ${outputPath}`);
         } catch (err) {
           this.error(`Failed to write branch summary to file: ${err.message}`);
-          // Fall back to terminal output
-          console.log('\n' + summary + '\n');
         }
         break;
+      }
 
       case 'notification':
         // Show a notification (platform-dependent, falls back to terminal)

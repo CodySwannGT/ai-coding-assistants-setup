@@ -10,11 +10,13 @@
   },
   "type": "module",
   "scripts": {
+    "pretest": "node scripts/setup-ci.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "lint": "eslint .",
     "lint-md": "markdownlint '**/*.md' --ignore node_modules --config .markdownlint.json",
     "format": "prettier --write .",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "build": "echo 'No build step required - this is a JavaScript project'"
   },
   "keywords": [
     "claude",

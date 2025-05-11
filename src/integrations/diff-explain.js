@@ -130,8 +130,8 @@ export function getGitDiff(options = {}) {
  */
 export function processDiff(diffOutput, options = {}) {
   const {
-    removeContext = false,
-    removeFilenames = false,
+    _removeContext = false,
+    _removeFilenames = false,
     maxDiffSize = DEFAULT_CONFIG.maxDiffSize
   } = options;
   

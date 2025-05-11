@@ -18,7 +18,6 @@
  * @license MIT
  */
 
-import fs from 'fs-extra';
 import path from 'path';
 import { program } from 'commander';
 import { checkbox, confirm, input, password, select } from '@inquirer/prompts';
@@ -31,19 +30,14 @@ import { uninstall } from './integrations/uninstall.js';
 import {
   findProjectRoot,
   ensureDirectory,
-  isMonorepo,
-  fileExists
+  isMonorepo
 } from './utils/file.js';
 import {
   initLogger,
   printHeader,
   printInfo,
-  printSuccess,
-  printError,
-  printWarning,
-  printDebug
+  printError
 } from './utils/logger.js';
-import { getProjectPaths, isWindows, isMac, isLinux } from './config/paths.js';
 import { loadEnvironmentVars, saveEnvironmentVars } from './config/environment.js';
 
 // Script version
@@ -100,12 +94,15 @@ async function main() {
     // Setup logging
     const logsDir = path.join(projectRoot, '.ai-assistants', 'logs');
     await ensureDirectory(logsDir, dryRun);
-    
+
     const logger = initLogger({
       logsPath: path.join(logsDir, 'setup.log'),
       dryRun,
       verbose
     });
+
+    // Define logger globally for error handling
+    global.logger = logger;
 
     // Create shared configuration options
     const sharedOptions = {
@@ -181,8 +178,8 @@ async function main() {
         return;
       } catch (err) {
         printError(`Error explaining diff: ${err.message}`);
-        if (logger) {
-          logger.error(err.stack);
+        if (global.logger) {
+          global.logger.error(err.stack);
         }
         process.exit(1);
       }
@@ -267,8 +264,8 @@ async function main() {
     console.log('\nThank you for using the AI Coding Assistants Setup Script!');
   } catch (err) {
     printError(`Error: ${err.message}`);
-    if (logger) {
-      logger.error(err.stack);
+    if (global.logger) {
+      global.logger.error(err.stack);
     }
     process.exit(1);
   }

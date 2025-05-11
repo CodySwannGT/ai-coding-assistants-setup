@@ -2,7 +2,7 @@
  * Tests for MCP configuration schema validation
  */
 import { jest } from '@jest/globals';
-import path from 'path';
+import _path from 'path';
 
 // Mock dependencies
 jest.mock('fs-extra', () => ({
@@ -19,7 +19,7 @@ jest.mock('../src/utils/logger.js', () => ({
 }));
 
 // Import after mocking
-import fs from 'fs-extra';
+import _fs from 'fs-extra';
 
 // Modules to test
 import { 

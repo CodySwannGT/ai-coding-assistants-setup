@@ -98,14 +98,14 @@ export const HookInterface = {
    * Initialize the hook with the provided configuration
    * @param {Object} config Hook configuration
    */
-  initialize(config) {},
+  initialize(_config) {},
   
   /**
    * Execute the hook with the provided context
    * @param {HookExecutionContext} context The hook execution context
    * @returns {Promise<HookResult>} The hook execution result
    */
-  async execute(context) {},
+  async execute(_context) {},
   
   /**
    * Generate the hook script content
@@ -142,28 +142,28 @@ export const HookInterface = {
    * @param {Object} config Configuration to validate
    * @returns {boolean} Whether the configuration is valid
    */
-  validateConfig(config) {},
+  validateConfig(_config) {},
   
   /**
    * Register a middleware function for a specific lifecycle phase
    * @param {string} phase Lifecycle phase (from HookLifecycle)
    * @param {Function} middleware Middleware function
    */
-  use(phase, middleware) {},
+  use(_phase, _middleware) {},
   
   /**
    * Handle events from other hooks
    * @param {string} eventName Name of the event
    * @param {Function} handler Event handler function
    */
-  on(eventName, handler) {},
+  on(_eventName, _handler) {},
   
   /**
    * Emit an event to other hooks
    * @param {string} eventName Name of the event
    * @param {Object} data Event data
    */
-  emit(eventName, data) {}
+  emit(_eventName, _data) {}
 };
 
 /**
@@ -199,28 +199,28 @@ export const HookUtilityInterface = {
    * @param {string} to To ref
    * @returns {Promise<string>} Git diff output
    */
-  async getDiff(from, to) {},
+  async getDiff(_from, _to) {},
   
   /**
    * Get recent commits
    * @param {number} limit Number of commits to retrieve
    * @returns {Promise<Array<Object>>} Array of commits
    */
-  async getRecentCommits(limit) {},
+  async getRecentCommits(_limit) {},
   
   /**
    * Call Claude API with the given prompt
    * @param {Object} options API call options
    * @returns {Promise<Object>} Claude API response
    */
-  async callClaude(options) {},
+  async callClaude(_options) {},
   
   /**
    * Load configuration from file
    * @param {string} path Path to configuration file
    * @returns {Promise<Object>} Configuration object
    */
-  async loadConfig(path) {},
+  async loadConfig(_path) {},
   
   /**
    * Save configuration to file
@@ -228,5 +228,5 @@ export const HookUtilityInterface = {
    * @param {Object} config Configuration object
    * @returns {Promise<boolean>} Whether save was successful
    */
-  async saveConfig(path, config) {}
+  async saveConfig(_path, _config) {}
 };

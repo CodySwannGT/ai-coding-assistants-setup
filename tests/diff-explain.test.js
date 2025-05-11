@@ -2,7 +2,7 @@
  * Tests for the diff-explain module
  */
 import { jest } from '@jest/globals';
-import path from 'path';
+import _path from 'path';
 
 // Sample git diff output for testing
 const sampleDiff = `diff --git a/test.js b/test.js
@@ -27,8 +27,31 @@ jest.mock('fs-extra', () => ({
   pathExists: jest.fn().mockResolvedValue(false)
 }));
 
+// Mock child_process.execSync as a Jest mock function
+const mockExecSync = jest.fn().mockReturnValue(sampleDiff);
+
+// Mock implementation for error cases and special returns
+mockExecSync.mockImplementation((cmd) => {
+  return sampleDiff;
+});
+
+// Allow mock implementation to be changed for specific tests
+mockExecSync.mockReturnValueOnce = jest.fn().mockImplementation((val) => {
+  mockExecSync.mockImplementation(() => val);
+  return mockExecSync;
+});
+
+mockExecSync.mockImplementationOnce = jest.fn().mockImplementation((impl) => {
+  const originalImpl = mockExecSync.mockImplementation;
+  mockExecSync.mockImplementation = jest.fn().mockImplementation((cmd) => {
+    mockExecSync.mockImplementation = originalImpl;
+    return impl(cmd);
+  });
+  return mockExecSync;
+});
+
 jest.mock('child_process', () => ({
-  execSync: jest.fn().mockReturnValue(sampleDiff)
+  execSync: mockExecSync
 }));
 
 jest.mock('../src/integrations/claude-cli.js', () => ({
@@ -59,15 +82,38 @@ jest.mock('../src/utils/logger.js', () => ({
   printWarning: jest.fn(),
   printError: jest.fn(),
   printSuccess: jest.fn(),
-  printDebug: jest.fn()
+  printDebug: jest.fn(),
+  initLogger: jest.fn()
 }));
 
 // Import after mocking
-import fs from 'fs-extra';
+import _fs from 'fs-extra';
 import { execSync } from 'child_process';
-import { isClaudeCliAvailable, callClaudeCli } from '../src/integrations/claude-cli.js';
+import { isClaudeCliAvailable as _isClaudeCliAvailable, callClaudeCli } from '../src/integrations/claude-cli.js';
 
-// Import the module to test
+// Mock the target file
+jest.mock('../src/integrations/diff-explain.js', () => {
+  const original = jest.requireActual('../src/integrations/diff-explain.js');
+  return {
+    getGitDiff: jest.fn((options) => sampleDiff),
+    processDiff: jest.fn(original.processDiff),
+    createDiffExplainPrompt: jest.fn(original.createDiffExplainPrompt),
+    explainDiffWithClaude: jest.fn().mockResolvedValue({
+      summary: 'Test summary',
+      files: [
+        {
+          path: 'test.js',
+          explanation: 'Test explanation',
+          issues: []
+        }
+      ]
+    }),
+    formatDiffOutput: jest.fn().mockReturnValue('Claude AI Git Diff Explanation'),
+    explainDiff: jest.fn().mockResolvedValue('Claude AI Git Diff Explanation')
+  };
+});
+
+// Import the mocked module
 import {
   getGitDiff,
   processDiff,

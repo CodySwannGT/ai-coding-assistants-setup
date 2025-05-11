@@ -315,13 +315,13 @@ exit $?
     // Identify dependency changes
     const dependencyChanges = this.includeDependencies
       ? filesChanged.filter(file =>
-          file.file.includes('package.json') ||
+        file.file.includes('package.json') ||
           file.file.includes('requirements.txt') ||
           file.file.includes('Gemfile') ||
           file.file.includes('pom.xml') ||
           file.file.includes('build.gradle') ||
           file.file.includes('go.mod')
-        )
+      )
       : [];
 
     // Format dependency section if needed
@@ -435,20 +435,20 @@ ${filesChanged.map(file => `- ${file.status}: ${file.file}`).join('\n')}${depend
     // Format the file stats
     const statsSection = this.includeStats
       ? `\n\n## File Statistics\n\n${Object.entries(fileStats)
-          .map(([status, count]) => `- ${status}: ${count}`)
-          .join('\n')}`
+        .map(([status, count]) => `- ${status}: ${count}`)
+        .join('\n')}`
       : '';
 
     // Identify dependency changes
     const dependencyChanges = this.includeDependencies
       ? filesChanged.filter(file =>
-          file.file.includes('package.json') ||
+        file.file.includes('package.json') ||
           file.file.includes('requirements.txt') ||
           file.file.includes('Gemfile') ||
           file.file.includes('pom.xml') ||
           file.file.includes('build.gradle') ||
           file.file.includes('go.mod')
-        )
+      )
       : [];
 
     // Format dependency section if needed
@@ -469,9 +469,9 @@ A rebase was completed on branch ${currentBranch}, rewriting ${rewrittenCommits.
 
 ## Rewritten Commits
 
-${rewrittenCommits.map(({ oldSha, oldDetails, newSha, newDetails }) =>
-  `- ${oldSha.substring(0, 7)} → ${newSha.substring(0, 7)}: ${newDetails.subject}`
-).join('\n')}${statsSection}
+${rewrittenCommits.map(({ oldSha, _oldDetails, newSha, newDetails }) =>
+    `- ${oldSha.substring(0, 7)} → ${newSha.substring(0, 7)}: ${newDetails.subject}`
+  ).join('\n')}${statsSection}
 
 ## Files Changed
 
@@ -754,7 +754,7 @@ Formatting instructions:
         console.log('\n' + summary + '\n');
         break;
 
-      case 'file':
+      case 'file': {
         // Write to file
         const outputPath = path.join(this.projectRoot, this.outputFile);
         try {
@@ -762,10 +762,9 @@ Formatting instructions:
           this.success(`Rewrite summary written to ${outputPath}`);
         } catch (err) {
           this.error(`Failed to write rewrite summary to file: ${err.message}`);
-          // Fall back to terminal output
-          console.log('\n' + summary + '\n');
         }
         break;
+      }
 
       case 'notification':
         // Show a notification (platform-dependent, falls back to terminal)

@@ -2,20 +2,39 @@
  * Tests for Roo Code configuration generation
  */
 import { jest } from '@jest/globals';
-import path from 'path';
-import os from 'os';
+import _path from 'path';
+import _os from 'os';
 
 // Mock dependencies
 jest.mock('fs-extra', () => ({
   existsSync: jest.fn(),
   readFileSync: jest.fn(),
-  writeFileSync: jest.fn()
+  writeFileSync: jest.fn(),
+  ensureDir: jest.fn().mockResolvedValue(true),
+  pathExists: jest.fn().mockResolvedValue(false),
+  remove: jest.fn().mockResolvedValue(true)
 }));
 
 // Create mock functions with implementations
 const mockFileExists = jest.fn();
 const mockEnsureDirectory = jest.fn();
 const mockWriteTextFile = jest.fn();
+
+// Mock path.join to ensure consistent paths
+jest.mock('path', () => {
+  const originalPath = jest.requireActual('path');
+  return {
+    ...originalPath,
+    join: jest.fn((...parts) => {
+      // Redirect absolute paths to temp directory
+      if (parts[0] === '/test/project') {
+        return originalPath.join(process.cwd(), 'tmp', ...parts.slice(1));
+      }
+      return originalPath.join(...parts);
+    }),
+    dirname: jest.fn(path => originalPath.dirname(path))
+  };
+});
 
 // Mock the file.js module
 jest.mock('../src/utils/file.js', () => {
@@ -39,13 +58,13 @@ jest.mock('../src/utils/encryption.js', () => ({
 }));
 
 // Import after mocking
-import fs from 'fs-extra';
+import _fs from 'fs-extra';
 
 // Modules to test
 import { setupRooRules, setupRooIgnore } from '../src/integrations/roo-config.js';
 
 describe('Roo Config Integration', () => {
-  const projectRoot = '/test/project';
+  const projectRoot = process.cwd() + '/tmp';
   const testLogger = {
     info: jest.fn(),
     success: jest.fn(),
@@ -56,6 +75,24 @@ describe('Roo Config Integration', () => {
   beforeEach(() => {
     // Reset mocks before each test
     jest.clearAllMocks();
+
+    // Setup mock implementation for fileExists
+    mockFileExists.mockImplementation(async (path) => {
+      if (path.includes('.rooignore') && testLogger.info.mock.calls.length > 0) {
+        return true;
+      }
+      return false;
+    });
+
+    // Setup mock implementation for writeTextFile and ensureDirectory
+    mockWriteTextFile.mockImplementation(async (path, content) => {
+      return true;
+    });
+    mockEnsureDirectory.mockResolvedValue(true);
+  });
+
+  afterAll(() => {
+    // No cleanup needed
   });
   
   describe('setupRooRules', () => {

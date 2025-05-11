@@ -14,10 +14,10 @@ import { HookLifecycle, HookResultStatus } from './hook-interfaces.js';
 import { registerCommonMiddleware } from './hook-middleware.js';
 import { 
   HookSchemas, 
-  validateConfig, 
-  applyDefaults, 
-  loadHookConfig, 
-  saveHookConfig
+  _validateConfig,
+  _applyDefaults,
+  _loadHookConfig,
+  _saveHookConfig
 } from './hook-config.js';
 
 // Get directory name in ESM
@@ -138,7 +138,7 @@ class EnhancedHookRegistry {
    * @param {string} id Hook ID
    * @returns {Object} Enhanced hook wrapper
    */
-  createEnhancedWrapper(legacyHook, id) {
+  createEnhancedWrapper(legacyHook, _id) {
     // Import needed modules
     const EnhancedBaseHook = require('./enhanced-base-hook.js').default;
     
@@ -162,7 +162,7 @@ class EnhancedHookRegistry {
     enhancedHook.disable = () => { legacyHook.disable(); };
     
     // Override execute to call legacy hook execute
-    const originalExecute = enhancedHook.execute.bind(enhancedHook);
+    const _originalExecute = enhancedHook.execute.bind(enhancedHook);
     enhancedHook.execute = async (args) => {
       // Create context for middleware
       const context = {

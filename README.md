@@ -11,7 +11,7 @@
 
 **Seamless setup of Claude Code and Roo Code AI assistants for JavaScript projects**
 
-[Features](#key-features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [How It Works](#how-it-works) • [Tool Comparison](./docs/ai-tools-comparison.md) • [MCP Reference](./docs/mcp-reference.md) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
+[Features](#key-features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [How It Works](#how-it-works) • [Tool Comparison](./docs/ai-tools-comparison.md) • [MCP Reference](./docs/mcp-reference.md) • [Git Hooks](./docs/hooks.md) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
 
 </div>
 
@@ -98,13 +98,14 @@ Before using this setup script, ensure your environment meets the following requ
 ## ✨ Key Features
 
 - 🤖 **Automated Integration**: Configure both Claude Code and Roo Code with a single command
-- 🔄 **Synchronized Configuration**: Keep settings in sync between both assistants 
+- 🔄 **Synchronized Configuration**: Keep settings in sync between both assistants
 - 🔒 **Secure Credential Management**: Encrypt API keys with AES-256-CBC
 - 🧩 **MCP Server Configuration**: Set up GitHub, Context7, Memory, and other MCP servers
 - 📋 **Custom Modes for Roo**: Create specialized AI roles like TDD Developer, Security Reviewer, etc.
 - 🏗️ **Project Structure Detection**: Works with both standard repositories and monorepos
 - 🔍 **Intelligent Ignore Patterns**: Properly configure which files AI assistants should ignore
 - ⚙️ **VS Code Optimization**: Configure editor settings for the best AI experience
+- 🔄 **Git Hook Integration**: AI-powered Git hooks for code review, commit messages, and more
 
 ## 🚀 Installation
 

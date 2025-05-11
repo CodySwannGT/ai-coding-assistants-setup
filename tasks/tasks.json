@@ -312,7 +312,7 @@
       "id": 17,
       "title": "Implement Extended Git Hooks with Claude CLI Integration",
       "description": "Extend the existing Git hook implementation to support additional hooks including prepare-commit-msg, commit-msg, pre-push, post-merge, post-checkout, post-rewrite, and pre-rebase, with Claude CLI integration for each hook. All hooks will be optional and require explicit user opt-in during setup.",
-      "status": "pending",
+      "status": "in-progress",
       "dependencies": [
         14,
         15

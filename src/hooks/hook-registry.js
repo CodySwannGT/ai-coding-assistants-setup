@@ -268,6 +268,40 @@ class HookRegistry {
           hookConfig.excludePatterns = hook.excludePatterns;
         }
 
+        // Add post-checkout specific configurations
+        if (id === 'post-checkout') {
+          hookConfig.summaryFormat = hook.summaryFormat;
+          hookConfig.includeStats = hook.includeStats;
+          hookConfig.includeDependencies = hook.includeDependencies;
+          hookConfig.includeBreakingChanges = hook.includeBreakingChanges;
+          hookConfig.notifyMethod = hook.notifyMethod;
+          hookConfig.outputFile = hook.outputFile;
+          hookConfig.skipInitialCheckout = hook.skipInitialCheckout;
+          hookConfig.skipTagCheckout = hook.skipTagCheckout;
+          hookConfig.maxDiffSize = hook.maxDiffSize;
+        }
+
+        // Add post-rewrite specific configurations
+        if (id === 'post-rewrite') {
+          hookConfig.summaryFormat = hook.summaryFormat;
+          hookConfig.includeStats = hook.includeStats;
+          hookConfig.includeDependencies = hook.includeDependencies;
+          hookConfig.includeBreakingChanges = hook.includeBreakingChanges;
+          hookConfig.notifyMethod = hook.notifyMethod;
+          hookConfig.outputFile = hook.outputFile;
+          hookConfig.maxDiffSize = hook.maxDiffSize;
+        }
+
+        // Add pre-rebase specific configurations
+        if (id === 'pre-rebase') {
+          hookConfig.blockingMode = hook.blockingMode;
+          hookConfig.checkConflicts = hook.checkConflicts;
+          hookConfig.checkTestImpact = hook.checkTestImpact;
+          hookConfig.checkDependencies = hook.checkDependencies;
+          hookConfig.blockOnSeverity = hook.blockOnSeverity;
+          hookConfig.maxDiffSize = hook.maxDiffSize;
+        }
+
         config.hooks[id] = hookConfig;
       });
 
@@ -327,6 +361,103 @@ class HookRegistry {
 
               if (hookConfig.excludePatterns) {
                 hook.excludePatterns = hookConfig.excludePatterns;
+              }
+            }
+
+            // Apply post-checkout specific configurations
+            if (id === 'post-checkout') {
+              if (hookConfig.summaryFormat) {
+                hook.summaryFormat = hookConfig.summaryFormat;
+              }
+
+              if (hookConfig.includeStats !== undefined) {
+                hook.includeStats = hookConfig.includeStats;
+              }
+
+              if (hookConfig.includeDependencies !== undefined) {
+                hook.includeDependencies = hookConfig.includeDependencies;
+              }
+
+              if (hookConfig.includeBreakingChanges !== undefined) {
+                hook.includeBreakingChanges = hookConfig.includeBreakingChanges;
+              }
+
+              if (hookConfig.notifyMethod) {
+                hook.notifyMethod = hookConfig.notifyMethod;
+              }
+
+              if (hookConfig.outputFile) {
+                hook.outputFile = hookConfig.outputFile;
+              }
+
+              if (hookConfig.skipInitialCheckout !== undefined) {
+                hook.skipInitialCheckout = hookConfig.skipInitialCheckout;
+              }
+
+              if (hookConfig.skipTagCheckout !== undefined) {
+                hook.skipTagCheckout = hookConfig.skipTagCheckout;
+              }
+
+              if (hookConfig.maxDiffSize) {
+                hook.maxDiffSize = hookConfig.maxDiffSize;
+              }
+            }
+
+            // Apply post-rewrite specific configurations
+            if (id === 'post-rewrite') {
+              if (hookConfig.summaryFormat) {
+                hook.summaryFormat = hookConfig.summaryFormat;
+              }
+
+              if (hookConfig.includeStats !== undefined) {
+                hook.includeStats = hookConfig.includeStats;
+              }
+
+              if (hookConfig.includeDependencies !== undefined) {
+                hook.includeDependencies = hookConfig.includeDependencies;
+              }
+
+              if (hookConfig.includeBreakingChanges !== undefined) {
+                hook.includeBreakingChanges = hookConfig.includeBreakingChanges;
+              }
+
+              if (hookConfig.notifyMethod) {
+                hook.notifyMethod = hookConfig.notifyMethod;
+              }
+
+              if (hookConfig.outputFile) {
+                hook.outputFile = hookConfig.outputFile;
+              }
+
+              if (hookConfig.maxDiffSize) {
+                hook.maxDiffSize = hookConfig.maxDiffSize;
+              }
+            }
+
+            // Apply pre-rebase specific configurations
+            if (id === 'pre-rebase') {
+              if (hookConfig.blockingMode) {
+                hook.blockingMode = hookConfig.blockingMode;
+              }
+
+              if (hookConfig.checkConflicts !== undefined) {
+                hook.checkConflicts = hookConfig.checkConflicts;
+              }
+
+              if (hookConfig.checkTestImpact !== undefined) {
+                hook.checkTestImpact = hookConfig.checkTestImpact;
+              }
+
+              if (hookConfig.checkDependencies !== undefined) {
+                hook.checkDependencies = hookConfig.checkDependencies;
+              }
+
+              if (hookConfig.blockOnSeverity) {
+                hook.blockOnSeverity = hookConfig.blockOnSeverity;
+              }
+
+              if (hookConfig.maxDiffSize) {
+                hook.maxDiffSize = hookConfig.maxDiffSize;
               }
             }
           }

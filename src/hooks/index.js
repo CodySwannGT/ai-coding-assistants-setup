@@ -15,6 +15,9 @@ import PrepareCommitMsgHook from './prepare-commit-msg-hook.js';
 import CommitMsgHook from './commit-msg-hook.js';
 import PrePushHook from './pre-push-hook.js';
 import PostMergeHook from './post-merge-hook.js';
+import PostCheckoutHook from './post-checkout-hook.js';
+import PostRewriteHook from './post-rewrite-hook.js';
+import PreRebaseHook from './pre-rebase-hook.js';
 
 /**
  * Hook descriptions for display in the setup UI
@@ -119,6 +122,41 @@ export function getHookRegistry(config) {
     includeDependencies: true,
     includeBreakingChanges: true,
     notifyMethod: 'terminal', // 'terminal', 'file', or 'notification'
+    maxDiffSize: 100000
+  });
+
+  // Register post-checkout hook
+  registry.registerHook('post-checkout', PostCheckoutHook, {
+    enabled: false, // Default to disabled
+    summaryFormat: 'detailed', // 'concise' or 'detailed'
+    includeStats: true,
+    includeDependencies: true,
+    includeBreakingChanges: true,
+    notifyMethod: 'terminal', // 'terminal', 'file', or 'notification'
+    skipInitialCheckout: true,
+    skipTagCheckout: false,
+    maxDiffSize: 100000
+  });
+
+  // Register post-rewrite hook
+  registry.registerHook('post-rewrite', PostRewriteHook, {
+    enabled: false, // Default to disabled
+    summaryFormat: 'detailed', // 'concise' or 'detailed'
+    includeStats: true,
+    includeDependencies: true,
+    includeBreakingChanges: true,
+    notifyMethod: 'terminal', // 'terminal', 'file', or 'notification'
+    maxDiffSize: 100000
+  });
+
+  // Register pre-rebase hook
+  registry.registerHook('pre-rebase', PreRebaseHook, {
+    enabled: false, // Default to disabled
+    blockingMode: 'warn', // 'block', 'warn', or 'none'
+    checkConflicts: true,
+    checkTestImpact: false,
+    checkDependencies: true,
+    blockOnSeverity: 'high', // 'critical', 'high', 'medium', 'low', 'none'
     maxDiffSize: 100000
   });
 
@@ -481,6 +519,214 @@ export async function setupHooks(config) {
 
         hook.includeDependencies = includeDependencies;
         hook.includeBreakingChanges = includeBreakingChanges;
+      }
+    }
+
+    // Configure post-checkout hook
+    else if (hookId === 'post-checkout') {
+      const { summaryFormat, includeStats, notifyMethod } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'summaryFormat',
+          message: 'How detailed should branch summaries be?',
+          choices: [
+            { name: 'Concise - Short overview of branch changes', value: 'concise' },
+            { name: 'Detailed - Comprehensive explanation of branch changes', value: 'detailed' }
+          ],
+          default: 'detailed'
+        },
+        {
+          type: 'confirm',
+          name: 'includeStats',
+          message: 'Include statistics in branch summaries?',
+          default: true
+        },
+        {
+          type: 'list',
+          name: 'notifyMethod',
+          message: 'How should branch summaries be delivered?',
+          choices: [
+            { name: 'Terminal output', value: 'terminal' },
+            { name: 'Write to file', value: 'file' },
+            { name: 'System notification (where supported)', value: 'notification' }
+          ],
+          default: 'terminal'
+        }
+      ]);
+
+      hook.summaryFormat = summaryFormat;
+      hook.includeStats = includeStats;
+      hook.notifyMethod = notifyMethod;
+
+      // Ask about advanced options
+      const { configureAdvanced } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'configureAdvanced',
+          message: 'Configure advanced options for branch summaries?',
+          default: false
+        }
+      ]);
+
+      if (configureAdvanced) {
+        const { includeDependencies, includeBreakingChanges, skipInitialCheckout, skipTagCheckout } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'includeDependencies',
+            message: 'Highlight dependency changes in summaries?',
+            default: hook.includeDependencies
+          },
+          {
+            type: 'confirm',
+            name: 'includeBreakingChanges',
+            message: 'Highlight potential breaking changes in summaries?',
+            default: hook.includeBreakingChanges
+          },
+          {
+            type: 'confirm',
+            name: 'skipInitialCheckout',
+            message: 'Skip summaries for initial checkouts?',
+            default: hook.skipInitialCheckout
+          },
+          {
+            type: 'confirm',
+            name: 'skipTagCheckout',
+            message: 'Skip summaries when checking out tags?',
+            default: hook.skipTagCheckout
+          }
+        ]);
+
+        hook.includeDependencies = includeDependencies;
+        hook.includeBreakingChanges = includeBreakingChanges;
+        hook.skipInitialCheckout = skipInitialCheckout;
+        hook.skipTagCheckout = skipTagCheckout;
+      }
+    }
+
+    // Configure post-rewrite hook
+    else if (hookId === 'post-rewrite') {
+      const { summaryFormat, includeStats, notifyMethod } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'summaryFormat',
+          message: 'How detailed should rewrite summaries be?',
+          choices: [
+            { name: 'Concise - Short overview of rewritten changes', value: 'concise' },
+            { name: 'Detailed - Comprehensive explanation of rewritten changes', value: 'detailed' }
+          ],
+          default: 'detailed'
+        },
+        {
+          type: 'confirm',
+          name: 'includeStats',
+          message: 'Include statistics in rewrite summaries?',
+          default: true
+        },
+        {
+          type: 'list',
+          name: 'notifyMethod',
+          message: 'How should rewrite summaries be delivered?',
+          choices: [
+            { name: 'Terminal output', value: 'terminal' },
+            { name: 'Write to file', value: 'file' },
+            { name: 'System notification (where supported)', value: 'notification' }
+          ],
+          default: 'terminal'
+        }
+      ]);
+
+      hook.summaryFormat = summaryFormat;
+      hook.includeStats = includeStats;
+      hook.notifyMethod = notifyMethod;
+
+      // Ask about advanced options
+      const { configureAdvanced } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'configureAdvanced',
+          message: 'Configure advanced options for rewrite summaries?',
+          default: false
+        }
+      ]);
+
+      if (configureAdvanced) {
+        const { includeDependencies, includeBreakingChanges } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'includeDependencies',
+            message: 'Highlight dependency changes in summaries?',
+            default: hook.includeDependencies
+          },
+          {
+            type: 'confirm',
+            name: 'includeBreakingChanges',
+            message: 'Highlight potential breaking changes in summaries?',
+            default: hook.includeBreakingChanges
+          }
+        ]);
+
+        hook.includeDependencies = includeDependencies;
+        hook.includeBreakingChanges = includeBreakingChanges;
+      }
+    }
+
+    // Configure pre-rebase hook
+    else if (hookId === 'pre-rebase') {
+      const { blockingMode, checkConflicts, checkTestImpact, checkDependencies } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'blockingMode',
+          message: 'How should the hook respond to detected issues?',
+          choices: [
+            { name: 'Block - Prevent rebase if issues are detected', value: 'block' },
+            { name: 'Warn - Show warnings but allow rebase to proceed', value: 'warn' },
+            { name: 'None - Just provide information, no warnings', value: 'none' }
+          ],
+          default: 'warn'
+        },
+        {
+          type: 'confirm',
+          name: 'checkConflicts',
+          message: 'Check for potential merge conflicts?',
+          default: hook.checkConflicts
+        },
+        {
+          type: 'confirm',
+          name: 'checkTestImpact',
+          message: 'Check for impact on tests?',
+          default: hook.checkTestImpact
+        },
+        {
+          type: 'confirm',
+          name: 'checkDependencies',
+          message: 'Check for dependency changes?',
+          default: hook.checkDependencies
+        }
+      ]);
+
+      hook.blockingMode = blockingMode;
+      hook.checkConflicts = checkConflicts;
+      hook.checkTestImpact = checkTestImpact;
+      hook.checkDependencies = checkDependencies;
+
+      // If blocking mode is enabled, ask about severity threshold
+      if (blockingMode === 'block') {
+        const { blockOnSeverity } = await inquirer.prompt([
+          {
+            type: 'list',
+            name: 'blockOnSeverity',
+            message: 'Block rebase on issues with which severity level or higher?',
+            choices: [
+              { name: 'Critical - Only block on critical issues', value: 'critical' },
+              { name: 'High - Block on high or critical issues', value: 'high' },
+              { name: 'Medium - Block on medium, high, or critical issues', value: 'medium' },
+              { name: 'Low - Block on any issues', value: 'low' }
+            ],
+            default: 'high'
+          }
+        ]);
+
+        hook.blockOnSeverity = blockOnSeverity;
       }
     }
   }

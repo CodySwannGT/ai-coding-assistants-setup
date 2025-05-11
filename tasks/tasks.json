@@ -1,0 +1,556 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Detect GitHub Copilot Installation",
+      "description": "Implement functionality to detect if GitHub Copilot is already installed in the user's VS Code environment.",
+      "details": "Create a utility function that checks for the presence of GitHub Copilot extension in VS Code. This can be done by examining the extensions directory or using VS Code's extension API if available.\n\n```javascript\nfunction detectCopilotInstallation() {\n  // Check common installation paths\n  const vsCodeExtensionsPath = getVSCodeExtensionsPath();\n  const copilotExtensionPattern = 'GitHub.copilot-*';\n  \n  // Use glob or similar to check if Copilot is installed\n  return checkExtensionExists(vsCodeExtensionsPath, copilotExtensionPattern);\n}\n```\n\nEnsure this function is exported and can be used by the configuration module.",
+      "testStrategy": "Create unit tests that mock the file system to simulate scenarios where Copilot is installed and not installed. Test with different VS Code configurations and operating systems.",
+      "priority": "high",
+      "dependencies": [],
+      "status": "completed",
+      "subtasks": []
+    },
+    {
+      "id": 2,
+      "title": "Implement Copilot Override Option",
+      "description": "Add functionality to disable or override GitHub Copilot when using other AI assistants.",
+      "details": "Extend the configuration module to include options for handling Copilot conflicts:\n\n```javascript\nfunction configureCopilotOverride(config, shouldOverride) {\n  if (!shouldOverride) return config;\n  \n  // Add settings to disable Copilot when other assistants are active\n  config.vscode = config.vscode || {};\n  config.vscode.settings = config.vscode.settings || {};\n  \n  // Disable Copilot features\n  config.vscode.settings['github.copilot.enable'] = false;\n  \n  return config;\n}\n```\n\nAdd a CLI prompt asking users if they want to disable Copilot when other assistants are active.",
+      "testStrategy": "Test the configuration generation with various combinations of override settings. Verify that the correct VS Code settings are generated when override is enabled/disabled.",
+      "priority": "medium",
+      "dependencies": [
+        1
+      ],
+      "status": "completed",
+      "subtasks": []
+    },
+    {
+      "id": 3,
+      "title": "Update Documentation for AI Tool Comparison",
+      "description": "Update documentation to clarify differences between Claude, Roo, and Copilot.",
+      "details": "Create a comprehensive comparison section in the documentation:\n\n1. Create a new markdown file `docs/ai-tools-comparison.md`\n2. Include a comparison table with the following columns:\n   - Tool name (Claude, Roo, Copilot)\n   - Key features\n   - Pricing model\n   - Integration capabilities\n   - Use cases\n   - Limitations\n\n3. Add specific guidance on when to use each tool\n4. Include information about how the tools can work together or conflict\n5. Update the main README.md to link to this comparison\n\nEnsure the documentation is factual, balanced, and helpful for users to make informed decisions.",
+      "testStrategy": "Have multiple contributors review the documentation for accuracy and clarity. Ensure all claims are factual and properly sourced. Test all links and references.",
+      "priority": "medium",
+      "dependencies": [
+        1,
+        2
+      ],
+      "status": "completed",
+      "subtasks": []
+    },
+    {
+      "id": 4,
+      "title": "Implement StackOverflow Search MCP",
+      "description": "Create a Model Context Protocol for searching StackOverflow and integrating results into AI responses.",
+      "details": "Implement a new MCP module for StackOverflow search:\n\n```javascript\nclass StackOverflowMCP {\n  constructor(config) {\n    this.apiKey = config.apiKey; // Optional, for higher rate limits\n    this.baseUrl = 'https://api.stackexchange.com/2.3';\n  }\n\n  async search(query, options = {}) {\n    const params = new URLSearchParams({\n      site: 'stackoverflow',\n      intitle: query,\n      sort: options.sort || 'relevance',\n      order: options.order || 'desc',\n      tagged: options.tags || '',\n      pagesize: options.limit || 5\n    });\n\n    const response = await fetch(`${this.baseUrl}/search/advanced?${params}`);\n    const data = await response.json();\n    \n    return this.formatResults(data.items);\n  }\n\n  formatResults(items) {\n    // Transform API response into a format suitable for AI context\n    return items.map(item => ({\n      title: item.title,\n      link: item.link,\n      score: item.score,\n      answerCount: item.answer_count,\n      isAnswered: item.is_answered,\n      tags: item.tags,\n      excerpt: this.getExcerpt(item)\n    }));\n  }\n\n  getExcerpt(item) {\n    // Extract or generate a relevant excerpt\n  }\n}\n```\n\nAdd configuration options in the setup wizard and update the MCP registry.",
+      "testStrategy": "Create unit tests with mocked API responses. Test search functionality with various queries and options. Verify rate limiting and error handling. Test integration with the AI assistant workflow.",
+      "priority": "high",
+      "dependencies": [],
+      "status": "completed",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Core StackOverflow API Integration",
+          "description": "Complete the StackOverflow MCP class with proper API integration, error handling, and result formatting",
+          "dependencies": [],
+          "details": "1. Complete the `getExcerpt()` method to extract relevant text from StackOverflow posts\n2. Add error handling for API requests\n3. Implement rate limiting to avoid API throttling\n4. Add support for authentication with API key\n5. Create utility methods for parsing and sanitizing API responses",
+          "status": "pending",
+          "testStrategy": "Create unit tests with mocked API responses to verify parsing logic and error handling"
+        },
+        {
+          "id": 2,
+          "title": "Add Advanced Search Features and Caching",
+          "description": "Enhance the StackOverflow MCP with advanced search capabilities and response caching",
+          "dependencies": [],
+          "details": "1. Implement additional search parameters (date range, user reputation, etc.)\n2. Add method to fetch answer content for specific questions\n3. Implement caching layer to store recent search results\n4. Add pagination support for retrieving more results\n5. Create helper methods to filter results by criteria (e.g., only answered questions)",
+          "status": "pending",
+          "testStrategy": "Test caching mechanism with different TTL values and verify advanced search parameters generate correct API URLs"
+        },
+        {
+          "id": 3,
+          "title": "Create Configuration UI in Setup Wizard",
+          "description": "Add StackOverflow MCP configuration options to the setup wizard interface",
+          "dependencies": [],
+          "details": "1. Create configuration form with fields for API key, default search parameters, and rate limits\n2. Add validation for configuration inputs\n3. Implement save/load functionality for StackOverflow MCP settings\n4. Add toggle for enabling/disabling the StackOverflow MCP\n5. Include help text explaining API key acquisition process",
+          "status": "pending",
+          "testStrategy": "Test configuration persistence and validation with various input combinations"
+        },
+        {
+          "id": 4,
+          "title": "Register MCP and Create Documentation",
+          "description": "Register the StackOverflow MCP in the system registry and create comprehensive documentation",
+          "dependencies": [],
+          "details": "1. Add StackOverflow MCP to the MCP registry\n2. Create integration examples showing how to use the MCP in prompts\n3. Document all available search options and parameters\n4. Add usage examples and best practices\n5. Create troubleshooting guide for common issues",
+          "status": "pending",
+          "testStrategy": "Verify MCP registration works correctly and test end-to-end functionality with sample prompts"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Implement Command Shell MCP",
+      "description": "Create a Model Context Protocol for executing shell commands and integrating results into AI responses.",
+      "details": "Implement a new MCP module for command shell execution:\n\n```javascript\nconst { exec } = require('child_process');\nconst { promisify } = require('util');\n\nclass CommandShellMCP {\n  constructor(config) {\n    this.allowedCommands = config.allowedCommands || [];\n    this.blockedCommands = config.blockedCommands || ['rm', 'sudo', 'chmod'];\n    this.timeoutMs = config.timeoutMs || 5000;\n    this.execAsync = promisify(exec);\n  }\n\n  isCommandAllowed(command) {\n    const baseCommand = command.split(' ')[0];\n    \n    if (this.blockedCommands.includes(baseCommand)) {\n      return false;\n    }\n    \n    if (this.allowedCommands.length === 0) {\n      return true; // All non-blocked commands allowed\n    }\n    \n    return this.allowedCommands.includes(baseCommand);\n  }\n\n  async executeCommand(command) {\n    if (!this.isCommandAllowed(command)) {\n      throw new Error(`Command not allowed: ${command}`);\n    }\n    \n    try {\n      const { stdout, stderr } = await this.execAsync(command, { timeout: this.timeoutMs });\n      return {\n        success: !stderr,\n        output: stdout,\n        error: stderr,\n        command\n      };\n    } catch (error) {\n      return {\n        success: false,\n        output: '',\n        error: error.message,\n        command\n      };\n    }\n  }\n}\n```\n\nAdd appropriate security warnings and configuration options in the setup wizard. Update the MCP registry to include this new protocol.",
+      "testStrategy": "Create comprehensive unit tests with mocked shell responses. Test command validation, timeout handling, and security restrictions. Verify that dangerous commands are properly blocked. Test integration with the AI assistant workflow.",
+      "priority": "high",
+      "dependencies": [],
+      "status": "completed",
+      "subtasks": []
+    },
+    {
+      "id": 6,
+      "title": "Implement Database Query MCP",
+      "description": "Create a Model Context Protocol for executing database queries and integrating results into AI responses.",
+      "details": "Implement a new MCP module for database queries:\n\n```javascript\nclass DatabaseQueryMCP {\n  constructor(config) {\n    this.connections = {};\n    this.initializeConnections(config.connections || {});\n    this.queryTimeout = config.queryTimeout || 10000;\n    this.maxRows = config.maxRows || 100;\n  }\n\n  async initializeConnections(connectionConfigs) {\n    for (const [name, config] of Object.entries(connectionConfigs)) {\n      try {\n        this.connections[name] = await this.createConnection(config);\n      } catch (error) {\n        console.error(`Failed to initialize database connection ${name}:`, error);\n      }\n    }\n  }\n\n  async createConnection(config) {\n    switch (config.type.toLowerCase()) {\n      case 'mysql':\n        return this.createMySQLConnection(config);\n      case 'postgres':\n        return this.createPostgresConnection(config);\n      case 'sqlite':\n        return this.createSQLiteConnection(config);\n      default:\n        throw new Error(`Unsupported database type: ${config.type}`);\n    }\n  }\n\n  async executeQuery(connectionName, query, params = []) {\n    const connection = this.connections[connectionName];\n    if (!connection) {\n      throw new Error(`Database connection not found: ${connectionName}`);\n    }\n    \n    // Implement query execution based on connection type\n    // Include timeout and row limit\n    // Return results in a standardized format\n  }\n\n  // Implement specific connection creators and query executors for each DB type\n}\n```\n\nAdd configuration options in the setup wizard for database connections. Include security warnings about exposing database access to AI. Update the MCP registry.",
+      "testStrategy": "Create unit tests with mocked database drivers. Test connection handling, query execution, and error scenarios. Test with various database types and query patterns. Verify timeout and row limit enforcement.",
+      "priority": "medium",
+      "dependencies": [],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 7,
+      "title": "Implement Embedding Search MCP",
+      "description": "Create a Model Context Protocol for searching vector databases like Weaviate or Chroma and integrating results into AI responses.",
+      "details": "Implement a new MCP module for embedding search:\n\n```javascript\nclass EmbeddingSearchMCP {\n  constructor(config) {\n    this.dbType = config.dbType; // 'weaviate' or 'chroma'\n    this.endpoint = config.endpoint;\n    this.apiKey = config.apiKey;\n    this.client = this.initializeClient();\n  }\n\n  initializeClient() {\n    switch (this.dbType.toLowerCase()) {\n      case 'weaviate':\n        return this.initializeWeaviate();\n      case 'chroma':\n        return this.initializeChroma();\n      default:\n        throw new Error(`Unsupported embedding database: ${this.dbType}`);\n    }\n  }\n\n  initializeWeaviate() {\n    // Initialize Weaviate client with endpoint and API key\n  }\n\n  initializeChroma() {\n    // Initialize Chroma client with endpoint and API key\n  }\n\n  async search(query, options = {}) {\n    // Convert query to embedding using appropriate service\n    const embedding = await this.getEmbedding(query);\n    \n    // Search the vector database\n    const results = await this.searchWithEmbedding(embedding, options);\n    \n    // Format results for AI context\n    return this.formatResults(results);\n  }\n\n  async getEmbedding(text) {\n    // Use OpenAI or other embedding service\n  }\n\n  async searchWithEmbedding(embedding, options) {\n    // Implement search based on database type\n  }\n\n  formatResults(results) {\n    // Transform results into a format suitable for AI context\n  }\n}\n```\n\nAdd configuration options in the setup wizard for vector database connections. Update the MCP registry to include this new protocol.",
+      "testStrategy": "Create unit tests with mocked vector database responses. Test embedding generation, search functionality, and result formatting. Test with various query types and database configurations.",
+      "priority": "medium",
+      "dependencies": [],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 8,
+      "title": "Update Configuration Files for New MCPs",
+      "description": "Update configuration files and documentation to include the new Model Context Protocols.",
+      "details": "Update the following configuration files and documentation:\n\n1. Update `config-schema.json` to include schemas for the new MCPs:\n   - Add StackOverflow Search MCP schema\n   - Add Command Shell MCP schema\n   - Add Database Query MCP schema\n   - Add Embedding Search MCP schema\n\n2. Update default configuration templates:\n   - Add default configurations for each new MCP\n   - Include commented examples\n\n3. Update the configuration generator in the CLI:\n   - Add prompts for each new MCP\n   - Include validation for inputs\n\n4. Create example configuration files for each MCP\n\nEnsure all configuration options are properly documented with descriptions and default values.",
+      "testStrategy": "Validate all JSON schema files for correctness. Test configuration generation with various input combinations. Verify that generated configurations are valid according to the schema.",
+      "priority": "medium",
+      "dependencies": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 9,
+      "title": "Modularize CLI Script",
+      "description": "Refactor the CLI script into smaller, more maintainable components.",
+      "details": "Refactor the CLI script using the following approach:\n\n1. Create a modular structure:\n   ```\n   src/\n     cli/\n       index.js         # Main entry point\n       commands/        # Command implementations\n       prompts/         # User input prompts\n       utils/           # CLI utilities\n       validators/      # Input validation\n     config/            # Configuration handling\n     mcps/              # MCP implementations\n     integrations/      # VS Code and other integrations\n   ```\n\n2. Implement a command pattern for CLI operations:\n   ```javascript\n   // src/cli/index.js\n   const yargs = require('yargs');\n   const { initCommand } = require('./commands/init');\n   const { configureCommand } = require('./commands/configure');\n   // ... other commands\n\n   yargs\n     .command(initCommand)\n     .command(configureCommand)\n     // ... other commands\n     .demandCommand(1, 'You need to specify a command')\n     .help()\n     .argv;\n   ```\n\n3. Create separate modules for each major functionality\n4. Implement proper error handling and logging\n5. Add progress indicators for long-running operations\n\nEnsure backward compatibility with existing command line arguments and behavior.",
+      "testStrategy": "Create unit tests for each module. Test command parsing and execution. Verify that the refactored CLI maintains the same functionality as the original. Test with various command line arguments and configurations.",
+      "priority": "high",
+      "dependencies": [],
+      "status": "completed",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Directory Structure and Base Files",
+          "description": "Set up the modular directory structure and create base files for the CLI refactoring.",
+          "dependencies": [],
+          "details": "1. Create the directory structure as specified in the task description (src/cli/, src/config/, src/mcps/, src/integrations/)\n2. Create subdirectories within src/cli/ (commands/, prompts/, utils/, validators/)\n3. Create empty index.js files in each directory to serve as entry points\n4. Set up package.json to properly reference the new main entry point\n5. Create a basic CLI entry point in src/cli/index.js with yargs configuration",
+          "status": "pending",
+          "testStrategy": "Verify directory structure exists and basic CLI can be executed without errors"
+        },
+        {
+          "id": 2,
+          "title": "Implement Command Pattern Structure",
+          "description": "Create the command pattern structure and move existing commands into separate modules.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Create command modules in src/cli/commands/ for each existing CLI command (init.js, configure.js, etc.)\n2. Implement the command pattern structure for each command with consistent exports\n3. Each command module should export an object with command name, description, builder and handler functions\n4. Update the main CLI entry point to import and register all commands\n5. Ensure command arguments and options are preserved during refactoring",
+          "status": "pending",
+          "testStrategy": "Test each command individually to ensure it works as before the refactoring"
+        },
+        {
+          "id": 3,
+          "title": "Extract Prompts and Validators",
+          "description": "Move all user input prompts and validation logic into separate modules.",
+          "dependencies": [
+            2
+          ],
+          "details": "1. Identify all user prompts in the current CLI script\n2. Create appropriate modules in src/cli/prompts/ for different types of prompts (e.g., configPrompts.js, mcpPrompts.js)\n3. Extract validation logic into src/cli/validators/ directory\n4. Create utility functions for common prompt patterns\n5. Update command handlers to use the new prompt and validator modules",
+          "status": "pending",
+          "testStrategy": "Test prompts with various inputs to ensure validation works correctly"
+        },
+        {
+          "id": 4,
+          "title": "Implement MCP and Integration Modules",
+          "description": "Refactor MCP-specific code and integration logic into separate modules.",
+          "dependencies": [
+            2
+          ],
+          "details": "1. Move MCP implementation code from the CLI script to src/mcps/ directory\n2. Create separate modules for each MCP (Claude.js, Roo.js, etc.)\n3. Move VS Code and other integration code to src/integrations/ directory\n4. Create a consistent API for MCP modules\n5. Update command handlers to use the new MCP and integration modules",
+          "status": "pending",
+          "testStrategy": "Test each MCP module independently and verify integrations work correctly"
+        },
+        {
+          "id": 5,
+          "title": "Add Error Handling and Progress Indicators",
+          "description": "Implement proper error handling and add progress indicators for long-running operations.",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "1. Create error handling utilities in src/cli/utils/errorHandler.js\n2. Implement a logging system in src/cli/utils/logger.js\n3. Add progress indicators (using libraries like ora or cli-progress) for long-running operations\n4. Wrap command handlers with try/catch blocks using the error handling utilities\n5. Add appropriate error messages and recovery options for common failure scenarios",
+          "status": "pending",
+          "testStrategy": "Test error scenarios by forcing failures and verifying appropriate error messages are displayed"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Update README with Prerequisites",
+      "description": "Add comprehensive prerequisites section to the README.",
+      "details": "Update the README.md file with a detailed prerequisites section:\n\n1. Add a new \"Prerequisites\" section after the introduction\n2. Include the following information:\n   - Required Node.js version\n   - Required VS Code version\n   - Required permissions (e.g., for installing extensions)\n   - Required API keys for various services\n   - System requirements\n   - Optional dependencies\n\n3. Add a \"Compatibility\" subsection detailing:\n   - Operating system compatibility\n   - Known issues with specific environments\n   - Compatibility with other VS Code extensions\n\n4. Add a \"Troubleshooting\" section for common setup issues\n\nFormat the information in a clear, scannable way with appropriate markdown formatting.",
+      "testStrategy": "Have multiple contributors review the documentation for accuracy and completeness. Test the setup process on different environments to verify that all prerequisites are correctly listed.",
+      "priority": "medium",
+      "dependencies": [],
+      "status": "completed",
+      "subtasks": []
+    },
+    {
+      "id": 11,
+      "title": "Enhance CONTRIBUTING.md",
+      "description": "Improve the contributor documentation to make it easier for new contributors to get started.",
+      "details": "Update the CONTRIBUTING.md file with the following enhancements:\n\n1. Add a \"Getting Started\" section with step-by-step instructions:\n   - Forking the repository\n   - Setting up the development environment\n   - Running tests\n   - Making your first contribution\n\n2. Add a \"Project Structure\" section explaining the codebase organization\n\n3. Add a \"Development Workflow\" section covering:\n   - Branch naming conventions\n   - Commit message format\n   - Pull request process\n   - Code review expectations\n\n4. Add a \"Testing\" section with instructions for running and writing tests\n\n5. Add a \"Documentation\" section explaining how to update docs\n\n6. Add a \"Code Style\" section with linting and formatting guidelines\n\nInclude examples and links to relevant resources throughout the document.",
+      "testStrategy": "Have new contributors review the documentation and attempt to follow the process. Gather feedback on clarity and completeness. Verify that all links and commands work correctly.",
+      "priority": "medium",
+      "dependencies": [
+        9
+      ],
+      "status": "completed",
+      "subtasks": []
+    },
+    {
+      "id": 12,
+      "title": "Add CI with GitHub Actions",
+      "description": "Set up continuous integration using GitHub Actions to automate testing and validation.",
+      "details": "Create GitHub Actions workflows for CI:\n\n1. Create a `.github/workflows/ci.yml` file with the following jobs:\n   - Lint: Check code style and formatting\n   - Test: Run unit and integration tests\n   - Build: Verify the build process\n\n```yaml\nname: CI\n\non:\n  push:\n    branches: [ main, develop ]\n  pull_request:\n    branches: [ main, develop ]\n\njobs:\n  lint:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - uses: actions/setup-node@v3\n        with:\n          node-version: '16'\n      - run: npm ci\n      - run: npm run lint\n\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - uses: actions/setup-node@v3\n        with:\n          node-version: '16'\n      - run: npm ci\n      - run: npm test\n\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - uses: actions/setup-node@v3\n        with:\n          node-version: '16'\n      - run: npm ci\n      - run: npm run build\n```\n\n2. Add a workflow for validating documentation\n3. Configure status checks for pull requests\n4. Add badges to README.md showing CI status\n5. Set up notifications for CI failures",
+      "testStrategy": "Test the GitHub Actions workflows by creating test branches and pull requests. Verify that all jobs run correctly and provide appropriate feedback. Test with both passing and failing scenarios.",
+      "priority": "high",
+      "dependencies": [],
+      "status": "completed",
+      "subtasks": []
+    },
+    {
+      "id": 13,
+      "title": "Create MCP Documentation Table",
+      "description": "Create a comprehensive table of all supported MCPs including purpose and requirements.",
+      "details": "Create a comprehensive MCP documentation table:\n\n1. Create a new markdown file `docs/mcp-reference.md`\n2. Include a table with the following columns:\n   - MCP Name\n   - Purpose/Description\n   - Configuration Requirements\n   - API Keys/Credentials Needed\n   - Rate Limits/Usage Considerations\n   - Example Configuration\n   - Example Usage\n\n3. Include detailed information for each MCP:\n   - Existing MCPs\n   - New MCPs (StackOverflow, Command Shell, Database Query, Embedding Search)\n\n4. Add a section on extending MCPs with custom implementations\n\n5. Update the main README.md to link to this reference\n\nEnsure the documentation is clear, accurate, and helpful for users trying to configure and use MCPs.",
+      "testStrategy": "Have multiple contributors review the documentation for accuracy and completeness. Verify all example configurations by testing them in a real environment. Ensure all MCPs are properly documented.",
+      "priority": "medium",
+      "dependencies": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 14,
+      "title": "Implement Git Hook Support",
+      "description": "Add Git hook support using Husky or lint-staged for Claude code reviews.",
+      "details": "Implement Git hook support for Claude code reviews:\n\n1. Add Husky as a dependency:\n   ```bash\n   npm install --save-dev husky\n   ```\n\n2. Configure Husky in package.json:\n   ```json\n   {\n     \"husky\": {\n       \"hooks\": {\n         \"pre-commit\": \"node scripts/claude-review.js\"\n       }\n     }\n   }\n   ```\n\n3. Create a Claude review script (`scripts/claude-review.js`):\n   ```javascript\n   const { execSync } = require('child_process');\n   const { Claude } = require('../src/integrations/claude');\n   \n   async function reviewChanges() {\n     // Get staged files\n     const stagedFiles = execSync('git diff --cached --name-only').toString().split('\\n').filter(Boolean);\n     \n     // Get diff content\n     const diff = execSync('git diff --cached').toString();\n     \n     // Skip review if diff is too large\n     if (diff.length > 50000) {\n       console.log('Diff too large for automated review. Skipping.');\n       process.exit(0);\n     }\n     \n     // Initialize Claude client\n     const claude = new Claude(config);\n     \n     // Request review\n     const review = await claude.reviewCode(diff, {\n       strictness: config.strictness || 'medium',\n       focus: config.focus || ['bugs', 'security', 'best-practices']\n     });\n     \n     // Display review results\n     console.log('Claude Code Review Results:');\n     console.log(review.summary);\n     \n     if (review.issues.length > 0) {\n       console.log('\\nIssues found:');\n       review.issues.forEach(issue => {\n         console.log(`- ${issue.severity}: ${issue.description}`);\n       });\n     }\n     \n     // Allow commit to proceed regardless of review results\n     process.exit(0);\n   }\n   \n   reviewChanges().catch(error => {\n     console.error('Error during code review:', error);\n     // Allow commit to proceed even if review fails\n     process.exit(0);\n   });\n   ```\n\n4. Add configuration options for review strictness and focus areas\n5. Add documentation on how to enable/disable the hooks",
+      "testStrategy": "Test the Git hook with various types of code changes. Verify that the review process works correctly and provides useful feedback. Test with different configuration options for strictness and focus areas.",
+      "priority": "medium",
+      "dependencies": [],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Set up Husky and basic Git hook structure",
+          "description": "Install Husky as a dev dependency and configure the basic Git hook structure in package.json. Create the directory structure for the Claude review script.",
+          "dependencies": [],
+          "details": "1. Install Husky using npm: `npm install --save-dev husky`\n2. Configure Husky in package.json by adding the hooks configuration\n3. Create the scripts directory if it doesn't exist\n4. Create an empty claude-review.js file as a placeholder\n5. Update the project's .gitignore to exclude node_modules but include the scripts directory",
+          "status": "pending",
+          "testStrategy": "Verify Husky installation by checking package.json and node_modules. Confirm the scripts directory and placeholder file exist."
+        },
+        {
+          "id": 2,
+          "title": "Implement Claude review script core functionality",
+          "description": "Create the claude-review.js script with core functionality to get staged files, extract diff content, and integrate with the Claude API for code reviews.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Import required modules (child_process, Claude integration)\n2. Implement the reviewChanges function to:\n   - Get staged files using git diff command\n   - Extract diff content\n   - Add size limit check for large diffs\n   - Initialize Claude client\n   - Call Claude API for code review\n   - Display review results\n3. Add error handling to ensure commits can proceed even if review fails",
+          "status": "pending",
+          "testStrategy": "Test the script manually by staging files and running it directly with node. Verify it correctly extracts diffs and handles errors gracefully."
+        },
+        {
+          "id": 3,
+          "title": "Add configuration options and customization",
+          "description": "Implement configuration options for the Claude code review, including strictness levels, focus areas, and the ability to enable/disable specific checks.",
+          "dependencies": [
+            2
+          ],
+          "details": "1. Create a configuration file structure (e.g., .clauderc.json or claude.config.js)\n2. Implement configuration loading in the review script\n3. Add support for the following options:\n   - strictness: 'low', 'medium', 'high'\n   - focus: array of areas like 'bugs', 'security', 'best-practices', 'performance'\n   - excludePaths: array of glob patterns for files to exclude\n   - maxDiffSize: maximum diff size to review\n4. Update the Claude API call to use these configuration options",
+          "status": "pending",
+          "testStrategy": "Create test configurations and verify the script correctly loads and applies different settings. Test with various configuration combinations."
+        },
+        {
+          "id": 4,
+          "title": "Add documentation and finalize implementation",
+          "description": "Create comprehensive documentation for the Git hook feature, including setup instructions, configuration options, and troubleshooting. Finalize and test the complete implementation.",
+          "dependencies": [
+            3
+          ],
+          "details": "1. Create a dedicated documentation file (HOOKS.md) explaining:\n   - Installation and setup process\n   - Available configuration options with examples\n   - How to enable/disable hooks temporarily or permanently\n   - Troubleshooting common issues\n2. Update the main README.md to mention the Git hook feature\n3. Add inline comments to the claude-review.js script\n4. Perform final testing of the complete implementation\n5. Create a simple shell script to help users enable/disable hooks easily",
+          "status": "pending",
+          "testStrategy": "Perform end-to-end testing of the Git hook process. Verify documentation accuracy by having another team member follow the instructions."
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Add Config for Review Strictness",
+      "description": "Add optional configuration for code review strictness and focus areas.",
+      "details": "Implement configuration options for code review strictness:\n\n1. Update the configuration schema to include review settings:\n   ```json\n   {\n     \"codeReview\": {\n       \"type\": \"object\",\n       \"properties\": {\n         \"enabled\": {\n           \"type\": \"boolean\",\n           \"default\": true,\n           \"description\": \"Enable/disable automated code reviews\"\n         },\n         \"strictness\": {\n           \"type\": \"string\",\n           \"enum\": [\"low\", \"medium\", \"high\"],\n           \"default\": \"medium\",\n           \"description\": \"How strict the code review should be\"\n         },\n         \"focus\": {\n           \"type\": \"array\",\n           \"items\": {\n             \"type\": \"string\",\n             \"enum\": [\"bugs\", \"security\", \"performance\", \"best-practices\", \"style\"]\n           },\n           \"default\": [\"bugs\", \"security\", \"best-practices\"],\n           \"description\": \"Areas to focus on during review\"\n         },\n         \"blockOnSeverity\": {\n           \"type\": \"string\",\n           \"enum\": [\"none\", \"critical\", \"high\", \"medium\", \"low\"],\n           \"default\": \"none\",\n           \"description\": \"Block commits with issues at or above this severity\"\n         }\n       }\n     }\n   }\n   ```\n\n2. Update the CLI to prompt for these settings during setup\n\n3. Modify the Claude review script to use these settings\n\n4. Add documentation explaining each setting and its impact",
+      "testStrategy": "Test the configuration options with various combinations of settings. Verify that the review process respects the configured strictness and focus areas. Test the blocking behavior with different severity thresholds.",
+      "priority": "low",
+      "dependencies": [
+        14
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 16,
+      "title": "Add Basic Tests for Config Generation",
+      "description": "Add snapshot or functional tests for configuration generation.",
+      "details": "Implement basic tests for configuration generation:\n\n1. Set up Jest or another testing framework:\n   ```bash\n   npm install --save-dev jest\n   ```\n\n2. Create test fixtures in `tests/fixtures/`:\n   - Sample input configurations\n   - Expected output configurations\n\n3. Create snapshot tests for configuration generation:\n   ```javascript\n   const { generateConfig } = require('../src/config/generator');\n   \n   describe('Configuration Generator', () => {\n     test('generates default configuration correctly', () => {\n       const input = {}; // Empty input = use defaults\n       const config = generateConfig(input);\n       expect(config).toMatchSnapshot();\n     });\n     \n     test('respects user overrides', () => {\n       const input = {\n         vscode: {\n           extensions: ['custom.extension']\n         },\n         mcps: {\n           stackoverflow: {\n             enabled: true\n           }\n         }\n       };\n       const config = generateConfig(input);\n       expect(config).toMatchSnapshot();\n     });\n     \n     // Add more test cases for different scenarios\n   });\n   ```\n\n4. Create functional tests that verify specific aspects of the configuration:\n   ```javascript\n   test('correctly merges MCP configurations', () => {\n     const input = {\n       mcps: {\n         stackoverflow: {\n           enabled: true,\n           apiKey: 'test-key'\n         }\n       }\n     };\n     const config = generateConfig(input);\n     expect(config.mcps.stackoverflow.enabled).toBe(true);\n     expect(config.mcps.stackoverflow.apiKey).toBe('test-key');\n     // Verify default values are set for unspecified properties\n     expect(config.mcps.stackoverflow.maxResults).toBeDefined();\n   });\n   ```\n\n5. Add tests for error cases and validation\n\n6. Integrate tests with the build process in package.json",
+      "testStrategy": "Run tests automatically as part of CI. Verify that tests catch regressions in configuration generation. Update snapshots when configuration format intentionally changes.",
+      "priority": "high",
+      "dependencies": [
+        8,
+        9
+      ],
+      "status": "completed",
+      "subtasks": []
+    },
+    {
+      "id": 17,
+      "title": "Implement Extended Git Hooks with Claude CLI Integration",
+      "description": "Extend the existing Git hook implementation to support additional hooks including prepare-commit-msg, commit-msg, pre-push, post-merge, post-checkout, post-rewrite, and pre-rebase, with Claude CLI integration for each hook. All hooks will be optional and require explicit user opt-in during setup.",
+      "status": "pending",
+      "dependencies": [
+        14,
+        15
+      ],
+      "priority": "medium",
+      "details": "This task involves implementing a comprehensive set of Git hooks beyond the existing pre-commit hook, with Claude CLI integration for each. All hooks will be optional and require explicit user confirmation to enable:\n\n1. **prepare-commit-msg hook**: \n   - Implement auto-generation of commit messages based on staged changes\n   - Use Claude to analyze diff and suggest meaningful commit messages\n   - Allow customization of message templates and formats\n   - Respect existing commit messages if manually provided\n\n2. **commit-msg hook**:\n   - Validate commit message structure against configurable rules\n   - Use Claude to check for clarity, completeness, and adherence to conventions\n   - Implement support for conventional commits format\n   - Provide feedback and suggestions for improving commit messages\n\n3. **pre-push hook**:\n   - Implement security and quality audits before pushing code\n   - Use Claude to analyze outgoing commits for sensitive information\n   - Check for large files, credentials, or other problematic content\n   - Allow configuration of audit strictness levels from Task #15\n\n4. **post-merge hook**:\n   - Generate summaries of merged changes\n   - Use Claude to create human-readable explanations of what changed\n   - Highlight potential areas requiring attention after merge\n   - Integrate with notification systems if configured\n\n5. **post-checkout hook**:\n   - Implement context loading when switching branches\n   - Use Claude to summarize branch state and recent activity\n   - Provide relevant information about the checked-out branch\n   - Suggest next steps based on branch purpose (feature, bugfix, etc.)\n\n6. **post-rewrite hook**:\n   - Generate summaries after rebase or amend operations\n   - Use Claude to explain what changed during the rewrite\n   - Highlight potential issues from the rewrite operation\n   - Provide guidance on next steps\n\n7. **pre-rebase hook**:\n   - Implement conflict prediction before rebasing\n   - Use Claude to analyze potential merge conflicts\n   - Provide suggestions for resolving predicted conflicts\n   - Allow configuration of conflict detection sensitivity\n\nFor each hook:\n- Ensure proper error handling and graceful degradation if Claude is unavailable\n- Implement bypass mechanisms for urgent situations\n- Add appropriate logging and telemetry\n- Ensure hooks respect the configuration settings from Task #15\n- Document hook behavior and configuration options\n- Optimize Claude prompts for each specific hook purpose\n- Provide clear descriptions for users during the setup process\n- Make each hook individually selectable during setup/update\n- No hooks should be enabled by default without explicit user confirmation\n\nThe implementation should build upon the existing hook infrastructure from Task #14, maintaining consistency in the codebase and user experience.",
+      "testStrategy": "Testing for this task will involve a comprehensive approach to verify each Git hook's functionality:\n\n1. **Unit Tests**:\n   - Create unit tests for each hook's core logic\n   - Mock Claude API responses to test different scenarios\n   - Verify proper handling of edge cases and error conditions\n   - Test configuration options and their effects on hook behavior\n   - Test the hook selection mechanism during setup\n\n2. **Integration Tests**:\n   - Set up test repositories with various states to trigger hooks\n   - Verify Claude integration works end-to-end for each hook\n   - Test interactions between multiple hooks in sequence\n   - Verify hooks respect global and per-repository configurations\n   - Test the setup wizard with various hook selection combinations\n\n3. **Specific Hook Tests**:\n   - **prepare-commit-msg**: Test with various staged changes to verify message generation\n   - **commit-msg**: Test with valid and invalid commit messages against different rule sets\n   - **pre-push**: Test with clean code and code containing security issues\n   - **post-merge**: Test with simple and complex merges to verify summary generation\n   - **post-checkout**: Test branch switching between different types of branches\n   - **post-rewrite**: Test after rebase and amend operations\n   - **pre-rebase**: Test with branches having varying levels of conflict potential\n\n4. **Performance Testing**:\n   - Measure hook execution time with various repository sizes\n   - Verify hooks don't significantly impact Git operations\n   - Test with simulated slow network conditions\n   - Ensure hooks timeout appropriately when Claude is unresponsive\n\n5. **User Acceptance Testing**:\n   - Create scenarios for manual testing of each hook\n   - Verify the usefulness and accuracy of Claude's responses\n   - Assess the clarity and helpfulness of messages to users\n   - Test with developers of varying Git experience levels\n   - Test the hook selection interface for usability and clarity\n   - Verify that only selected hooks are installed and active\n\n6. **Documentation Verification**:\n   - Verify all hooks are properly documented\n   - Ensure configuration options are clearly explained\n   - Check that examples are provided for common use cases\n   - Verify troubleshooting guidance is included\n   - Verify hook descriptions in the setup wizard are clear and accurate\n\n7. **Regression Testing**:\n   - Verify existing pre-commit hook functionality is preserved\n   - Ensure configuration from Task #15 still works correctly\n   - Check that all hooks can be individually enabled/disabled\n   - Verify that previously selected hooks remain enabled after updates\n\nThe testing should be automated where possible, with CI integration to prevent regressions in future development.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Base Hook Extension Framework",
+          "description": "Extend the existing Git hook infrastructure to support additional hook types beyond pre-commit. Create a modular framework that allows for consistent implementation of all required hooks.",
+          "dependencies": [],
+          "details": "1. Review existing pre-commit hook implementation from Task #14\n2. Design a modular hook class/interface that can be extended for each hook type\n3. Implement common utilities for all hooks (Claude CLI interaction, configuration loading, error handling)\n4. Create a registration system for hooks to be dynamically loaded\n5. Implement bypass mechanisms and logging infrastructure\n6. Ensure backward compatibility with existing pre-commit implementation",
+          "status": "pending",
+          "testStrategy": "Create unit tests for the base hook framework with mock hook implementations. Test configuration loading, error handling, and bypass mechanisms."
+        },
+        {
+          "id": 2,
+          "title": "Implement prepare-commit-msg and commit-msg Hooks",
+          "description": "Implement the prepare-commit-msg hook for auto-generating commit messages and the commit-msg hook for validating commit message structure, both with Claude CLI integration.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Implement prepare-commit-msg hook to analyze staged changes using git diff\n2. Create Claude prompt templates for commit message generation\n3. Implement commit-msg hook to validate messages against configurable rules\n4. Design Claude prompts for checking message clarity and convention adherence\n5. Add support for conventional commits format validation\n6. Implement feedback mechanism for improving commit messages\n7. Create configuration options for customizing message templates and validation rules",
+          "status": "pending",
+          "testStrategy": "Test with various staged changes and commit messages. Create mock Claude responses to test message generation and validation logic."
+        },
+        {
+          "id": 3,
+          "title": "Implement pre-push and post-merge Hooks",
+          "description": "Implement the pre-push hook for security and quality audits before pushing code, and the post-merge hook for generating summaries of merged changes.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Implement pre-push hook to analyze outgoing commits\n2. Create Claude prompts for detecting sensitive information and problematic content\n3. Implement configurable strictness levels for security audits\n4. Develop post-merge hook to generate summaries of merged changes\n5. Design Claude prompts for creating human-readable explanations of changes\n6. Implement highlighting of areas requiring attention after merge\n7. Add integration points with notification systems",
+          "status": "pending",
+          "testStrategy": "Create test scenarios with various types of outgoing commits and merged changes. Test detection of sensitive information and quality of generated summaries."
+        },
+        {
+          "id": 4,
+          "title": "Implement post-checkout and post-rewrite Hooks",
+          "description": "Implement the post-checkout hook for context loading when switching branches and the post-rewrite hook for generating summaries after rebase or amend operations.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Implement post-checkout hook to summarize branch state\n2. Create Claude prompts for analyzing branch context and recent activity\n3. Implement suggestion generation based on branch purpose\n4. Develop post-rewrite hook for summarizing rebase/amend operations\n5. Design Claude prompts for explaining rewrite changes\n6. Implement detection of potential issues from rewrite operations\n7. Add guidance generation for next steps after rewrites",
+          "status": "pending",
+          "testStrategy": "Test with various branch checkout scenarios and rewrite operations. Verify quality of context summaries and issue detection."
+        },
+        {
+          "id": 5,
+          "title": "Implement pre-rebase Hook and Conflict Prediction",
+          "description": "Implement the pre-rebase hook with conflict prediction capabilities using Claude to analyze potential merge conflicts and provide resolution suggestions.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Implement pre-rebase hook to analyze branches before rebasing\n2. Create Claude prompts for predicting merge conflicts\n3. Implement algorithms to identify potential conflict areas in code\n4. Design conflict resolution suggestion generation\n5. Add configuration options for conflict detection sensitivity\n6. Implement visualization of potential conflict areas\n7. Create user guidance for proceeding with or modifying rebase plans",
+          "status": "pending",
+          "testStrategy": "Test with various rebase scenarios, including known conflict-prone situations. Evaluate accuracy of conflict predictions and quality of resolution suggestions."
+        },
+        {
+          "id": 6,
+          "title": "Implement Claude CLI Optimization and Fallback Mechanisms",
+          "description": "Optimize Claude CLI integration for each hook type, including prompt engineering, response parsing, and fallback mechanisms for when Claude is unavailable.",
+          "dependencies": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "details": "1. Review and optimize Claude prompts for each hook type\n2. Implement efficient response parsing for different hook contexts\n3. Create fallback mechanisms for all hooks when Claude is unavailable\n4. Implement caching of similar requests to reduce API usage\n5. Add timeout handling and graceful degradation\n6. Create telemetry for Claude interaction success/failure rates\n7. Implement prompt versioning to support Claude model updates",
+          "status": "pending",
+          "testStrategy": "Test Claude integration with various network conditions, including timeouts and failures. Verify fallback mechanisms work correctly and maintain hook functionality."
+        },
+        {
+          "id": 7,
+          "title": "Implement Configuration System and Documentation",
+          "description": "Create a comprehensive configuration system for all hooks and generate documentation for hook behavior, configuration options, and customization.",
+          "dependencies": [
+            6
+          ],
+          "details": "1. Design a unified configuration schema for all hook types\n2. Implement configuration validation and defaults\n3. Create hook-specific configuration sections\n4. Generate comprehensive documentation for each hook\n5. Create examples and templates for common use cases\n6. Implement configuration migration from previous versions\n7. Add configuration wizard or interactive setup options",
+          "status": "pending",
+          "testStrategy": "Test configuration loading with various valid and invalid configurations. Verify documentation accuracy by having team members follow it to configure hooks."
+        },
+        {
+          "id": 8,
+          "title": "Implement Hook Selection Mechanism in Setup Wizard",
+          "description": "Create an interactive setup wizard that allows users to selectively enable individual Git hooks with clear descriptions of each hook's purpose and functionality.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Design an interactive CLI interface for hook selection during setup/update\n2. Create clear, concise descriptions for each hook type explaining its purpose and benefits\n3. Implement a mechanism to present each hook individually with opt-in selection\n4. Ensure no hooks are enabled by default without explicit user confirmation\n5. Add ability to preview hook behavior before enabling\n6. Implement persistence of user selections between updates\n7. Create a quick setup option for experienced users\n8. Add ability to modify hook selections after initial setup\n9. Implement hook dependency resolution (if one hook requires another)\n10. Create visual indicators showing which hooks are currently active",
+          "status": "pending",
+          "testStrategy": "Test the setup wizard with various selection combinations. Verify that only selected hooks are installed and active. Test the clarity of hook descriptions with users of varying technical backgrounds. Verify that selections persist correctly between updates."
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "title": "Implement Optional Branching Strategy Enforcement",
+      "description": "Create functionality to enforce development best practices for Git branching, including detection of work on main/master branches, warnings to users, and Claude-powered suggestions for appropriate branch names based on task descriptions. Present this as an optional feature during setup/update with clear user choice.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "medium",
+      "details": "This task involves implementing an optional enforcement mechanism for branching strategy best practices:\n\n1. **Branch Detection System**:\n   - Create a mechanism to detect when a developer is working directly on main/master branches\n   - Implement warning notifications when direct work on protected branches is detected\n   - Add configuration options to enable/disable this feature and customize protected branch names\n\n2. **New Branch Enforcement**:\n   - Develop functionality to verify that each task begins on a new branch\n   - Create a system to track task-to-branch relationships\n   - Implement pre-commit hooks that check if the current branch is appropriate for the task\n\n3. **Claude Integration for Branch Naming**:\n   - Integrate with Claude API to analyze task descriptions\n   - Implement logic for Claude to suggest appropriate branch names following common conventions (feature/, bugfix/, hotfix/, etc.)\n   - Create a user-friendly interface for accepting or modifying suggested branch names\n\n4. **Configuration Options**:\n   - Add configuration parameters in the project's config file for:\n     - Enabling/disabling branching enforcement\n     - Customizing branch naming conventions\n     - Setting protected branch names\n     - Configuring warning behavior (blocking vs. advisory)\n\n5. **User Experience Considerations**:\n   - Ensure warnings are clear and actionable\n   - Provide guidance on how to correct branching issues\n   - Make it easy to create a new branch from the warning interface\n\n6. **Integration with Existing Hooks**:\n   - Leverage the extended Git hooks implementation from Task #17\n   - Ensure compatibility with other hook functionality\n\n7. **Setup/Update Integration**:\n   - Present branching strategy enforcement as an explicit opt-in feature during setup/update\n   - Provide a clear description of the feature's purpose and benefits\n   - Require explicit user confirmation before enabling\n   - Ensure the feature is disabled by default unless specifically chosen by the user\n   - Include screenshots or examples of how the feature works in the description\n\nThis feature should be implemented as an optional module that can be enabled/disabled through configuration, with sensible defaults that follow industry standard Git workflows, but should never be enabled without explicit user consent.",
+      "testStrategy": "Testing for this feature will involve multiple approaches:\n\n1. **Unit Tests**:\n   - Test branch detection logic with various branch names and configurations\n   - Verify Claude integration for branch name suggestions with mocked API responses\n   - Test configuration parsing and validation\n\n2. **Integration Tests**:\n   - Create test Git repositories with various branching scenarios\n   - Verify that warnings trigger appropriately when working on protected branches\n   - Test the full flow of task creation, branch suggestion, and enforcement\n\n3. **Mock Testing**:\n   - Use mock Claude API responses to test branch name suggestion functionality\n   - Simulate various task descriptions and verify appropriate branch name suggestions\n\n4. **Configuration Testing**:\n   - Test with various configuration options enabled/disabled\n   - Verify that protected branch lists are correctly interpreted\n   - Test custom branch naming convention configurations\n   - Verify that the feature is disabled by default in new installations\n\n5. **User Experience Testing**:\n   - Manually verify warning messages are clear and actionable\n   - Test the UX flow for creating a new branch from a warning\n   - Ensure suggestions are helpful and relevant to task descriptions\n   - Test the setup/update flow to confirm clear presentation of the feature as optional\n   - Verify that enabling requires explicit user confirmation\n\n6. **Edge Cases**:\n   - Test behavior when no task description is available\n   - Verify handling of unusual branch names or structures\n   - Test performance with large repositories or complex branching structures\n\n7. **Regression Testing**:\n   - Ensure existing Git hook functionality continues to work\n   - Verify that other features are not affected by the branching enforcement\n   - Confirm that updates to existing installations don't enable the feature without user consent\n\nDocument all test cases and expected outcomes in the test suite, with particular attention to the configuration options and their effects on system behavior. Include specific test cases for the setup/update experience to ensure the opt-in nature of the feature is preserved.",
+      "subtasks": []
+    },
+    {
+      "id": 19,
+      "title": "Implement Optional Test-First Development Enforcement",
+      "description": "Create functionality to detect when new files are added without corresponding test files, prompt users about missing tests, and integrate Claude to suggest appropriate test cases based on the code being developed. Present this as an optional feature during setup/update that requires explicit user opt-in.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "medium",
+      "details": "This task involves implementing a system to enforce test-first development practices as an optional feature:\n\n1. Feature presentation during setup/update:\n   - Present the test-first enforcement as an optional feature during installation or update\n   - Provide a clear description of what the feature does and its benefits\n   - Require explicit user confirmation before enabling (disabled by default)\n   - Allow users to enable/disable the feature at any time through configuration\n\n2. File monitoring:\n   - Create a mechanism to detect when new source files are added to the project\n   - Identify file types that should have corresponding tests (e.g., .js, .ts, .jsx, .tsx)\n   - Determine naming conventions for test files (e.g., component.test.js, __tests__/component.js)\n\n3. Test file detection:\n   - Implement logic to check if a matching test file exists for newly added source files\n   - Support multiple test frameworks (Jest, Playwright, etc.) and their respective file patterns\n   - Consider configuration options for custom test file patterns\n\n4. User prompting:\n   - Create a notification system to alert developers when tests are missing\n   - Implement as a Git hook (pre-commit or post-checkout) to catch missing tests early\n   - Make the enforcement optional via configuration settings\n\n5. Claude integration:\n   - Develop an interface to send code to Claude for test suggestion\n   - Parse the source file to extract relevant information for Claude\n   - Format Claude's suggestions into proper test files using the appropriate framework\n   - Support multiple testing frameworks (Jest for unit tests, Playwright for E2E tests)\n   - Include options for test style (e.g., AAA pattern, BDD style)\n\n6. Configuration options:\n   - Test framework preferences\n   - Enforcement level (strict, warning, disabled)\n   - File pattern matching rules\n   - Exclusion patterns for files that don't need tests\n   - Easy way to disable the feature entirely\n\n7. Documentation:\n   - Update user documentation with new feature details\n   - Provide examples of configuration options\n   - Include troubleshooting guidance\n   - Clearly document the opt-in nature of the feature",
+      "testStrategy": "Testing for this feature should include:\n\n1. Unit tests:\n   - Test file detection logic with various file patterns and naming conventions\n   - Test the configuration parsing and validation\n   - Test Claude API integration with mocked responses\n   - Test the test file generation logic for different frameworks\n   - Test the feature presentation and opt-in mechanism\n\n2. Integration tests:\n   - Test the Git hook integration to ensure it triggers appropriately\n   - Test the end-to-end flow from file creation to test suggestion\n   - Verify configuration options correctly modify behavior\n   - Verify the feature remains disabled by default until explicitly enabled\n\n3. Manual testing scenarios:\n   - Verify the feature is presented clearly during setup/update\n   - Confirm the feature remains disabled until explicitly enabled\n   - Create new source files without tests and verify prompts appear only when enabled\n   - Test with different configuration settings to ensure enforcement levels work\n   - Verify Claude suggestions for different types of components (React components, utility functions, API endpoints)\n   - Test with multiple test frameworks to ensure compatibility\n   - Verify the feature can be easily disabled after being enabled\n\n4. Edge cases to test:\n   - Files that shouldn't require tests (e.g., configuration files)\n   - Projects with non-standard directory structures\n   - Handling of files with complex dependencies\n   - Performance with large codebases\n   - Upgrade paths for users who previously had different test enforcement settings\n\n5. User experience testing:\n   - Verify the opt-in presentation is clear and non-intrusive\n   - Ensure prompts are clear and actionable when the feature is enabled\n   - Ensure Claude suggestions are helpful and follow best practices\n   - Check that the feature doesn't disrupt normal development workflow\n\n6. Documentation verification:\n   - Ensure all configuration options are documented\n   - Verify examples work as described\n   - Confirm the documentation clearly explains the opt-in nature of the feature",
+      "subtasks": []
+    },
+    {
+      "id": 20,
+      "title": "Implement AI-enhanced Git Diff Explanation CLI Command",
+      "description": "Create a 'claude diff-explain' CLI command that provides annotated git diff output, explaining code changes in natural language, highlighting potential issues, and providing context for the changes. This feature should be presented as optional during setup/update with clear user consent required.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "medium",
+      "details": "This task involves creating a new CLI command 'claude diff-explain' that enhances standard git diff output with AI-powered explanations:\n\n1. Extend the existing Claude CLI integration to create a new subcommand 'diff-explain'\n2. Implement functionality to capture git diff output for specified files or commits\n3. Process the diff output to identify:\n   - Added, modified, and deleted code sections\n   - Language/framework specific patterns\n   - Potential bugs or code smells\n   - Security implications of changes\n4. Send the processed diff to Claude API with appropriate prompting to:\n   - Generate natural language explanations of what changed and why\n   - Highlight potential issues or improvements\n   - Provide context about the impact of changes\n5. Format and display the enhanced diff output with:\n   - Original diff syntax highlighting\n   - Inline or adjacent natural language explanations\n   - Color-coded warnings for potential issues\n   - Summary of changes at the file and commit level\n6. Implement configuration options:\n   - Verbosity level for explanations (brief/detailed)\n   - Focus areas (security, performance, readability)\n   - Output format preferences (inline, side-by-side, summary-only)\n7. Add documentation for the new command in the project README and help text\n8. Ensure the implementation handles large diffs efficiently, potentially using chunking or summarization for very large changes\n9. Implement as an opt-in feature:\n   - Present the feature during setup or update processes with clear description\n   - Require explicit user confirmation before enabling\n   - Ensure the feature is disabled by default\n   - Provide clear instructions on how to enable/disable the feature later\n10. Create clear messaging that explains:\n    - What data will be sent to Claude API\n    - How the diff information will be used\n    - Any privacy considerations users should be aware of\n\nThe implementation should integrate with the existing Claude CLI architecture and follow the same patterns as previous Git-related features.",
+      "testStrategy": "Testing for this feature should include:\n\n1. Unit Tests:\n   - Test parsing and processing of git diff output in various formats\n   - Test construction of appropriate prompts for Claude API\n   - Test formatting and display of enhanced diff output\n   - Test configuration options and their effects\n\n2. Integration Tests:\n   - Test end-to-end functionality with actual git repositories\n   - Test with various types of changes (code, documentation, binary files)\n   - Test with different programming languages and frameworks\n   - Test with different sizes of diffs (single line to very large changes)\n   - Test the opt-in mechanism during setup and updates\n   - Verify the feature remains disabled by default\n\n3. Performance Tests:\n   - Measure response time for different sizes of diffs\n   - Evaluate token usage and API costs for typical usage patterns\n   - Test handling of rate limits and large requests\n\n4. User Acceptance Testing:\n   - Create a test script with predefined git repositories and changes\n   - Have developers use the command and provide feedback on:\n     - Accuracy of explanations\n     - Helpfulness of identified issues\n     - Overall UX and readability of output\n     - Clarity of opt-in messaging and controls\n   - Compare usefulness against standard git diff\n\n5. Edge Case Testing:\n   - Test with merge conflicts\n   - Test with binary files or non-text content\n   - Test with very large repositories or changes\n   - Test with unusual or malformed git diff output\n\n6. Command Line Interface Testing:\n   - Verify all command options work as expected\n   - Test help text and documentation accuracy\n   - Test error handling and user feedback\n   - Verify opt-in/opt-out functionality works correctly\n   - Test that feature state persists correctly between sessions\n\n7. Consent Flow Testing:\n   - Verify clear messaging during setup/update\n   - Test that explicit confirmation is required\n   - Verify that declining doesn't impact other functionality\n   - Test the process for enabling/disabling after initial setup\n\nSuccess criteria: The command successfully processes git diffs, provides accurate and helpful explanations, identifies potential issues, and presents the information in a clear, readable format that developers find more useful than standard git diff output. Additionally, the feature is properly implemented as opt-in with clear user consent required.",
+      "subtasks": []
+    },
+    {
+      "id": 21,
+      "title": "Implement Uninstall Functionality in Setup Script",
+      "description": "Add a \"remove\" option to the setup script that allows users to completely uninstall the tool, removing all configurations, hooks, and settings previously established, with appropriate warnings and confirmation requirements.",
+      "details": "The implementation should include:\n\n1. Add a new \"--remove\" or \"--uninstall\" command-line flag to the setup script.\n2. Create a dedicated function that handles the uninstallation process.\n3. Implement a tracking mechanism that records all changes made during setup (if not already present), such as:\n   - Git hooks installed\n   - VS Code configurations added\n   - MCP settings modified\n   - Any other files or configurations created\n4. Display a clear, prominent warning about the destructive nature of the operation, using colored text (red) if supported.\n5. Require explicit confirmation from the user with a typed response (e.g., \"YES\" or the project name) to proceed.\n6. Implement the removal logic for each component:\n   - Remove Git hooks from .git/hooks directory\n   - Restore original VS Code settings or remove added configurations\n   - Remove MCP settings or restore defaults\n   - Delete any created directories or files\n7. Provide verbose logging during the removal process, informing the user about each step.\n8. Handle error cases gracefully, such as:\n   - Files already manually removed\n   - Permission issues\n   - Unexpected file states\n9. After completion, display a summary of all removed items.\n10. Consider adding a \"--dry-run\" option that shows what would be removed without actually performing the removal.\n\nThe implementation should follow the same code style and patterns used in the existing setup script, maintaining consistency with how other features like the AI-enhanced Git diff, test-first enforcement, and branching strategy are implemented.",
+      "testStrategy": "Testing should verify the uninstall functionality works correctly and safely:\n\n1. Manual Testing:\n   - Run the setup script with the new remove option on a test environment\n   - Verify all prompts and warnings display correctly\n   - Confirm the confirmation mechanism prevents accidental removal\n   - Check that all components are properly removed\n   - Verify the system returns to its pre-installation state\n\n2. Automated Testing:\n   - Create unit tests for the removal function logic\n   - Develop integration tests that:\n     - Set up a mock environment with all components installed\n     - Run the removal process\n     - Verify each component is properly removed\n     - Check for any leftover files or configurations\n\n3. Edge Case Testing:\n   - Test the removal process on a system where some components were already manually deleted\n   - Test with insufficient permissions\n   - Test with corrupted configuration files\n   - Test cancellation mid-process\n\n4. User Acceptance Testing:\n   - Have team members test the removal process on their development environments\n   - Collect feedback on the clarity of warnings and confirmation prompts\n   - Verify the process is intuitive and meets user expectations\n\n5. Documentation Testing:\n   - Review help text and documentation for clarity\n   - Ensure the removal option is properly documented in README and help commands\n\nThe test results should be documented, including screenshots of the process and a checklist of all components verified to be properly removed.",
+      "status": "completed",
+      "dependencies": [],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Add command-line flags and implement tracking mechanism",
+          "description": "Add '--remove' and '--uninstall' command-line flags to the setup script and implement a tracking mechanism to record all changes made during setup.",
+          "dependencies": [],
+          "details": "1. Add new command-line arguments to the argument parser for '--remove' and '--uninstall' (as aliases).\n2. Create a JSON-based tracking file (e.g., '.tool-installation.json') that records all modifications made during setup.\n3. Update all existing setup functions to record their actions in this tracking file.\n4. Include timestamps, file paths, original states, and new states in the tracking data.\n5. Implement a function to read this tracking file during uninstallation.",
+          "status": "pending",
+          "testStrategy": "Create unit tests that verify command-line arguments are properly parsed and that the tracking mechanism correctly records and retrieves installation actions."
+        },
+        {
+          "id": 2,
+          "title": "Implement warning and confirmation UI",
+          "description": "Create a user interface for displaying warnings and obtaining confirmation before proceeding with uninstallation.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Implement a function to display a prominent warning message in red text (using ANSI color codes if supported).\n2. Create a confirmation prompt that requires the user to type 'YES' or the project name to proceed.\n3. Add a '--force' option to bypass confirmation for automated scripts.\n4. Implement a '--dry-run' flag that shows what would be removed without performing actual changes.\n5. Create helper functions for displaying verbose logging during the removal process.",
+          "status": "pending",
+          "testStrategy": "Test the confirmation UI with various inputs, including correct confirmation, incorrect confirmation, and automated confirmation via '--force'."
+        },
+        {
+          "id": 3,
+          "title": "Implement Git hooks removal functionality",
+          "description": "Create functions to remove Git hooks that were installed by the setup script.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "1. Use the tracking file to identify which Git hooks were installed.\n2. Implement a function to remove each hook from the .git/hooks directory.\n3. If original hooks were backed up during installation, restore them.\n4. Handle edge cases such as manually deleted hooks or modified hooks.\n5. Log each removal action with appropriate verbosity levels.",
+          "status": "pending",
+          "testStrategy": "Create a test environment with sample Git hooks, run the removal function, and verify that hooks are properly removed and original hooks are restored if applicable."
+        },
+        {
+          "id": 4,
+          "title": "Implement VS Code and MCP settings removal",
+          "description": "Create functions to remove or restore VS Code settings and MCP configurations that were modified during setup.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "1. Use the tracking file to identify which VS Code settings were modified.\n2. Implement functions to restore original VS Code settings or remove added configurations.\n3. Create similar functions for MCP settings restoration.\n4. Handle cases where settings files might have been manually modified since installation.\n5. Implement backup restoration for any configuration files that were backed up during installation.",
+          "status": "pending",
+          "testStrategy": "Create test scenarios with sample VS Code and MCP configuration files, apply modifications, then verify that the removal functions correctly restore original states."
+        },
+        {
+          "id": 5,
+          "title": "Implement main uninstall function and summary reporting",
+          "description": "Create the main uninstall function that orchestrates the removal process and provides a summary of actions taken.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "1. Create a main 'uninstall' function that calls each component removal function in the appropriate order.\n2. Implement error handling that continues the uninstallation process even if individual components fail to uninstall.\n3. Track successful and failed removal actions.\n4. After completion, generate and display a summary of all removed items.\n5. Include recommendations for manual cleanup if any automated removal steps failed.\n6. Delete the tracking file itself as the final step of a successful uninstallation.",
+          "status": "pending",
+          "testStrategy": "Create an end-to-end test that installs the tool with various components, then runs the uninstall process and verifies that all components are properly removed and a correct summary is displayed."
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "title": "Update Setup Script to Add Task Master AI Files to .gitignore",
+      "description": "Modify the setup script to automatically add Task Master AI configuration and task files to the project's .gitignore file during installation, preventing sensitive or user-specific files from being committed to version control.",
+      "details": "The implementation should:\n\n1. Update the setup script to include a function that handles .gitignore modifications\n2. When Task Master AI is installed, the script should:\n   - Check if a .gitignore file exists in the project root\n   - Create a new .gitignore file if one doesn't exist\n   - Add the following patterns if they don't already exist:\n     * .taskmasterconfig\n     * tasks/*.txt\n     * tasks/task_*.txt\n3. Implement pattern checking to prevent duplicate entries\n4. Use appropriate file handling techniques to:\n   - Read the existing .gitignore content\n   - Check for existing patterns\n   - Append new patterns only when needed\n   - Write back to the file\n5. Add appropriate logging to inform the user about the changes made\n6. Handle potential errors gracefully (file permissions, etc.)\n7. Document the behavior in the setup script's help text and README\n8. Ensure this functionality runs during initial installation and can be triggered separately during updates\n\nThis feature helps maintain a clean repository by preventing user-specific task files and configuration from being committed, while still allowing the core functionality to be version controlled.",
+      "testStrategy": "Testing should verify:\n\n1. **New Installation Test**:\n   - Run the setup script in a fresh project without a .gitignore\n   - Verify a .gitignore file is created with the correct patterns\n\n2. **Existing .gitignore Test**:\n   - Create a test project with an existing .gitignore containing some patterns\n   - Run the setup script\n   - Verify the Task Master AI patterns are added without disturbing existing content\n\n3. **Duplicate Prevention Test**:\n   - Create a test project with a .gitignore that already contains some of the Task Master AI patterns\n   - Run the setup script\n   - Verify no duplicates are created and all required patterns exist\n\n4. **File Permission Test**:\n   - Create a read-only .gitignore file\n   - Run the setup script\n   - Verify appropriate error handling and user feedback\n\n5. **Integration Test**:\n   - After installation, create some task files in the tasks/ directory\n   - Run git status\n   - Verify the task files are ignored by git\n\n6. **Manual Verification**:\n   - Review the modified setup script code for proper error handling and edge cases\n   - Ensure the implementation follows best practices for file manipulation\n\nDocument all test cases and results to confirm the feature works as expected across different scenarios.",
+      "status": "completed",
+      "dependencies": [],
+      "priority": "medium",
+      "subtasks": []
+    }
+  ]
+}

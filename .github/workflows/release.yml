@@ -52,8 +52,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20.18.0"
-          cache: "yarn"
-      - run: yarn install
+      - run: npm ci
       - name: Configure Git
         run: |
           git config user.name "github-actions"
@@ -61,7 +60,7 @@ jobs:
       - name: Bump version
         id: version
         run: |
-          yarn standard-version --message "chore(release): %s [skip ci]"
+          npx standard-version --message "chore(release): %s [skip ci]"
           echo "new_version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
           # Add environment suffix for staging and dev, but not for main
           if [ "${{ needs.determine_environment.outputs.environment }}" == "main" ]; then
@@ -202,7 +201,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20.18.0"
-          cache: yarn
       - name: Setup EAS
         uses: expo/expo-github-action@v8
         with:
@@ -211,7 +209,7 @@ jobs:
       - name: Set Env
         run: echo "PUPPETEER_SKIP_DOWNLOAD=true" >> $GITHUB_ENV
       - name: Install dependencies
-        run: yarn install
+        run: npm ci
       - name: Copy environment file
         uses: canastro/copy-file-action@master
         with:
@@ -224,9 +222,9 @@ jobs:
           source: ".env.${{ needs.determine_environment.outputs.environment == 'dev' && 'development' || needs.determine_environment.outputs.environment }}"
           target: ".env.production"
       - name: Publish update
-        run: STAGE=${{ needs.determine_environment.outputs.environment == 'main' && 'production' || needs.determine_environment.outputs.environment}} NODE_OPTIONS="--max-old-space-size=8192" eas update --auto --channel=${{ needs.determine_environment.outputs.environment == 'main' && 'production' || needs.determine_environment.outputs.environment}} --message="Update to v${{ needs.version_and_release.outputs.version }}"
+        run: STAGE=${{ needs.determine_environment.outputs.environment == 'main' && 'production' || needs.determine_environment.outputs.environment}} NODE_OPTIONS="--max-old-space-size=8192" npx eas update --auto --channel=${{ needs.determine_environment.outputs.environment == 'main' && 'production' || needs.determine_environment.outputs.environment}} --message="Update to v${{ needs.version_and_release.outputs.version }}"
       - name: Publish preview update
-        run: STAGE=${{ needs.determine_environment.outputs.environment == 'main' && 'production' || needs.determine_environment.outputs.environment}} NODE_OPTIONS="--max-old-space-size=8192" eas update --channel=${{ needs.determine_environment.outputs.environment == 'main' && 'production' || needs.determine_environment.outputs.environment}}-preview --message="Preview update v${{ needs.version_and_release.outputs.version }}"
+        run: STAGE=${{ needs.determine_environment.outputs.environment == 'main' && 'production' || needs.determine_environment.outputs.environment}} NODE_OPTIONS="--max-old-space-size=8192" npx eas update --channel=${{ needs.determine_environment.outputs.environment == 'main' && 'production' || needs.determine_environment.outputs.environment}}-preview --message="Preview update v${{ needs.version_and_release.outputs.version }}"
       - name: Check Sentry Token
         id: sentry-token
         run: |

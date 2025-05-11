@@ -81,6 +81,13 @@ const vsCodeUserConfigPaths = {
   linux: path.join(os.homedir(), '.config', 'Code', 'User')
 };
 
+// VS Code extensions paths
+const vsCodeExtensionsPaths = {
+  mac: path.join(os.homedir(), '.vscode', 'extensions'),
+  windows: path.join(process.env.USERPROFILE || '', '.vscode', 'extensions'),
+  linux: path.join(os.homedir(), '.vscode', 'extensions')
+};
+
 /**
  * Get the appropriate Claude config path based on OS
  * @returns {string} Path to Claude config file
@@ -99,6 +106,16 @@ function getVSCodeUserConfigPath() {
   if (isMac) return vsCodeUserConfigPaths.mac;
   if (isWindows) return vsCodeUserConfigPaths.windows;
   return vsCodeUserConfigPaths.linux;
+}
+
+/**
+ * Get the VS Code extensions path
+ * @returns {string} Path to VS Code extensions
+ */
+function getVSCodeExtensionsPath() {
+  if (isMac) return vsCodeExtensionsPaths.mac;
+  if (isWindows) return vsCodeExtensionsPaths.windows;
+  return vsCodeExtensionsPaths.linux;
 }
 
 /**
@@ -439,26 +456,26 @@ async function setupClaudeCode() {
   if (apiKey) {
     const encryptionKey = await getEncryptionKey();
     const encryptedKey = encryptValue(apiKey, encryptionKey);
-    
+
     // Store credentials in project-specific encrypted file
     await safeWriteJson(
-      path.join(projectClaudeDir, 'credentials.json.enc'), 
+      path.join(projectClaudeDir, 'credentials.json.enc'),
       { apiKey: encryptedKey }
     );
-    
+
     // Update system config if needed
     if (!claudeConfig.apiKey) {
       claudeConfig.apiKey = encryptedKey;
     }
   }
-  
+
   // Update additional settings
   claudeConfig.memoryLimit = parseInt(memoryLimit, 10);
   claudeConfig.mcpPreferences = {
     useMcpWhenAvailable: true,
     preferMcpOverInternal: true
   };
-  
+
   // Create project-specific settings
   const projectSettings = {
     version: VERSION,
@@ -480,24 +497,29 @@ async function setupClaudeCode() {
       preferMcpOverInternal: true
     }
   };
-  
+
   await safeWriteJson(path.join(projectClaudeDir, 'settings.json'), projectSettings);
-  
+
+  // Get current VSCode settings to check Copilot config status
+  const vscodeSettingsPath = path.join(projectRoot, '.vscode', 'settings.json');
+  const vscodeSettings = await safeReadJson(vscodeSettingsPath) || {};
+
   // Create or update CLAUDE.md file
-  await setupClaudeMd();
-  
+  await setupClaudeMd(vscodeSettings);
+
   // Save system config
   if (!dryRun) {
     await safeWriteJson(configPath, claudeConfig);
   }
-  
+
   printSuccess('Claude Code configuration completed!');
 }
 
 /**
  * Create or update CLAUDE.md file
+ * @param {Object} [vscodeSettings={}] VS Code settings object to check Copilot configuration
  */
-async function setupClaudeMd() {
+async function setupClaudeMd(vscodeSettings = {}) {
   const claudeMdPath = path.join(projectRoot, 'CLAUDE.md');
   const exists = await fileExists(claudeMdPath);
   
@@ -521,6 +543,9 @@ async function setupClaudeMd() {
   const isMonorepoProject = await isMonorepo(projectRoot);
   const projectType = isMonorepoProject ? 'Monorepo' : 'Standard Repository';
   
+  // Check if Copilot is installed
+  const { installed: copilotInstalled } = await detectGitHubCopilot();
+
   // Create basic CLAUDE.md content
   const claudeMdContent = `# ${projectName} Project
 
@@ -542,6 +567,14 @@ ${isMonorepoProject && await fileExists(path.join(projectRoot, 'turbo.json')) ? 
 
 ## Architecture Guide
 @/.roo/rules/02-architecture-guide.md to ./CLAUDE.md
+
+${copilotInstalled ? `
+## GitHub Copilot Compatibility
+This project is configured to ${vscodeSettings?.['github.copilot.enable'] === false ? 'disable' : 'work alongside'} GitHub Copilot.
+${vscodeSettings?.['github.copilot.enable'] === false ?
+  'Copilot has been disabled for this workspace to avoid conflicts with Claude and Roo.' :
+  'Copilot and Claude/Roo are both active; be aware of potential conflicts with inline suggestions.'}
+` : ''}
 `;
 
   await writeTextFile(claudeMdPath, claudeMdContent);
@@ -835,6 +868,87 @@ async function setupRooMcp() {
 
   await safeWriteJson(rooMcpPath, rooMcpConfig);
   printSuccess('Created Roo MCP configuration');
+}
+
+/**
+ * Detect if GitHub Copilot is installed in VS Code
+ * @returns {Promise<{installed: boolean, path: string|null}>} Object indicating if Copilot is installed and its path
+ */
+async function detectGitHubCopilot() {
+  printDebug('Checking for GitHub Copilot installation...');
+
+  try {
+    // Get the VS Code extensions directory
+    const extensionsPath = getVSCodeExtensionsPath();
+
+    // Check for different Copilot extension patterns
+    const copilotPatterns = [
+      // Main GitHub Copilot extension
+      'github.copilot-*',
+      // GitHub Copilot Chat
+      'github.copilot-chat-*',
+      // Other Copilot variants
+      '*copilot*'
+    ];
+
+    // Check for Copilot in extensions directory
+    for (const pattern of copilotPatterns) {
+      const extensionPath = path.join(extensionsPath, pattern);
+      printDebug(`Checking for Copilot extensions matching: ${extensionPath}`);
+
+      try {
+        // Use glob-like pattern to find matching directories
+        const matches = await fs.readdir(extensionsPath);
+        const copilotMatches = matches.filter(dir => {
+          return dir.toLowerCase().includes('copilot') && dir.toLowerCase().includes('github');
+        });
+
+        if (copilotMatches.length > 0) {
+          const copilotPath = path.join(extensionsPath, copilotMatches[0]);
+          printDebug(`Found GitHub Copilot at: ${copilotPath}`);
+          return { installed: true, path: copilotPath };
+        }
+      } catch (err) {
+        printDebug(`Error searching for Copilot with pattern ${pattern}: ${err.message}`);
+        // Continue checking other patterns
+      }
+    }
+
+    // Also check in VS Code integrated extensions
+    // This location is used for extensions installed directly via VS Code
+    const integratedExtPaths = [
+      // Possible locations for integrated extensions
+      path.join(getVSCodeUserConfigPath(), '..', 'extensions'),
+      // For VS Code Insiders
+      path.join(getVSCodeUserConfigPath(), '..', '..', 'Code - Insiders', 'User', 'extensions')
+    ];
+
+    for (const extPath of integratedExtPaths) {
+      try {
+        if (await fileExists(extPath)) {
+          const matches = await fs.readdir(extPath);
+          const copilotMatches = matches.filter(dir => {
+            return dir.toLowerCase().includes('copilot') && dir.toLowerCase().includes('github');
+          });
+
+          if (copilotMatches.length > 0) {
+            const copilotPath = path.join(extPath, copilotMatches[0]);
+            printDebug(`Found GitHub Copilot at integrated location: ${copilotPath}`);
+            return { installed: true, path: copilotPath };
+          }
+        }
+      } catch (err) {
+        printDebug(`Error checking integrated extension path ${extPath}: ${err.message}`);
+        // Continue checking other locations
+      }
+    }
+
+    printDebug('GitHub Copilot not found');
+    return { installed: false, path: null };
+  } catch (err) {
+    printWarning(`Error detecting GitHub Copilot: ${err.message}`);
+    return { installed: false, path: null };
+  }
 }
 
 /**
@@ -1188,46 +1302,98 @@ OPENAI_API_KEY=your-openai-key-here
  */
 async function setupVSCodeSettings() {
   printHeader('Setting up VS Code settings');
-  
+
   const vscodeDir = path.join(projectRoot, '.vscode');
   await ensureDirectory(vscodeDir);
-  
+
   const settingsPath = path.join(vscodeDir, 'settings.json');
   let settings = {};
-  
+
   // Read existing settings if they exist
   const settingsExist = await fileExists(settingsPath);
   if (settingsExist) {
     settings = await safeReadJson(settingsPath) || {};
   }
-  
+
+  // Check for GitHub Copilot installation
+  const { installed: copilotInstalled, path: copilotPath } = await detectGitHubCopilot();
+
+  if (copilotInstalled) {
+    printInfo(`GitHub Copilot detected at: ${copilotPath}`);
+
+    // Ask user if they want to disable Copilot for this workspace
+    let disableCopilot = false;
+    if (!nonInteractive) {
+      disableCopilot = await confirm({
+        message: 'GitHub Copilot detected. Would you like to disable it for this workspace to avoid conflicts?',
+        default: true
+      });
+    }
+
+    if (disableCopilot || nonInteractive) {
+      printInfo('Configuring settings to disable GitHub Copilot for this workspace');
+
+      // Disable GitHub Copilot
+      settings['github.copilot.enable'] = false;
+      settings['github.copilot.editor.enableAutoCompletions'] = false;
+
+      // If Copilot Chat is likely installed based on the path
+      if (copilotPath && copilotPath.toLowerCase().includes('chat')) {
+        settings['github.copilot.chat.enabled'] = false;
+      }
+
+      printSuccess('GitHub Copilot disabled for this workspace');
+    } else {
+      printInfo('GitHub Copilot will remain active alongside Claude/Roo - be aware of potential conflicts');
+
+      // Configure settings to reduce conflicts
+      settings['editor.inlineSuggest.suppressSuggestions'] = false;
+      settings['editor.inlineSuggest.enabled'] = true;
+      settings['editor.inlineSuggest.showToolbar'] = 'always';
+
+      // Prioritize your preferred AI assistant
+      if (await confirm({
+        message: 'Would you like to prioritize Claude/Roo over GitHub Copilot?',
+        default: true
+      })) {
+        // These settings favor Claude/Roo over Copilot
+        settings['github.copilot.inlineSuggest.enable'] = true;
+        settings['github.copilot.inlineSuggest.count'] = 1; // Reduce suggestions from Copilot
+
+        printSuccess('Settings configured to prioritize Claude/Roo over GitHub Copilot');
+      }
+    }
+  } else {
+    printInfo('GitHub Copilot not detected');
+  }
+
   // Update AI assistant settings
   settings['editor.inlineSuggest.enabled'] = true;
   settings['editor.inlineSuggest.showToolbar'] = 'always';
-  
+
   // Claude settings
   settings['claude.enableAutoCompletion'] = true;
-  
+
   // Roo Code settings
   settings['rooCode.useIgnoreFiles'] = true;
   settings['rooCode.autoApproveReads'] = true;
-  
+
   // Git settings related to AI
   settings['git.ignoreLimitWarning'] = true;
-  
+
   await safeWriteJson(settingsPath, settings);
   printSuccess('VS Code settings updated for AI assistants.');
-  
+
   // Update extensions.json to recommend required extensions
   const extensionsPath = path.join(vscodeDir, 'extensions.json');
   let extensions = {};
-  
+
   // Read existing extensions if they exist
   const extensionsExist = await fileExists(extensionsPath);
   if (extensionsExist) {
     extensions = await safeReadJson(extensionsPath) || {};
   }
-  
+
   // Add recommended extensions
   extensions.recommendations = extensions.recommendations || [];
   const recommendedExtensions = [
@@ -1238,14 +1404,25 @@ async function setupVSCodeSettings() {
     'esbenp.prettier-vscode',
     'editorconfig.editorconfig'
   ];
-  
+
   // Add extensions that aren't already recommended
   for (const ext of recommendedExtensions) {
     if (!extensions.recommendations.includes(ext)) {
       extensions.recommendations.push(ext);
     }
   }
-  
+
+  // If Copilot is installed, add a note about potential conflicts
+  if (copilotInstalled) {
+    extensions.unwantedRecommendations = extensions.unwantedRecommendations || [];
+    if (!extensions.unwantedRecommendations.includes('github.copilot')) {
+      extensions.unwantedRecommendations.push('github.copilot');
+    }
+    if (!extensions.unwantedRecommendations.includes('github.copilot-chat')) {
+      extensions.unwantedRecommendations.push('github.copilot-chat');
+    }
+  }
+
   await safeWriteJson(extensionsPath, extensions);
   printSuccess('VS Code extensions recommendations updated.');
 }

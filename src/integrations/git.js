@@ -140,7 +140,7 @@ export async function setupGitHooks(options) {
   try {
     // Import hooks module dynamically to avoid circular dependencies
     const { setupHooks } = await import('../hooks/index.js');
-    
+
     // Setup hooks
     const results = await setupHooks({
       projectRoot,

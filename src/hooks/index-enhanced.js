@@ -14,6 +14,8 @@ import EnhancedBaseHook from './enhanced-base-hook.js';
 // Hook implementations
 import EnhancedPrepareCommitMsgHook from './enhanced-prepare-commit-msg-hook.js';
 import EnhancedCommitMsgHook from './enhanced-commit-msg-hook.js';
+import EnhancedPreCommitHook from './enhanced-pre-commit-hook.js';
+import { runEnhancedSetupWizard } from './enhanced-setup-wizard.js';
 
 // Backward compatibility layer
 import { adaptLegacyHook, wrapEnhancedHook } from './hook-compatibility.js';
@@ -85,6 +87,7 @@ function registerBuiltins(registry) {
   // Register the built-in hooks
   registry.register('prepare-commit-msg', EnhancedPrepareCommitMsgHook);
   registry.register('commit-msg', EnhancedCommitMsgHook);
+  registry.register('pre-commit', EnhancedPreCommitHook);
   // Additional hooks will be registered here as they are implemented
 }
 
@@ -144,6 +147,10 @@ export {
   // Hook implementations
   EnhancedPrepareCommitMsgHook,
   EnhancedCommitMsgHook,
+  EnhancedPreCommitHook,
+
+  // Setup wizard
+  runEnhancedSetupWizard,
   
   // Registry and factory
   EnhancedHookRegistry,
@@ -172,6 +179,10 @@ export default {
   compatibility,
   hooks: {
     EnhancedPrepareCommitMsgHook,
-    EnhancedCommitMsgHook
-  }
+    EnhancedCommitMsgHook,
+    EnhancedPreCommitHook
+  },
+
+  // Setup wizard
+  setupWizard: runEnhancedSetupWizard
 };

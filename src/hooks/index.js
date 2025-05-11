@@ -31,6 +31,26 @@ const HOOK_DESCRIPTIONS = {
     description: 'Uses Claude to review staged changes before they are committed',
     details: 'This hook analyzes your staged changes for bugs, security issues, and code quality problems before you commit them. It can be configured to either block commits with critical issues or just provide advisory warnings.'
   },
+  'type-check': {
+    title: 'TypeScript Type Checking',
+    description: 'Runs TypeScript type checking on your code before committing',
+    details: 'This hook runs the TypeScript compiler to check for type errors in your code before committing. It helps catch type-related issues early in the development process.'
+  },
+  'lint': {
+    title: 'Code Linting',
+    description: 'Runs linting checks on your code before committing',
+    details: 'This hook runs your configured linter (ESLint, TSLint, etc.) on staged files to ensure code quality and consistency before committing.'
+  },
+  'format': {
+    title: 'Code Formatting',
+    description: 'Ensures code is properly formatted before committing',
+    details: 'This hook runs your configured formatter (Prettier, etc.) on staged files to ensure consistent code style before committing.'
+  },
+  'commit-lint': {
+    title: 'Commit Message Validation',
+    description: 'Validates commit messages against conventional commits format',
+    details: 'This hook ensures your commit messages follow the conventional commits format, making your commit history more consistent and readable.'
+  },
   'diff-explain': {
     title: 'AI-Enhanced Git Diff Explanation',
     description: 'Uses Claude to explain code changes in natural language',
@@ -268,12 +288,53 @@ export async function setupHooks(config) {
   // Initialize hooks
   const registry = await initializeHooks(config);
   const hooks = registry.getAllHooks();
-  
+
   // In non-interactive mode, just use defaults
   if (config.nonInteractive) {
     return registry.setupHooks();
   }
-  
+
+  // Try to import project detector for code quality hooks
+  let projectDetector = null;
+  try {
+    projectDetector = (await import('../utils/project-detector.js')).default;
+  } catch (err) {
+    // Project detector not available, continue without it
+    console.log('Project detector not available, code quality hooks will not be offered');
+  }
+
+  // Detect project capabilities if detector is available
+  let typeScriptInfo = { isTypeScriptProject: false, hasTypesCheck: false };
+  let linterInfo = { linter: null, scriptName: null };
+  let formatterInfo = { formatter: null, scriptName: null };
+  let commitlintInfo = { hasCommitlint: false };
+
+  if (projectDetector) {
+    try {
+      // Detect TypeScript
+      const isTypeScript = await projectDetector.isTypeScriptProject(config.projectRoot);
+      if (isTypeScript) {
+        typeScriptInfo = {
+          isTypeScriptProject: true,
+          hasTypesCheck: false,
+          ...(await projectDetector.hasTypeScriptTypeChecking(config.projectRoot))
+        };
+      }
+
+      // Detect linter
+      linterInfo = await projectDetector.detectLinter(config.projectRoot);
+
+      // Detect formatter
+      formatterInfo = await projectDetector.detectFormatter(config.projectRoot);
+
+      // Detect commitlint
+      commitlintInfo = await projectDetector.hasCommitlint(config.projectRoot);
+    } catch (err) {
+      // Error in detection, continue without it
+      console.log('Error detecting project capabilities:', err.message);
+    }
+  }
+
   // Create list of available hooks for selection
   const choices = Object.entries(hooks).map(([id, hook]) => ({
     name: `${HOOK_DESCRIPTIONS[id]?.title || hook.name} - ${HOOK_DESCRIPTIONS[id]?.description || hook.description}`,
@@ -281,6 +342,43 @@ export async function setupHooks(config) {
     short: HOOK_DESCRIPTIONS[id]?.title || hook.name,
     checked: hook.isEnabled()
   }));
+
+  // Add code quality hooks if capabilities are detected
+  if (typeScriptInfo.isTypeScriptProject) {
+    choices.push({
+      name: `${HOOK_DESCRIPTIONS['type-check'].title} - ${HOOK_DESCRIPTIONS['type-check'].description}`,
+      value: 'type-check',
+      short: HOOK_DESCRIPTIONS['type-check'].title,
+      checked: false
+    });
+  }
+
+  if (linterInfo.linter) {
+    choices.push({
+      name: `${HOOK_DESCRIPTIONS['lint'].title} - ${HOOK_DESCRIPTIONS['lint'].description} (${linterInfo.linter})`,
+      value: 'lint',
+      short: HOOK_DESCRIPTIONS['lint'].title,
+      checked: false
+    });
+  }
+
+  if (formatterInfo.formatter) {
+    choices.push({
+      name: `${HOOK_DESCRIPTIONS['format'].title} - ${HOOK_DESCRIPTIONS['format'].description} (${formatterInfo.formatter})`,
+      value: 'format',
+      short: HOOK_DESCRIPTIONS['format'].title,
+      checked: false
+    });
+  }
+
+  if (commitlintInfo.hasCommitlint) {
+    choices.push({
+      name: `${HOOK_DESCRIPTIONS['commit-lint'].title} - ${HOOK_DESCRIPTIONS['commit-lint'].description}`,
+      value: 'commit-lint',
+      short: HOOK_DESCRIPTIONS['commit-lint'].title,
+      checked: false
+    });
+  }
   
   // Prompt user to select hooks
   const { selectedHooks } = await inquirer.prompt([
@@ -304,12 +402,25 @@ export async function setupHooks(config) {
   
   // Configure selected hooks
   for (const hookId of selectedHooks) {
+    // Handle code quality hooks separately
+    if (['type-check', 'lint', 'format', 'commit-lint'].includes(hookId)) {
+      await configureCodeQualityHook(hookId, {
+        ...config,
+        typeScriptInfo,
+        linterInfo,
+        formatterInfo,
+        commitlintInfo,
+        projectDetector
+      });
+      continue;
+    }
+
     const hook = registry.getHook(hookId);
     if (!hook) continue;
-    
+
     console.log(chalk.blue(`\nConfiguring ${hook.name}...\n`));
     console.log(chalk.gray(HOOK_DESCRIPTIONS[hookId]?.details || ''));
-    
+
     // Configure pre-commit hook
     if (hookId === 'pre-commit') {
       const { strictness, blockingMode, reviewTypes, blockOnSeverity } = await inquirer.prompt([
@@ -1201,6 +1312,264 @@ export async function setupHooks(config) {
 export async function removeHooks(config) {
   const registry = getHookRegistry(config);
   return registry.removeHooks();
+}
+
+/**
+ * Configure code quality hooks
+ * @param {string} hookId The hook ID ('type-check', 'lint', 'format', 'commit-lint')
+ * @param {Object} options Configuration options
+ * @returns {Promise<void>}
+ */
+async function configureCodeQualityHook(hookId, options) {
+  const {
+    projectRoot,
+    logger,
+    dryRun,
+    typeScriptInfo,
+    linterInfo,
+    formatterInfo,
+    commitlintInfo,
+    projectDetector
+  } = options;
+
+  console.log(chalk.blue(`\nConfiguring ${HOOK_DESCRIPTIONS[hookId].title}...\n`));
+  console.log(chalk.gray(HOOK_DESCRIPTIONS[hookId].details || ''));
+
+  try {
+    // Handle TypeScript type checking
+    if (hookId === 'type-check' && typeScriptInfo.isTypeScriptProject) {
+      let scriptName = typeScriptInfo.scriptName;
+
+      // If no script exists, offer to create one
+      if (!scriptName) {
+        const { shouldCreate } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'shouldCreate',
+            message: 'No TypeScript type checking script found. Would you like to create one?',
+            default: true
+          }
+        ]);
+
+        if (shouldCreate && projectDetector) {
+          const { scriptName: recommendedName, scriptCommand } =
+            await projectDetector.getRecommendedTypeCheckScript(projectRoot);
+
+          const added = await projectDetector.addNpmScript(projectRoot, recommendedName, scriptCommand);
+
+          if (added) {
+            console.log(chalk.green(`Added "${recommendedName}" script to package.json: "${scriptCommand}"`));
+            scriptName = recommendedName;
+          } else {
+            console.log(chalk.red('Failed to add type check script to package.json'));
+          }
+        }
+      }
+
+      if (scriptName) {
+        // Configure the pre-commit hook to run type checking
+        await configurePreCommitExtension('typeCheck', {
+          enabled: true,
+          scriptName
+        }, projectRoot, dryRun, logger);
+      }
+    }
+
+    // Handle linting
+    else if (hookId === 'lint' && linterInfo.linter) {
+      let scriptName = linterInfo.scriptName;
+
+      // If no script exists, offer to create one
+      if (!scriptName) {
+        const { shouldCreate } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'shouldCreate',
+            message: `No ${linterInfo.linter} script found. Would you like to create one?`,
+            default: true
+          }
+        ]);
+
+        if (shouldCreate && projectDetector) {
+          const { scriptName: recommendedName, scriptCommand } =
+            await projectDetector.getRecommendedLintScript(projectRoot, linterInfo.linter);
+
+          const added = await projectDetector.addNpmScript(projectRoot, recommendedName, scriptCommand);
+
+          if (added) {
+            console.log(chalk.green(`Added "${recommendedName}" script to package.json: "${scriptCommand}"`));
+            scriptName = recommendedName;
+          } else {
+            console.log(chalk.red(`Failed to add ${linterInfo.linter} script to package.json`));
+          }
+        }
+      }
+
+      if (scriptName) {
+        // Configure the pre-commit hook to run linting
+        await configurePreCommitExtension('linting', {
+          enabled: true,
+          linter: linterInfo.linter,
+          scriptName
+        }, projectRoot, dryRun, logger);
+      }
+    }
+
+    // Handle formatting
+    else if (hookId === 'format' && formatterInfo.formatter) {
+      let scriptName = formatterInfo.scriptName;
+
+      // If no script exists, offer to create one
+      if (!scriptName) {
+        const { shouldCreate } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'shouldCreate',
+            message: `No ${formatterInfo.formatter} script found. Would you like to create one?`,
+            default: true
+          }
+        ]);
+
+        if (shouldCreate && projectDetector) {
+          const { scriptName: recommendedName, scriptCommand } =
+            await projectDetector.getRecommendedFormatScript(projectRoot, formatterInfo.formatter);
+
+          const added = await projectDetector.addNpmScript(projectRoot, recommendedName, scriptCommand);
+
+          if (added) {
+            console.log(chalk.green(`Added "${recommendedName}" script to package.json: "${scriptCommand}"`));
+            scriptName = recommendedName;
+          } else {
+            console.log(chalk.red(`Failed to add ${formatterInfo.formatter} script to package.json`));
+          }
+        }
+      }
+
+      if (scriptName) {
+        // Configure the pre-commit hook to run formatting
+        await configurePreCommitExtension('formatting', {
+          enabled: true,
+          formatter: formatterInfo.formatter,
+          scriptName
+        }, projectRoot, dryRun, logger);
+      }
+    }
+
+    // Handle commitlint
+    else if (hookId === 'commit-lint' && commitlintInfo.hasCommitlint) {
+      // Configure the commit-msg hook to run commitlint
+      await configureCommitMsgExtension('commitlint', {
+        enabled: true
+      }, projectRoot, dryRun, logger);
+    }
+  } catch (err) {
+    console.log(chalk.red(`Error configuring ${hookId} hook: ${err.message}`));
+    if (logger) {
+      logger.error(`Error configuring ${hookId} hook: ${err.stack}`);
+    }
+  }
+}
+
+/**
+ * Configure pre-commit hook extension
+ * @param {string} extensionName Name of the extension ('typeCheck', 'linting', 'formatting')
+ * @param {Object} config Configuration object
+ * @param {string} projectRoot Project root directory
+ * @param {boolean} dryRun Whether to perform a dry run
+ * @param {Object} logger Logger instance
+ * @returns {Promise<boolean>} Whether the operation succeeded
+ */
+async function configurePreCommitExtension(extensionName, config, projectRoot, dryRun, logger) {
+  try {
+    // Get the pre-commit hook configuration file path
+    const hooksDir = path.join(projectRoot, '.claude', 'hooks');
+    const configFile = path.join(hooksDir, 'pre-commit.json');
+
+    // Create directory if it doesn't exist
+    if (!dryRun) {
+      await fs.ensureDir(hooksDir);
+    }
+
+    // Load existing configuration if available
+    let hookConfig = {};
+    try {
+      if (await fs.pathExists(configFile)) {
+        hookConfig = JSON.parse(await fs.readFile(configFile, 'utf8'));
+      }
+    } catch (err) {
+      console.log(chalk.yellow(`Could not read existing pre-commit configuration: ${err.message}`));
+    }
+
+    // Update configuration
+    hookConfig[extensionName] = config;
+
+    // Save configuration
+    if (!dryRun) {
+      await fs.writeFile(configFile, JSON.stringify(hookConfig, null, 2), 'utf8');
+      console.log(chalk.green(`Updated pre-commit hook configuration with ${extensionName} settings`));
+    } else {
+      console.log(chalk.blue(`[DRY RUN] Would update pre-commit hook configuration with ${extensionName} settings`));
+    }
+
+    return true;
+  } catch (err) {
+    console.log(chalk.red(`Failed to configure pre-commit ${extensionName}: ${err.message}`));
+    if (logger) {
+      logger.error(`Failed to configure pre-commit ${extensionName}: ${err.stack}`);
+    }
+    return false;
+  }
+}
+
+/**
+ * Configure commit-msg hook extension
+ * @param {string} extensionName Name of the extension ('commitlint')
+ * @param {Object} config Configuration object
+ * @param {string} projectRoot Project root directory
+ * @param {boolean} dryRun Whether to perform a dry run
+ * @param {Object} logger Logger instance
+ * @returns {Promise<boolean>} Whether the operation succeeded
+ */
+async function configureCommitMsgExtension(extensionName, config, projectRoot, dryRun, logger) {
+  try {
+    // Get the commit-msg hook configuration file path
+    const hooksDir = path.join(projectRoot, '.claude', 'hooks');
+    const configFile = path.join(hooksDir, 'commit-msg.json');
+
+    // Create directory if it doesn't exist
+    if (!dryRun) {
+      await fs.ensureDir(hooksDir);
+    }
+
+    // Load existing configuration if available
+    let hookConfig = {};
+    try {
+      if (await fs.pathExists(configFile)) {
+        hookConfig = JSON.parse(await fs.readFile(configFile, 'utf8'));
+      }
+    } catch (err) {
+      console.log(chalk.yellow(`Could not read existing commit-msg configuration: ${err.message}`));
+    }
+
+    // Update configuration
+    hookConfig[extensionName] = config;
+
+    // Save configuration
+    if (!dryRun) {
+      await fs.writeFile(configFile, JSON.stringify(hookConfig, null, 2), 'utf8');
+      console.log(chalk.green(`Updated commit-msg hook configuration with ${extensionName} settings`));
+    } else {
+      console.log(chalk.blue(`[DRY RUN] Would update commit-msg hook configuration with ${extensionName} settings`));
+    }
+
+    return true;
+  } catch (err) {
+    console.log(chalk.red(`Failed to configure commit-msg ${extensionName}: ${err.message}`));
+    if (logger) {
+      logger.error(`Failed to configure commit-msg ${extensionName}: ${err.stack}`);
+    }
+    return false;
+  }
 }
 
 export default {

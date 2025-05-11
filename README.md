@@ -138,14 +138,14 @@ npx ai-coding-assistants-setup
 
 ```bash
 npm install -g ai-coding-assistants-setup
-ai-assistant-setup
+ai-coding-assistants-setup
 ```
 
 ### Local Project Installation
 
 ```bash
 npm install --save-dev ai-coding-assistants-setup
-npx ai-assistant-setup
+npx ai-coding-assistants-setup
 ```
 
 ## 📋 Usage

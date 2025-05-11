@@ -4,7 +4,7 @@
   "description": "Setup script for AI coding assistants like Claude Code and Roo Code",
   "main": "index.js",
   "bin": {
-    "ai-assistant-setup": "./index.js",
+    "ai-coding-assistants-setup": "./index.js",
     "claude-hook-runner": "./src/hooks/hook-runner.js",
     "claude-diff-explain": "./bin/claude-diff-explain"
   },

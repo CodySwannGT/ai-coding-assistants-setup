@@ -7,7 +7,7 @@
 
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { getHookRegistry, initializeHooks, setupHooks } from './index.js';
+import { getHookRegistry as _getHookRegistry, initializeHooks, setupHooks } from './index.js';
 import { applyHookTemplate } from './config-manager.js';
 import { isClaudeCliAvailable } from '../integrations/claude-cli.js';
 import projectDetector from '../utils/project-detector.js';
@@ -45,7 +45,7 @@ export async function runEnhancedSetupWizard({
   }
   
   // Initialize hooks registry
-  const registry = await initializeHooks({
+  const _registry = await initializeHooks({
     projectRoot,
     logger,
     dryRun

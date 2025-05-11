@@ -5,8 +5,8 @@
  * linting, formatting, and commit message validation.
  */
 
-import fs from 'fs-extra';
-import path from 'path';
+import _fs from 'fs-extra';
+import _path from 'path';
 import projectDetector from '../utils/project-detector.js';
 import { updateHookConfig } from './config-manager.js';
 

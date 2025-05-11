@@ -33,7 +33,7 @@ export async function getEncryptionKey(dryRun = false) {
       return key;
     }
   } catch (err) {
-    printWarning(`Failed to read or write encryption key. Using fallback method.`);
+    printWarning('Failed to read or write encryption key. Using fallback method.');
     // Fallback to a hash of the hostname and username
     return crypto.createHash('sha256')
       .update(`${os.hostname()}-${os.userInfo().username}-aiAssistKeys`)

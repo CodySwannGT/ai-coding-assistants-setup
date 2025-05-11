@@ -143,8 +143,8 @@ ${copilotInstalled ? `
 ## GitHub Copilot Compatibility
 This project is configured to ${vscodeSettings?.['github.copilot.enable'] === false ? 'disable' : 'work alongside'} GitHub Copilot.
 ${vscodeSettings?.['github.copilot.enable'] === false ?
-  'Copilot has been disabled for this workspace to avoid conflicts with Claude and Roo.' :
-  'Copilot and Claude/Roo are both active; be aware of potential conflicts with inline suggestions.'}
+    'Copilot has been disabled for this workspace to avoid conflicts with Claude and Roo.' :
+    'Copilot and Claude/Roo are both active; be aware of potential conflicts with inline suggestions.'}
 ` : ''}`;
 
   await writeTextFile(claudeMdPath, claudeMdContent, dryRun);
@@ -251,15 +251,15 @@ export async function setupClaudeCode(options) {
     projectRoot: projectRoot,
     memoryLimit: parseInt(memoryLimit, 10),
     ignoredPatterns: [
-      "node_modules/**",
-      "dist/**",
-      "build/**",
-      ".git/**",
-      ".env",
-      "*.log",
-      "*.lock",
-      ".next/**",
-      "coverage/**"
+      'node_modules/**',
+      'dist/**',
+      'build/**',
+      '.git/**',
+      '.env',
+      '*.log',
+      '*.lock',
+      '.next/**',
+      'coverage/**'
     ],
     mcpPreferences: {
       useMcpWhenAvailable: true,

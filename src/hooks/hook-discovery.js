@@ -154,7 +154,7 @@ export async function discoverPluginHooks(projectRoot, logger) {
     };
     
     // Find hooks from plugins (packages with claude-hook in their name)
-    for (const [name, version] of Object.entries(allDependencies)) {
+    for (const [name, _version] of Object.entries(allDependencies)) {
       if (name.includes('claude-hook') || name.includes('claude-git-hook')) {
         try {
           // Try to import the package to check if it exports hooks

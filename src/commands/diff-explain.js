@@ -8,7 +8,7 @@
  */
 
 import { program } from 'commander';
-import chalk from 'chalk';
+import _chalk from 'chalk';
 import { explainDiff } from '../integrations/diff-explain.js';
 import { printHeader, printInfo, printError } from '../utils/logger.js';
 

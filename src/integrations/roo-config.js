@@ -214,7 +214,7 @@ export async function setupRooCode(options) {
  * @returns {Promise<void>}
  */
 export async function setupRooRules(options) {
-  const { projectRoot, rooRulesDir, dryRun = false } = options;
+  const { _projectRoot, rooRulesDir, dryRun = false } = options;
   
   // Project coding standards
   const codingStandards = `# Coding Standards
@@ -337,13 +337,13 @@ export async function setupRooMcp(options) {
 
     // Special handling for memory server to use compact args format
     if (key === 'memory' && Array.isArray(server.args)) {
-      rooMcpConfig.mcpServers[key].args = ["-y", "mcp-knowledge-graph", "--memory-path", "${MEMORY_PATH}"];
+      rooMcpConfig.mcpServers[key].args = ['-y', 'mcp-knowledge-graph', '--memory-path', '${MEMORY_PATH}'];
     }
 
     // Ensure GitHub has proper env structure
     if (key === 'github') {
       rooMcpConfig.mcpServers[key].env = {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+        'GITHUB_PERSONAL_ACCESS_TOKEN': '${GITHUB_PERSONAL_ACCESS_TOKEN}'
       };
     }
   });
@@ -368,7 +368,7 @@ export async function setupRooModes(options) {
     dryRun = false, 
     nonInteractive = false,
     checkbox = async () => [],
-    confirm = async () => true
+    _confirm = async () => true
   } = options;
   
   const roomodesPath = path.join(projectRoot, '.roomodes');
@@ -385,53 +385,53 @@ export async function setupRooModes(options) {
       name: '🏗️ Architect (System design and architecture)',
       value: 'architect',
       config: {
-        slug: "architect",
-        name: "🏗️ Architect",
-        roleDefinition: "You are an expert software architect specializing in designing scalable, maintainable systems. You excel at creating clear architectural diagrams, defining interfaces, and planning project structure.",
-        groups: ["read", "edit", "command"],
-        customInstructions: "Focus on modular design principles, separation of concerns, and clear documentation of interfaces between components."
+        slug: 'architect',
+        name: '🏗️ Architect',
+        roleDefinition: 'You are an expert software architect specializing in designing scalable, maintainable systems. You excel at creating clear architectural diagrams, defining interfaces, and planning project structure.',
+        groups: ['read', 'edit', 'command'],
+        customInstructions: 'Focus on modular design principles, separation of concerns, and clear documentation of interfaces between components.'
       }
     },
     { 
       name: '🧪 TDD Developer (Test-driven development)',
       value: 'tdd',
       config: {
-        slug: "tdd",
-        name: "🧪 TDD Developer",
-        roleDefinition: "You are a test-driven development specialist who follows a strict red-green-refactor workflow. You always write tests before implementation code.",
+        slug: 'tdd',
+        name: '🧪 TDD Developer',
+        roleDefinition: 'You are a test-driven development specialist who follows a strict red-green-refactor workflow. You always write tests before implementation code.',
         groups: [
-          "read", 
-          ["edit", { 
-            fileRegex: "\\.(test|spec)\\.(js|ts|jsx|tsx)$", 
-            description: "Test files only" 
+          'read', 
+          ['edit', { 
+            fileRegex: '\\.(test|spec)\\.(js|ts|jsx|tsx)$', 
+            description: 'Test files only' 
           }]
         ],
-        customInstructions: "Follow the TDD workflow: 1) Write a failing test, 2) Write minimal code to make the test pass, 3) Refactor while keeping tests green. Never write implementation before tests."
+        customInstructions: 'Follow the TDD workflow: 1) Write a failing test, 2) Write minimal code to make the test pass, 3) Refactor while keeping tests green. Never write implementation before tests.'
       }
     },
     { 
       name: '🔒 Security Reviewer (Security audits)',
       value: 'security',
       config: {
-        slug: "security",
-        name: "🔒 Security Reviewer",
-        roleDefinition: "You are a cybersecurity expert specializing in code review for security vulnerabilities. You analyze code for potential security issues and suggest secure alternatives.",
-        groups: ["read"],
-        customInstructions: "Focus on identifying: 1) Injection vulnerabilities, 2) Authentication flaws, 3) Sensitive data exposure, 4) Cross-site scripting (XSS), 5) Insecure dependencies, 6) Hard-coded credentials."
+        slug: 'security',
+        name: '🔒 Security Reviewer',
+        roleDefinition: 'You are a cybersecurity expert specializing in code review for security vulnerabilities. You analyze code for potential security issues and suggest secure alternatives.',
+        groups: ['read'],
+        customInstructions: 'Focus on identifying: 1) Injection vulnerabilities, 2) Authentication flaws, 3) Sensitive data exposure, 4) Cross-site scripting (XSS), 5) Insecure dependencies, 6) Hard-coded credentials.'
       }
     },
     { 
       name: '📝 Documentation Writer (Creating documentation)',
       value: 'docs',
       config: {
-        slug: "docs",
-        name: "📝 Documentation Writer",
-        roleDefinition: "You are a technical writer who specializes in creating clear, comprehensive documentation for developers and users.",
+        slug: 'docs',
+        name: '📝 Documentation Writer',
+        roleDefinition: 'You are a technical writer who specializes in creating clear, comprehensive documentation for developers and users.',
         groups: [
-          "read",
-          ["edit", { 
-            fileRegex: "\\.(md|txt|mdx)$", 
-            description: "Documentation files only" 
+          'read',
+          ['edit', { 
+            fileRegex: '\\.(md|txt|mdx)$', 
+            description: 'Documentation files only' 
           }]
         ],
         customInstructions: "Create documentation that is: 1) Clear and concise, 2) Well-structured with headings, 3) Includes examples, 4) Explains both 'how' and 'why', 5) Uses consistent terminology."
@@ -441,33 +441,33 @@ export async function setupRooModes(options) {
       name: '📊 Data Analyst (Data processing and visualization)',
       value: 'data',
       config: {
-        slug: "data",
-        name: "📊 Data Analyst",
-        roleDefinition: "You are a data analyst specializing in processing, analyzing, and visualizing data to extract meaningful insights.",
-        groups: ["read", "edit", "command"],
-        customInstructions: "Focus on: 1) Data cleaning and preparation, 2) Statistical analysis, 3) Data visualization, 4) Interpreting results, 5) Communicating insights clearly."
+        slug: 'data',
+        name: '📊 Data Analyst',
+        roleDefinition: 'You are a data analyst specializing in processing, analyzing, and visualizing data to extract meaningful insights.',
+        groups: ['read', 'edit', 'command'],
+        customInstructions: 'Focus on: 1) Data cleaning and preparation, 2) Statistical analysis, 3) Data visualization, 4) Interpreting results, 5) Communicating insights clearly.'
       }
     },
     { 
       name: '🚀 DevOps Engineer (Infrastructure and deployment)',
       value: 'devops',
       config: {
-        slug: "devops",
-        name: "🚀 DevOps Engineer",
-        roleDefinition: "You are a DevOps engineer specializing in infrastructure, CI/CD pipelines, and deployment automation.",
-        groups: ["read", "edit", "command"],
-        customInstructions: "Focus on: 1) Infrastructure as code, 2) CI/CD pipeline optimization, 3) Containerization, 4) Security best practices, 5) Monitoring and observability."
+        slug: 'devops',
+        name: '🚀 DevOps Engineer',
+        roleDefinition: 'You are a DevOps engineer specializing in infrastructure, CI/CD pipelines, and deployment automation.',
+        groups: ['read', 'edit', 'command'],
+        customInstructions: 'Focus on: 1) Infrastructure as code, 2) CI/CD pipeline optimization, 3) Containerization, 4) Security best practices, 5) Monitoring and observability.'
       }
     },
     { 
       name: '🔍 Code Reviewer (Code quality and standards)',
       value: 'reviewer',
       config: {
-        slug: "reviewer",
-        name: "🔍 Code Reviewer",
-        roleDefinition: "You are a meticulous code reviewer focused on maintaining high code quality, consistency, and adherence to best practices.",
-        groups: ["read"],
-        customInstructions: "Focus on: 1) Code quality and readability, 2) Design patterns and architecture, 3) Performance considerations, 4) Potential bugs or edge cases, 5) Adherence to project standards."
+        slug: 'reviewer',
+        name: '🔍 Code Reviewer',
+        roleDefinition: 'You are a meticulous code reviewer focused on maintaining high code quality, consistency, and adherence to best practices.',
+        groups: ['read'],
+        customInstructions: 'Focus on: 1) Code quality and readability, 2) Design patterns and architecture, 3) Performance considerations, 4) Potential bugs or edge cases, 5) Adherence to project standards.'
       }
     }
   ];

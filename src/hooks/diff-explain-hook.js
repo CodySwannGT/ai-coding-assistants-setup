@@ -7,7 +7,7 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import chalk from 'chalk';
+import _chalk from 'chalk';
 import { BaseHook } from './base-hook.js';
 
 class DiffExplainHook extends BaseHook {
@@ -49,7 +49,7 @@ exit 0
    */
   async setup() {
     if (!this.enabled) {
-      this.debug(`Diff-explain feature is disabled, skipping setup`);
+      this.debug('Diff-explain feature is disabled, skipping setup');
       return false;
     }
 
@@ -82,8 +82,8 @@ exit 0
       
       await fs.writeJson(configPath, config, { spaces: 2 });
       
-      this.success(`AI-Enhanced Git Diff Explanation feature set up successfully`);
-      this.info(`You can now use the \`diff-explain\` command to get AI-enhanced git diff explanations.`);
+      this.success('AI-Enhanced Git Diff Explanation feature set up successfully');
+      this.info('You can now use the `diff-explain` command to get AI-enhanced git diff explanations.');
       this.info(`Configuration file saved at: ${configPath}`);
       
       return true;

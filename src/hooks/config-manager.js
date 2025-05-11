@@ -97,7 +97,7 @@ export async function getHookConfigById({ projectRoot, hookId, logger }) {
  * @returns {Promise<Object>} Hook registry with applied configuration
  */
 export async function applyHookConfig({ projectRoot, logger }) {
-  const config = await getHookConfig({ projectRoot, logger });
+  const _config = await getHookConfig({ projectRoot, logger });
   const registry = getHookRegistry({ projectRoot, logger });
   
   await registry.loadConfig();

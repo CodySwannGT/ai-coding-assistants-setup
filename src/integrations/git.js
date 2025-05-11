@@ -7,10 +7,10 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { execSync } from 'child_process';
-import { 
-  fileExists, 
-  safeReadTextFile, 
-  writeTextFile 
+import {
+  fileExists,
+  // safeReadTextFile is unused,
+  writeTextFile
 } from '../utils/file.js';
 import { 
   printHeader, 
@@ -352,9 +352,9 @@ tasks/task_*.txt
 `;
   
   // Make sure .env.example is not ignored
-  if (gitignoreContent.includes(".env.example")) {
-    gitignoreContent = gitignoreContent.replace(/^\.env\.example$/gm, "");
-    gitignoreContent = gitignoreContent.replace(/^\.env\.\*$/gm, ".env\n!.env.example");
+  if (gitignoreContent.includes('.env.example')) {
+    gitignoreContent = gitignoreContent.replace(/^\.env\.example$/gm, '');
+    gitignoreContent = gitignoreContent.replace(/^\.env\.\*$/gm, '.env\n!.env.example');
   }
 
   // Check if we need to append the patterns or if they already exist

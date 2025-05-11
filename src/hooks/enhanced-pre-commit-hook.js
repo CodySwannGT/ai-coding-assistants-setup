@@ -6,7 +6,7 @@
  * using Claude to review staged changes.
  */
 
-import fs from 'fs-extra';
+import _fs from 'fs-extra';
 import path from 'path';
 import { spawn } from 'child_process';
 import chalk from 'chalk';
@@ -128,7 +128,7 @@ exit $?
    * @param {Object} context Hook execution context
    * @param {Function} next Next middleware function
    */
-  async beforeExecutionMiddleware(context, next) {
+  async beforeExecutionMiddleware(context, _next) {
     this.info('Preparing to run pre-commit checks...');
     
     // Get staged files
@@ -159,7 +159,7 @@ exit $?
    * @param {Object} context Hook execution context
    * @param {Function} next Next middleware function
    */
-  async executionMiddleware(context, next) {
+  async executionMiddleware(context, _next) {
     // Skip if we already have a result (e.g., due to early exit in before execution)
     if (context.result) {
       return; // Skip to next middleware
@@ -227,7 +227,7 @@ exit $?
    * @param {Object} context Hook execution context
    * @param {Function} next Next middleware function
    */
-  async afterExecutionMiddleware(context, next) {
+  async afterExecutionMiddleware(context, _next) {
     // Output check results
     this.outputCheckResults(context.results);
     
@@ -259,7 +259,7 @@ exit $?
    * @param {Object} context Hook execution context
    * @param {Function} next Next middleware function
    */
-  async errorMiddleware(context, next) {
+  async errorMiddleware(context, _next) {
     this.error(`Error in ${this.name} hook: ${context.error?.message || 'Unknown error'}`);
     
     // Emit error event

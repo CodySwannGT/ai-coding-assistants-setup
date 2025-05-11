@@ -167,7 +167,7 @@ export async function uninstall(options) {
         try {
           // Read settings
           const settings = await fs.readJson(vscodeSettingsPath);
-          const originalSettings = { ...settings };
+          const _originalSettings = { ...settings };
           
           // Remove AI assistant settings
           for (const key of Object.keys(settings)) {
@@ -196,7 +196,7 @@ export async function uninstall(options) {
         try {
           // Read extensions
           const extensions = await fs.readJson(extensionsPath);
-          const originalExtensions = { ...extensions };
+          const _originalExtensions = { ...extensions };
           let changed = false;
           
           // Remove AI assistant extensions from recommendations

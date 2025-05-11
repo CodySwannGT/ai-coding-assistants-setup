@@ -85,12 +85,12 @@ export async function setupMcpConfig(options) {
   }
   
   // Get repository info if github is selected
-  let github = {};
+  // let github = {}; - unused
   if (selectedServers.includes('github')) {
     const repoInfo = await detectGitHubRepository(projectRoot);
     
     if (repoInfo.usesGithub) {
-      github = {
+      const _github = {
         owner: repoInfo.owner,
         repo: repoInfo.repo,
         branch: repoInfo.branch
@@ -109,13 +109,13 @@ export async function setupMcpConfig(options) {
           default: 'repo'
         });
         
-        github = {
+        const _github = {
           owner,
           repo,
           branch: 'main'
         };
       } else {
-        github = {
+        const _github = {
           owner: 'owner',
           repo: 'repo',
           branch: 'main'

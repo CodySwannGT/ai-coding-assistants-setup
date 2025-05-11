@@ -4,8 +4,8 @@
  * Provides schema validation for MCP server configurations.
  */
 
-import fs from 'fs-extra';
-import path from 'path';
+import _fs from 'fs-extra';
+import _path from 'path';
 import Ajv from 'ajv';
 import configSchema from './config-schema.json';
 import { printWarning } from '../utils/logger.js';

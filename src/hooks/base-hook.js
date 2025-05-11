@@ -7,7 +7,7 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import os from 'os';
+import _os from 'os';
 import chalk from 'chalk';
 import { execSync } from 'child_process';
 
@@ -559,10 +559,10 @@ exit 0
 
   /**
    * Execute the hook logic
-   * @param {Array<string>} args Command-line arguments
+   * @param {Array<string>} _args Command-line arguments
    * @returns {Promise<void>} Promise that resolves when the hook execution is complete
    */
-  async execute(args) {
+  async execute(_args) {
     throw new Error('Hook.execute() must be implemented by subclasses');
   }
 

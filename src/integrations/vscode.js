@@ -6,11 +6,9 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import { 
-  getVSCodeUserConfigPath, 
-  getVSCodeExtensionsPath,
-  isMac, 
-  isWindows 
+import {
+  getVSCodeUserConfigPath,
+  getVSCodeExtensionsPath
 } from '../config/paths.js';
 import { 
   fileExists, 
@@ -121,7 +119,7 @@ export async function setupVSCodeSettings(options) {
     projectRoot, 
     dryRun = false, 
     nonInteractive = false, 
-    forceOverwrite = false,
+    // forceOverwrite is unused
     confirm = async () => true
   } = options;
 

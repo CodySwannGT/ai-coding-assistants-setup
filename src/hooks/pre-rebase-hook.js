@@ -644,7 +644,7 @@ Focus on concrete, specific issues rather than general warnings. If there are no
 
       // If we can't parse JSON, just extract issues and summary using regex
       const issues = [];
-      const issueMatches = analysisText.matchAll(/severity[\"'\s:]+([^"'\s,]+)[\"'\s,]+description[\"'\s:]+([^"]+?)["']/g);
+      const issueMatches = analysisText.matchAll(/severity["'\s:]+([^"'\s,]+)["'\s,]+description["'\s:]+([^"]+?)["']/g);
 
       for (const match of issueMatches) {
         issues.push({
@@ -653,7 +653,7 @@ Focus on concrete, specific issues rather than general warnings. If there are no
         });
       }
 
-      const summaryMatch = analysisText.match(/summary[\"'\s:]+([^"]+?)[\"']/);
+      const summaryMatch = analysisText.match(/summary["'\s:]+([^"]+?)["']/);
       const summary = summaryMatch ? summaryMatch[1].trim() : 'Analysis completed, but format could not be parsed properly.';
 
       return {

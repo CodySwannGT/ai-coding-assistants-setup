@@ -7,7 +7,7 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import os from 'os';
+import _os from 'os';
 import chalk from 'chalk';
 import { execSync } from 'child_process';
 import EventEmitter from 'events';

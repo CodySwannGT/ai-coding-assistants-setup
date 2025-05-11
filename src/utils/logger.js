@@ -19,7 +19,7 @@ let logger;
  * @returns {winston.Logger} Logger instance
  */
 export function initLogger(options = {}) {
-  const { logsPath, dryRun = false, verbose = 1 } = options;
+  const { logsPath, dryRun = false, _verbose = 1 } = options;
   
   // Create logger
   logger = winston.createLogger({

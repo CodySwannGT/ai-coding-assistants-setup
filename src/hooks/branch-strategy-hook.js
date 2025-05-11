@@ -7,7 +7,7 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import chalk from 'chalk';
+import _chalk from 'chalk';
 import { BaseHook } from './base-hook.js';
 
 class BranchStrategyHook extends BaseHook {
@@ -365,7 +365,7 @@ exit 0
     else if (this.strategyType === 'trunk') {
       // Trunk-based development typically uses short-lived feature branches
       if (!branch.startsWith('feature/') && !branch.startsWith('fix/') && !branch.startsWith('chore/')) {
-        violations.push(`Branch name should start with feature/, fix/, or chore/`);
+        violations.push('Branch name should start with feature/, fix/, or chore/');
       }
       
       // Check if branch name includes the developer's username
@@ -378,7 +378,7 @@ exit 0
     else if (this.strategyType === 'github-flow') {
       // GitHub Flow typically uses descriptive branch names
       if (branch.split('/').length < 2) {
-        violations.push(`Branch name should be descriptive and include a category (e.g., feature/add-login)`);
+        violations.push('Branch name should be descriptive and include a category (e.g., feature/add-login)');
       }
     }
     // Custom strategy - apply custom naming rules
@@ -419,7 +419,7 @@ exit 0
       if (branch.startsWith(this.branchPrefixes.release)) {
         const targetBranch = await this.getPushTargetBranch(branch, remote);
         if (targetBranch !== 'main' && targetBranch !== 'master' && targetBranch !== 'develop') {
-          violations.push(`Release branches should only merge into main/master or develop`);
+          violations.push('Release branches should only merge into main/master or develop');
         }
       }
       
@@ -427,7 +427,7 @@ exit 0
       if (branch.startsWith(this.branchPrefixes.hotfix)) {
         const targetBranch = await this.getPushTargetBranch(branch, remote);
         if (targetBranch !== 'main' && targetBranch !== 'master' && targetBranch !== 'develop') {
-          violations.push(`Hotfix branches should only merge into main/master or develop`);
+          violations.push('Hotfix branches should only merge into main/master or develop');
         }
       }
     }
@@ -491,7 +491,7 @@ exit 0
    * @param {string} remote Remote name
    * @returns {Promise<Array<string>>} List of custom rule violations
    */
-  async applyCustomRules(branch, remote) {
+  async applyCustomRules(branch, _remote) {
     const violations = [];
     
     // Ignore custom rules for standard strategies
@@ -565,7 +565,7 @@ exit 0
     if (!this.claudeApiKey) {
       return {
         valid: true,
-        message: "Claude AI validation skipped - no API key found",
+        message: 'Claude AI validation skipped - no API key found',
         issues: [],
         suggestion: null,
         severity: 'low'
@@ -730,7 +730,7 @@ If there are no issues, return an empty array for issues and null for suggestion
    * @param {string} branch Branch name
    * @returns {Promise<Array<string>>} List of allowed users
    */
-  async getAllowedUsers(branch) {
+  async getAllowedUsers(_branch) {
     // This would normally come from a configuration file or API
     // For now, return an empty array to allow all users
     return [];
@@ -741,7 +741,7 @@ If there are no issues, return an empty array for issues and null for suggestion
    * @param {string} branch Branch name
    * @returns {Promise<boolean>} Whether branch has a code review
    */
-  async hasCodeReview(branch) {
+  async hasCodeReview(_branch) {
     // This would be implemented by checking PRs or a code review system
     // For now, return true to skip this check
     return true;
@@ -763,7 +763,7 @@ If there are no issues, return an empty array for issues and null for suggestion
    * @param {string} remote Remote name
    * @returns {Promise<string|null>} Target branch name
    */
-  async getPushTargetBranch(branch, remote) {
+  async getPushTargetBranch(branch, _remote) {
     try {
       // Get the configured push target
       const pushCmd = `git config --get branch.${branch}.merge`;

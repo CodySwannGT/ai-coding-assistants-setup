@@ -18,7 +18,7 @@ import { HookSchemas, validateConfig, applyDefaults } from './hook-config.js';
  * @param {string} id Hook ID
  * @returns {Object} Enhanced hook wrapper
  */
-export function createEnhancedWrapper(legacyHook, id) {
+export function createEnhancedWrapper(legacyHook, _id) {
   // Create an enhanced hook that delegates to the legacy hook
   const enhancedHook = new EnhancedBaseHook({
     name: legacyHook.name,
@@ -49,7 +49,7 @@ export function createEnhancedWrapper(legacyHook, id) {
   enhancedHook.disable = () => { legacyHook.disable(); };
   
   // Override execute to call legacy hook execute
-  const originalExecute = enhancedHook.execute.bind(enhancedHook);
+  const _originalExecute = enhancedHook.execute.bind(enhancedHook);
   enhancedHook.execute = async (args) => {
     // Create context for middleware
     const context = {

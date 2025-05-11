@@ -79,7 +79,7 @@ exit $?
    * @param {Array<string>} args Command-line arguments
    * @returns {Promise<void>}
    */
-  async execute(args) {
+  async execute(_args) {
     this.info('Executing test-first development hook...');
     
     try {
@@ -244,9 +244,9 @@ exit $?
    */
   findTestFiles(sourceFile) {
     const testFiles = [];
-    const dirName = path.dirname(sourceFile);
-    const baseName = path.basename(sourceFile, path.extname(sourceFile));
-    const ext = path.extname(sourceFile);
+    const _dirName = path.dirname(sourceFile);
+    const _baseName = path.basename(sourceFile, path.extname(sourceFile));
+    const _ext = path.extname(sourceFile);
     
     // Generate possible test file paths
     const possibleTestPaths = this.suggestTestPaths(sourceFile);
@@ -284,7 +284,7 @@ exit $?
         testPaths.push(testPath);
       } else if (testPath.includes('/')) {
         // Path contains directories, join with dirname
-        const testDir = testPath.substring(0, testPath.lastIndexOf('/'));
+        const _testDir = testPath.substring(0, testPath.lastIndexOf('/'));
         const testFile = testPath.substring(testPath.lastIndexOf('/') + 1);
         
         if (dirName === '.') {
@@ -383,7 +383,7 @@ exit $?
    */
   createTestSuggestionPrompt(sourceFile, fileContent, framework) {
     const fileExt = path.extname(sourceFile);
-    const fileName = path.basename(sourceFile);
+    const _fileName = path.basename(sourceFile);
     const testPaths = this.suggestTestPaths(sourceFile);
     
     return `You are an expert test engineer. I need your help writing tests for a source file following test-first development principles.
@@ -447,25 +447,25 @@ Format your response as a JSON object with the following structure:
         return {
           testContent: codeMatch[1],
           testCases: [],
-          coverage: "unknown",
-          frameworkUsed: "unknown"
+          coverage: 'unknown',
+          frameworkUsed: 'unknown'
         };
       }
       
       // If nothing can be parsed, return a basic structure
       return {
-        testContent: "// Could not parse test suggestion from Claude",
+        testContent: '// Could not parse test suggestion from Claude',
         testCases: [],
-        coverage: "unknown",
-        frameworkUsed: "unknown"
+        coverage: 'unknown',
+        frameworkUsed: 'unknown'
       };
     } catch (err) {
       this.error(`Failed to parse test suggestion: ${err.message}`);
       return {
-        testContent: "// Error parsing test suggestion",
+        testContent: '// Error parsing test suggestion',
         testCases: [],
-        coverage: "unknown",
-        frameworkUsed: "unknown"
+        coverage: 'unknown',
+        frameworkUsed: 'unknown'
       };
     }
   }

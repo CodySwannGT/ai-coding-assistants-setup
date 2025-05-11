@@ -79,6 +79,12 @@ npx ai-coding-assistants-setup --force
 
 # Set verbosity level (0-3)
 npx ai-coding-assistants-setup --verbose=2
+
+# Uninstall/Removal options
+npx ai-coding-assistants-setup --list-files              # List all AI assistant files without removing
+npx ai-coding-assistants-setup --remove --dry-run        # Show what would be removed (no actual changes)
+npx ai-coding-assistants-setup --remove                  # Remove AI assistant configuration files
+npx ai-coding-assistants-setup --remove-all              # Remove config files + VS Code settings
 ```
 
 ### Setup Options
@@ -90,6 +96,7 @@ The script provides several setup options:
 - **Update Configuration**: Update existing configurations
 - **MCP Servers Only**: Configure only the MCP server integration
 - **VS Code Settings**: Update only VS Code editor settings
+- **Uninstall**: Remove AI assistant configurations
 
 ## ⚙️ Configuration
 
@@ -267,6 +274,62 @@ The script helps you set up specialized AI roles for different tasks:
   ]
 }
 ```
+
+## 🧹 Uninstalling
+
+The script provides comprehensive uninstall functionality to completely remove all AI assistant configurations when needed.
+
+### Listing AI Assistant Files
+
+To see what files would be affected without making any changes:
+
+```bash
+npx ai-coding-assistants-setup --list-files
+```
+
+This will display all AI assistant-related files and directories in your project.
+
+### Dry Run Uninstall
+
+To perform a dry run that shows what would be removed without actually removing anything:
+
+```bash
+npx ai-coding-assistants-setup --remove --dry-run
+```
+
+This is useful to preview the impact before committing to removal.
+
+### Standard Uninstall
+
+To remove all AI assistant configuration files:
+
+```bash
+npx ai-coding-assistants-setup --remove
+```
+
+This removes:
+- `.claude/` directory and related files
+- `.roo/` directory and related files
+- `.mcp.json` and `.mcp.json.local` files
+- `CLAUDE.md` file
+- `.roomodes` file
+- AI-related environment variables in `.env`
+- Git hooks added by the script
+
+Note: VS Code settings related to AI assistants are preserved by default.
+
+### Complete Uninstall
+
+To remove all AI assistant files including VS Code settings:
+
+```bash
+npx ai-coding-assistants-setup --remove-all
+```
+
+This performs a standard uninstall plus:
+- Removes AI assistant settings from VS Code settings.json
+- Removes AI assistant extensions from recommendations
+- Removes GitHub Copilot from unwanted recommendations
 
 ## ❓ Frequently Asked Questions
 

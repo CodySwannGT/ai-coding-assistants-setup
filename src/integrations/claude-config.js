@@ -64,9 +64,11 @@ This is a ${projectType} project.
 Always check for available MCP tools before attempting to solve a problem directly.
 Prioritize using MCP tools when they can help with a task - they provide enhanced
 capabilities beyond your base functionality.
+@/.roo/rules/03-mcp-tools.md to ./CLAUDE.md
 
 ## Key Files
 @/package.json to ./CLAUDE.md
+@/README.md to ./CLAUDE.md
 ${await fileExists(path.join(projectRoot, 'tsconfig.json')) ? '@/tsconfig.json to ./CLAUDE.md' : ''}
 ${isMonorepoProject && await fileExists(path.join(projectRoot, 'turbo.json')) ? '@/turbo.json to ./CLAUDE.md' : ''}
 

@@ -11,7 +11,7 @@
 
 **Seamless setup of Claude Code and Roo Code AI assistants for JavaScript projects**
 
-[Features](#key-features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [How It Works](#how-it-works) • [Tool Comparison](./docs/ai-tools-comparison.md) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
+[Features](#key-features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [How It Works](#how-it-works) • [Tool Comparison](./docs/ai-tools-comparison.md) • [MCP Reference](./docs/mcp-reference.md) • [FAQs](#frequently-asked-questions) • [Contributing](#contributing)
 
 </div>
 
@@ -266,6 +266,10 @@ tasks/task_*.txt
 ```
 
 This prevents cluttering your repository with individual task files while still allowing you to track the main task configuration file (`tasks.json`) for project structure and task organization.
+
+### MCP Server Documentation
+
+For a comprehensive reference of all supported MCP servers including their purpose, configuration requirements, API key needs, rate limits, and example usage, please see our [MCP Reference Documentation](./docs/mcp-reference.md).
 
 ### Global MCP Servers
 

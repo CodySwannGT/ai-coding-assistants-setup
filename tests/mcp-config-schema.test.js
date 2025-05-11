@@ -2,8 +2,24 @@
  * Tests for MCP configuration schema validation
  */
 import { jest } from '@jest/globals';
-import fs from 'fs-extra';
 import path from 'path';
+
+// Mock dependencies
+jest.mock('fs-extra', () => ({
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+  writeFileSync: jest.fn()
+}));
+
+jest.mock('../src/utils/logger.js', () => ({
+  printInfo: jest.fn(),
+  printSuccess: jest.fn(),
+  printError: jest.fn(),
+  printWarning: jest.fn()
+}));
+
+// Import after mocking
+import fs from 'fs-extra';
 
 // Modules to test
 import { 
@@ -12,23 +28,10 @@ import {
   getDefaultCommandShellMcpConfig 
 } from '../src/config/mcp-config-schema.js';
 
-// Mock dependencies
-jest.mock('fs-extra');
-jest.mock('../src/utils/logger.js', () => ({
-  printInfo: jest.fn(),
-  printSuccess: jest.fn(),
-  printError: jest.fn(),
-  printWarning: jest.fn()
-}));
-
 describe('MCP Config Schema', () => {
   beforeEach(() => {
     // Reset mocks before each test
     jest.clearAllMocks();
-    
-    // Setup default mock implementations
-    fs.existsSync.mockReturnValue(false);
-    fs.readFileSync.mockReturnValue('{}');
   });
   
   describe('validateMcpConfig', () => {

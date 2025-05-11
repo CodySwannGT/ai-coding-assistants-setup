@@ -1,7 +1,6 @@
 // jest.config.js
+/** @type {import('jest').Config} */
 export default {
-  // Use ESM for Jest
-  type: 'module',
   // Use Node.js environment for running tests
   testEnvironment: 'node',
   // Look for test files with these patterns
@@ -9,10 +8,14 @@ export default {
     '**/tests/**/*.test.js',
     '**/tests/**/*.spec.js'
   ],
-  // Transform ES modules
+  // Setup files to run before tests
+  setupFilesAfterEnv: ['./tests/jest-setup.js'],
+  // Transform ES modules - experimental
   transform: {},
-  // Use experimental VM modules (needed for ESM support)
-  experimentalVmModule: true,
+  // Required for ESM - maps imports without extension to .js files
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1'
+  },
   // Don't watch node_modules
   watchPathIgnorePatterns: [
     '/node_modules/'
@@ -24,9 +27,5 @@ export default {
     '!src/hooks/**'
   ],
   // Configure coverage reporting
-  coverageReporters: ['text', 'lcov'],
-  // Mock files and modules
-  moduleNameMapper: {
-    // Add any module mocks here if needed
-  }
+  coverageReporters: ['text', 'lcov']
 };

@@ -3,50 +3,6 @@
  */
 import { jest } from '@jest/globals';
 import path from 'path';
-import fs from 'fs-extra';
-import { execSync } from 'child_process';
-
-// Import the module to test
-import {
-  getGitDiff,
-  processDiff,
-  createDiffExplainPrompt,
-  explainDiffWithClaude,
-  formatDiffOutput,
-  explainDiff
-} from '../src/integrations/diff-explain.js';
-
-// Mock dependencies
-jest.mock('fs-extra');
-jest.mock('child_process');
-jest.mock('../src/integrations/claude-cli.js', () => ({
-  isClaudeCliAvailable: jest.fn().mockResolvedValue(true),
-  callClaudeCli: jest.fn().mockResolvedValue({
-    content: JSON.stringify({
-      summary: 'Test summary',
-      files: [
-        {
-          path: 'test.js',
-          explanation: 'Test explanation',
-          issues: []
-        }
-      ]
-    })
-  })
-}));
-jest.mock('../src/config/environment.js', () => ({
-  loadEnvironmentVars: jest.fn().mockResolvedValue({
-    ANTHROPIC_API_KEY: 'test-api-key'
-  })
-}));
-jest.mock('../src/utils/logger.js', () => ({
-  printHeader: jest.fn(),
-  printInfo: jest.fn(),
-  printWarning: jest.fn(),
-  printError: jest.fn(),
-  printSuccess: jest.fn(),
-  printDebug: jest.fn()
-}));
 
 // Sample git diff output for testing
 const sampleDiff = `diff --git a/test.js b/test.js
@@ -63,15 +19,68 @@ index 1234567..abcdefg 100644
  
  module.exports = test;`;
 
+// Mock dependencies
+jest.mock('fs-extra', () => ({
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+  writeFileSync: jest.fn(),
+  pathExists: jest.fn().mockResolvedValue(false)
+}));
+
+jest.mock('child_process', () => ({
+  execSync: jest.fn().mockReturnValue(sampleDiff)
+}));
+
+jest.mock('../src/integrations/claude-cli.js', () => ({
+  isClaudeCliAvailable: jest.fn().mockResolvedValue(true),
+  callClaudeCli: jest.fn().mockResolvedValue({
+    content: JSON.stringify({
+      summary: 'Test summary',
+      files: [
+        {
+          path: 'test.js',
+          explanation: 'Test explanation',
+          issues: []
+        }
+      ]
+    })
+  })
+}));
+
+jest.mock('../src/config/environment.js', () => ({
+  loadEnvironmentVars: jest.fn().mockResolvedValue({
+    ANTHROPIC_API_KEY: 'test-api-key'
+  })
+}));
+
+jest.mock('../src/utils/logger.js', () => ({
+  printHeader: jest.fn(),
+  printInfo: jest.fn(),
+  printWarning: jest.fn(),
+  printError: jest.fn(),
+  printSuccess: jest.fn(),
+  printDebug: jest.fn()
+}));
+
+// Import after mocking
+import fs from 'fs-extra';
+import { execSync } from 'child_process';
+import { isClaudeCliAvailable, callClaudeCli } from '../src/integrations/claude-cli.js';
+
+// Import the module to test
+import {
+  getGitDiff,
+  processDiff,
+  createDiffExplainPrompt,
+  explainDiffWithClaude,
+  formatDiffOutput,
+  explainDiff
+} from '../src/integrations/diff-explain.js';
+
 describe('diff-explain module', () => {
   beforeEach(() => {
     // Reset mocks before each test
     jest.clearAllMocks();
-    
-    // Setup default mock implementations
-    execSync.mockReturnValue(sampleDiff);
-    fs.existsSync.mockReturnValue(false);
-    fs.pathExists.mockResolvedValue(false);
   });
   
   describe('getGitDiff', () => {
@@ -121,7 +130,7 @@ describe('diff-explain module', () => {
     });
     
     test('handles command failure gracefully', () => {
-      execSync.mockImplementation(() => {
+      execSync.mockImplementationOnce(() => {
         throw new Error('Command failed');
       });
       
@@ -242,8 +251,6 @@ describe('diff-explain module', () => {
   
   describe('explainDiffWithClaude', () => {
     test('calls Claude CLI when available', async () => {
-      const { callClaudeCli } = require('../src/integrations/claude-cli.js');
-      
       await explainDiffWithClaude('test prompt', {
         claudeApiKey: 'test-api-key'
       });
@@ -266,7 +273,7 @@ describe('diff-explain module', () => {
     });
     
     test('handles empty diff', async () => {
-      execSync.mockReturnValue('');
+      execSync.mockReturnValueOnce('');
       
       const result = await explainDiff({
         staged: true
@@ -276,7 +283,7 @@ describe('diff-explain module', () => {
     });
     
     test('handles errors gracefully', async () => {
-      execSync.mockImplementation(() => {
+      execSync.mockImplementationOnce(() => {
         throw new Error('Command failed');
       });
       

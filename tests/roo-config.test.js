@@ -3,31 +3,46 @@
  */
 import { jest } from '@jest/globals';
 import path from 'path';
-import fs from 'fs-extra';
 import os from 'os';
 
-// Modules to test
-import { setupRooRules, setupRooIgnore } from '../src/integrations/roo-config.js';
-
 // Mock dependencies
-jest.mock('fs-extra');
+jest.mock('fs-extra', () => ({
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+  writeFileSync: jest.fn()
+}));
+
+// Create mock functions with implementations
+const mockFileExists = jest.fn();
+const mockEnsureDirectory = jest.fn();
+const mockWriteTextFile = jest.fn();
+
+// Mock the file.js module
+jest.mock('../src/utils/file.js', () => {
+  return {
+    fileExists: mockFileExists,
+    ensureDirectory: mockEnsureDirectory,
+    writeTextFile: mockWriteTextFile
+  };
+});
+
 jest.mock('../src/utils/logger.js', () => ({
   printInfo: jest.fn(),
   printSuccess: jest.fn(),
   printError: jest.fn(),
   printWarning: jest.fn()
 }));
-jest.mock('../src/utils/file.js', () => ({
-  fileExists: jest.fn(),
-  dirExists: jest.fn(),
-  readFileContent: jest.fn(),
-  writeFileContent: jest.fn(),
-  createDirectory: jest.fn()
-}));
+
 jest.mock('../src/utils/encryption.js', () => ({
   encrypt: jest.fn((text) => `encrypted-${text}`),
   decrypt: jest.fn((text) => text.replace('encrypted-', ''))
 }));
+
+// Import after mocking
+import fs from 'fs-extra';
+
+// Modules to test
+import { setupRooRules, setupRooIgnore } from '../src/integrations/roo-config.js';
 
 describe('Roo Config Integration', () => {
   const projectRoot = '/test/project';
@@ -41,42 +56,33 @@ describe('Roo Config Integration', () => {
   beforeEach(() => {
     // Reset mocks before each test
     jest.clearAllMocks();
-    
-    // Setup default mock implementations
-    fs.existsSync.mockReturnValue(false);
-    fs.readFileSync.mockReturnValue('{}');
   });
   
   describe('setupRooRules', () => {
     test('creates rules directory and files', async () => {
       // Setup
-      const dirExistsMock = jest.fn().mockResolvedValue(false);
-      const createDirectoryMock = jest.fn().mockResolvedValue(true);
-      const writeFileContentMock = jest.fn().mockResolvedValue(true);
+      mockEnsureDirectory.mockResolvedValue(true);
+      mockWriteTextFile.mockResolvedValue(true);
       
       // Execute
       await setupRooRules({
         projectRoot,
         projectName: 'Test Project',
-        logger: testLogger,
-        dirExists: dirExistsMock,
-        createDirectory: createDirectoryMock,
-        writeFileContent: writeFileContentMock
+        logger: testLogger
       });
       
       // Verify
-      expect(createDirectoryMock).toHaveBeenCalledWith(
-        expect.stringContaining(path.join(projectRoot, '.roo/rules'))
-      );
-      expect(writeFileContentMock).toHaveBeenCalledWith(
+      expect(mockEnsureDirectory).toHaveBeenCalled();
+      expect(mockWriteTextFile).toHaveBeenCalledTimes(3);
+      expect(mockWriteTextFile).toHaveBeenCalledWith(
         expect.stringContaining('01-coding-standards.md'),
         expect.stringContaining('Coding Standards')
       );
-      expect(writeFileContentMock).toHaveBeenCalledWith(
+      expect(mockWriteTextFile).toHaveBeenCalledWith(
         expect.stringContaining('02-architecture-guide.md'),
         expect.stringContaining('Architecture Guide')
       );
-      expect(writeFileContentMock).toHaveBeenCalledWith(
+      expect(mockWriteTextFile).toHaveBeenCalledWith(
         expect.stringContaining('03-mcp-tools.md'),
         expect.stringContaining('MCP Tool Usage')
       );
@@ -86,27 +92,25 @@ describe('Roo Config Integration', () => {
   describe('setupRooIgnore', () => {
     test('creates .rooignore file with common patterns', async () => {
       // Setup
-      const fileExistsMock = jest.fn().mockResolvedValue(false);
-      const writeFileContentMock = jest.fn().mockResolvedValue(true);
+      mockFileExists.mockResolvedValue(false);
+      mockWriteTextFile.mockResolvedValue(true);
       
       // Execute
       await setupRooIgnore({
         projectRoot,
-        logger: testLogger,
-        fileExists: fileExistsMock,
-        writeFileContent: writeFileContentMock
+        logger: testLogger
       });
       
       // Verify
-      expect(writeFileContentMock).toHaveBeenCalledWith(
+      expect(mockWriteTextFile).toHaveBeenCalledWith(
         expect.stringContaining('.rooignore'),
         expect.stringMatching(/node_modules/)
       );
-      expect(writeFileContentMock).toHaveBeenCalledWith(
+      expect(mockWriteTextFile).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringMatching(/dist/)
       );
-      expect(writeFileContentMock).toHaveBeenCalledWith(
+      expect(mockWriteTextFile).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringMatching(/build/)
       );
@@ -114,38 +118,34 @@ describe('Roo Config Integration', () => {
     
     test('skips creation if file already exists and not forced', async () => {
       // Setup
-      const fileExistsMock = jest.fn().mockResolvedValue(true);
-      const writeFileContentMock = jest.fn().mockResolvedValue(true);
+      mockFileExists.mockResolvedValue(true);
+      mockWriteTextFile.mockResolvedValue(true);
       
       // Execute
       await setupRooIgnore({
         projectRoot,
         logger: testLogger,
-        fileExists: fileExistsMock,
-        writeFileContent: writeFileContentMock,
         force: false
       });
       
       // Verify
-      expect(writeFileContentMock).not.toHaveBeenCalled();
+      expect(mockWriteTextFile).not.toHaveBeenCalled();
     });
     
     test('overwrites file if force is true', async () => {
       // Setup
-      const fileExistsMock = jest.fn().mockResolvedValue(true);
-      const writeFileContentMock = jest.fn().mockResolvedValue(true);
+      mockFileExists.mockResolvedValue(true);
+      mockWriteTextFile.mockResolvedValue(true);
       
       // Execute
       await setupRooIgnore({
         projectRoot,
         logger: testLogger,
-        fileExists: fileExistsMock,
-        writeFileContent: writeFileContentMock,
         force: true
       });
       
       // Verify
-      expect(writeFileContentMock).toHaveBeenCalled();
+      expect(mockWriteTextFile).toHaveBeenCalled();
     });
   });
 });

@@ -83,10 +83,14 @@ export function getHookRegistry(config) {
   const registry = new HookRegistry(config);
 
   // Register available hooks
+  // Get Claude CLI preference from the environment
+  const useClaudeCli = process.env.CLAUDE_USE_CLI !== 'false'; // Default to true unless explicitly disabled
+
   registry.registerHook('pre-commit', PreCommitHook, {
     enabled: false, // Default to disabled
     blockingMode: false,
-    strictness: 'medium'
+    strictness: 'medium',
+    preferCli: useClaudeCli
   });
 
   // Register prepare-commit-msg hook
@@ -96,7 +100,8 @@ export function getHookRegistry(config) {
     conventionalCommits: true,
     includeScope: true,
     includeBreaking: true,
-    messageStyle: 'detailed' // 'concise' or 'detailed'
+    messageStyle: 'detailed', // 'concise' or 'detailed'
+    preferCli: useClaudeCli
   });
 
   // Register commit-msg hook
@@ -107,7 +112,8 @@ export function getHookRegistry(config) {
     checkSpelling: true,
     checkGrammar: true,
     maxLength: { subject: 72, body: 100 },
-    suggestImprovements: true
+    suggestImprovements: true,
+    preferCli: useClaudeCli
   });
 
   // Register pre-push hook
@@ -117,7 +123,8 @@ export function getHookRegistry(config) {
     auditTypes: ['security', 'credentials', 'sensitive-data', 'dependencies'],
     excludePatterns: ['node_modules/**', 'dist/**', 'build/**', '**/*.lock'],
     maxCommits: 10,
-    maxDiffSize: 100000
+    maxDiffSize: 100000,
+    preferCli: useClaudeCli
   });
 
   // Register post-merge hook
@@ -128,7 +135,8 @@ export function getHookRegistry(config) {
     includeDependencies: true,
     includeBreakingChanges: true,
     notifyMethod: 'terminal', // 'terminal', 'file', or 'notification'
-    maxDiffSize: 100000
+    maxDiffSize: 100000,
+    preferCli: useClaudeCli
   });
 
   // Register post-checkout hook
@@ -141,7 +149,8 @@ export function getHookRegistry(config) {
     notifyMethod: 'terminal', // 'terminal', 'file', or 'notification'
     skipInitialCheckout: true,
     skipTagCheckout: false,
-    maxDiffSize: 100000
+    maxDiffSize: 100000,
+    preferCli: useClaudeCli
   });
 
   // Register post-rewrite hook
@@ -152,7 +161,8 @@ export function getHookRegistry(config) {
     includeDependencies: true,
     includeBreakingChanges: true,
     notifyMethod: 'terminal', // 'terminal', 'file', or 'notification'
-    maxDiffSize: 100000
+    maxDiffSize: 100000,
+    preferCli: useClaudeCli
   });
 
   // Register pre-rebase hook
@@ -163,7 +173,8 @@ export function getHookRegistry(config) {
     checkTestImpact: false,
     checkDependencies: true,
     blockOnSeverity: 'high', // 'critical', 'high', 'medium', 'low', 'none'
-    maxDiffSize: 100000
+    maxDiffSize: 100000,
+    preferCli: useClaudeCli
   });
 
   // Register branch strategy hook
@@ -182,7 +193,8 @@ export function getHookRegistry(config) {
     protectedBranches: ['main', 'master', 'develop', 'release/*'],
     releasePattern: '^release\\/v?(\\d+\\.\\d+\\.\\d+)$',
     validateWithClaude: true,
-    jiraIntegration: false
+    jiraIntegration: false,
+    preferCli: useClaudeCli
   });
 
   return registry;

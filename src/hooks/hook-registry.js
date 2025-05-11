@@ -255,7 +255,8 @@ class HookRegistry {
           name: hook.name,
           gitHookName: hook.gitHookName,
           enabled: hook.enabled,
-          strictness: hook.strictness
+          strictness: hook.strictness,
+          preferCli: hook.preferCli // Add Claude CLI preference for all hooks
         };
 
         // Add pre-commit specific configurations
@@ -349,6 +350,11 @@ class HookRegistry {
 
             if (hookConfig.strictness) {
               hook.setStrictness(hookConfig.strictness);
+            }
+
+            // Set Claude CLI preference
+            if (hookConfig.preferCli !== undefined) {
+              hook.preferCli = hookConfig.preferCli;
             }
 
             // Apply pre-commit specific configurations

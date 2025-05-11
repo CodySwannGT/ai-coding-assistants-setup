@@ -11,6 +11,10 @@ The AI Coding Assistants Setup includes a comprehensive Git hook system that use
 - **Commit-Msg**: Validates commit message structure and content
 - **Pre-Push**: Performs security audits before pushing code
 - **Post-Merge**: Generates summaries of merged changes
+- **Post-Checkout**: Provides context when switching branches
+- **Post-Rewrite**: Explains changes after rebases or amends
+- **Pre-Rebase**: Predicts potential conflicts before rebasing
+- **Branch-Strategy**: Enforces branch naming conventions and workflow rules
 
 ## Setup
 
@@ -23,6 +27,35 @@ node index.js --hooks
 ```
 
 This will launch the hook configuration wizard that lets you select and customize Git hooks.
+
+### Configuration Templates
+
+There are several predefined configuration templates:
+
+- **Minimal** - Only essential hooks with basic configuration (commit-msg)
+- **Standard** - Common hooks with recommended configuration (prepare-commit-msg, commit-msg, post-merge, post-checkout)
+- **Strict** - All hooks with comprehensive configuration
+- **Custom** - Select specific hooks and configure each one
+
+Example:
+
+```bash
+node index.js --hooks --template standard
+```
+
+### Configuration Management
+
+Hooks can be managed programmatically using the config-manager API:
+
+```javascript
+import { enableHook, disableHook, applyHookTemplate } from './hooks/config-manager.js';
+
+// Enable a specific hook
+await enableHook({ projectRoot: '.', hookId: 'commit-msg' });
+
+// Apply a configuration template
+await applyHookTemplate({ projectRoot: '.', template: 'standard' });
+```
 
 ## How It Works
 
@@ -86,7 +119,57 @@ This hook generates summaries of merged changes to help you understand what chan
 Options:
 - **Summary Format**: Concise or Detailed
 - **Include Statistics**: Whether to include statistics in the summary
+- **Include Dependencies**: Whether to highlight dependency changes
+- **Include Breaking Changes**: Whether to identify breaking changes
 - **Notification Method**: Terminal, File, or System Notification
+
+### Post-Checkout Hook
+
+This hook provides context when switching between branches.
+
+Options:
+- **Summary Format**: Concise or Detailed
+- **Include Statistics**: Whether to include file statistics
+- **Include Dependencies**: Whether to highlight dependency changes
+- **Include Breaking Changes**: Whether to identify breaking changes
+- **Skip Initial Checkout**: Whether to skip summaries for initial checkouts
+- **Skip Tag Checkout**: Whether to skip summaries when checking out tags
+- **Notification Method**: Terminal, File, or System Notification
+
+### Post-Rewrite Hook
+
+This hook generates summaries after rebase or amend operations.
+
+Options:
+- **Summary Format**: Concise or Detailed
+- **Include Statistics**: Whether to include file statistics
+- **Include Dependencies**: Whether to highlight dependency changes
+- **Include Breaking Changes**: Whether to identify breaking changes
+- **Notification Method**: Terminal, File, or System Notification
+
+### Pre-Rebase Hook
+
+This hook analyzes rebases before they occur to predict potential issues.
+
+Options:
+- **Blocking Mode**: How to handle detected issues ('block', 'warn', 'none')
+- **Check Conflicts**: Whether to check for potential conflicts
+- **Check Test Impact**: Whether to evaluate impact on tests
+- **Check Dependencies**: Whether to check for dependency conflicts
+- **Block on Severity**: Minimum issue severity to block the rebase
+
+### Branch Strategy Hook
+
+This hook enforces branch naming conventions and workflow rules.
+
+Options:
+- **Strategy Type**: GitFlow, Trunk-based, GitHub Flow, or Custom
+- **Blocking Mode**: How to handle violations ('block', 'warn', 'none')
+- **Branch Prefixes**: Prefix mapping for different branch types
+- **Main Branches**: List of main branches
+- **Protected Branches**: List of protected branches
+- **Validate with Claude**: Whether to use Claude for validation
+- **JIRA Integration**: Whether to enforce JIRA ticket references
 
 ## Enabling/Disabling Hooks Temporarily
 
@@ -97,15 +180,47 @@ git commit --no-verify
 git push --no-verify
 ```
 
+You can also selectively disable hooks using environment variables:
+
+```bash
+CLAUDE_SKIP_COMMIT_MSG=true git commit -m "Skip commit message validation"
+CLAUDE_SKIP_PRE_PUSH=true git push
+```
+
+Available skip environment variables:
+- `CLAUDE_SKIP_PRE_COMMIT=true`
+- `CLAUDE_SKIP_PREPARE_COMMIT_MSG=true`
+- `CLAUDE_SKIP_COMMIT_MSG=true`
+- `CLAUDE_SKIP_PRE_PUSH=true`
+- `CLAUDE_SKIP_POST_MERGE=true`
+- `CLAUDE_SKIP_POST_CHECKOUT=true`
+- `CLAUDE_SKIP_POST_REWRITE=true`
+- `CLAUDE_SKIP_PRE_REBASE=true`
+- `CLAUDE_SKIP_BRANCH_STRATEGY=true`
+
 ## Troubleshooting
+
+### Claude API vs Claude CLI
+
+By default, the hooks will use Claude CLI if it's available, with fallback to the Claude API. This behavior can be configured:
+
+- Set `preferCli: false` in hook configuration to prefer API over CLI for a specific hook
+- Set environment variable `CLAUDE_USE_CLI=false` to prefer API for all hooks
 
 ### Missing API Key
 
-If you see "No Claude API key found" errors, you need to add your Anthropic API key to the `.env` file:
+If you see "No Claude API key found" errors and Claude CLI is not installed, you need to add your Anthropic API key to the `.env` file:
 
 ```
 ANTHROPIC_API_KEY=your-api-key-here
 ```
+
+### Claude CLI Setup
+
+To use Claude CLI:
+
+1. Install Claude CLI: `npm install -g @anthropic-ai/claude-cli`
+2. Log in using `claude login`
 
 ### Hook Not Executing
 
@@ -158,7 +273,22 @@ export default MyCustomHook;
 
 ### Customizing Claude Prompts
 
-Advanced users can customize the prompts sent to Claude by editing the hook implementation files in the `src/hooks` directory.
+You can create custom prompt templates for each hook:
+
+1. Create a `.claude/templates` directory in your project
+2. For each hook, create a JSON file with the hook name (e.g., `commit-msg.json`)
+3. Define templates with variables using Mustache syntax: `{{variable}}`
+
+Example template for commit-msg hook:
+
+```json
+{
+  "validateCommit": "You are a commit message validator. Please analyze this commit message: {{message}}...",
+  "suggestImprovements": "You are a commit message expert. Here is a commit message that might need improvement: {{message}}..."
+}
+```
+
+For more advanced customization, you can edit the hook implementation files in the `src/hooks` directory.
 
 ## Security Considerations
 

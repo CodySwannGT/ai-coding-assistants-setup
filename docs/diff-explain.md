@@ -19,13 +19,13 @@ To use the diff-explain feature from the command line:
 
 ```bash
 # Explain staged changes (default)
-node index.js --diff-explain
+npx ai-coding-assistants-setup --diff-explain
 
 # Explain specific commit
-node index.js --diff-explain-commit <commit-hash>
+npx ai-coding-assistants-setup --diff-explain-commit <commit-hash>
 
 # Explain branch differences
-node index.js --diff-explain-branch <branch-name>
+npx ai-coding-assistants-setup --diff-explain-branch <branch-name>
 ```
 
 ### Direct Command
@@ -33,7 +33,7 @@ node index.js --diff-explain-branch <branch-name>
 For more control, you can use the direct command:
 
 ```bash
-node src/commands/diff-explain.js [options]
+npx ai-coding-assistants-setup diff-explain [options]
 ```
 
 #### Available Options
@@ -108,7 +108,7 @@ node index.js --diff-explain-branch main
 Focus the explanation on specific aspects:
 
 ```bash
-node src/commands/diff-explain.js --staged --focus functionality security
+npx ai-coding-assistants-setup diff-explain --staged --focus functionality security
 ```
 
 ### Brief Summary
@@ -116,7 +116,7 @@ node src/commands/diff-explain.js --staged --focus functionality security
 Get a concise explanation of changes:
 
 ```bash
-node src/commands/diff-explain.js --staged --verbosity brief --output-format summary-only
+npx ai-coding-assistants-setup diff-explain --staged --verbosity brief --output-format summary-only
 ```
 
 ## How It Works
@@ -145,7 +145,7 @@ The diff-explain command sends git diff output to the Claude API. This may inclu
 Only include specific files in the explanation:
 
 ```bash
-node src/commands/diff-explain.js --staged --files src/main.js src/utils.js
+npx ai-coding-assistants-setup diff-explain --staged --files src/main.js src/utils.js
 ```
 
 ### Changes Over Time
@@ -153,7 +153,7 @@ node src/commands/diff-explain.js --staged --files src/main.js src/utils.js
 Explain changes since a specific point in history:
 
 ```bash
-node src/commands/diff-explain.js --since HEAD~5
+npx ai-coding-assistants-setup diff-explain --since HEAD~5
 ```
 
 ### Custom Output
@@ -161,7 +161,7 @@ node src/commands/diff-explain.js --since HEAD~5
 Get a summary-only explanation without issue highlighting:
 
 ```bash
-node src/commands/diff-explain.js --staged --output-format summary-only --no-highlight-issues
+npx ai-coding-assistants-setup diff-explain --staged --output-format summary-only --no-highlight-issues
 ```
 
 ## Troubleshooting

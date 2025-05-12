@@ -7,7 +7,7 @@
 import _fs from 'fs-extra';
 import _path from 'path';
 import Ajv from 'ajv';
-import configSchema from './config-schema.json';
+import configSchema from './config-schema.json' assert { type: 'json' };
 import { printWarning } from '../utils/logger.js';
 
 // Initialize Ajv

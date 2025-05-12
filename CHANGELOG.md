@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.7](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.6...v1.1.7) (2025-05-12)
+
+
+### Bug Fixes
+
+* eliminate duplicate API key prompts ([c979d0a](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/c979d0a771130990f1a81114e45af888377863b9))
+* improve setup completion messages ([16d050d](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/16d050d31aa844304cc2db37b0d5dfcdb210d1e7))
+
 ### [1.1.6](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.5...v1.1.6) (2025-05-12)
 
 

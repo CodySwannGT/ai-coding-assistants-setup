@@ -6,16 +6,16 @@
 
 import fs from 'fs-extra';
 import path from 'path';
+import { getProjectPaths } from '../config/paths.js';
 import { fileExists } from '../utils/file.js';
 import {
+  printDebug,
+  printError,
   printHeader,
   printInfo,
   printSuccess,
-  printWarning,
-  printError,
-  printDebug
+  printWarning
 } from '../utils/logger.js';
-import { getProjectPaths } from '../config/paths.js';
 
 /**
  * Find all AI assistant related files and directories
@@ -291,6 +291,36 @@ export async function uninstall(options) {
       } catch (err) {
         printWarning(`Failed to update .env file: ${err.message}`);
       }
+    }
+    
+    // Check for Dependabot configuration file
+    const dependabotPath = path.join(projectRoot, '.github', 'dependabot.yml');
+    if (await fileExists(dependabotPath)) {
+      if (dryRun) {
+        printDebug(`Would remove Dependabot configuration: ${dependabotPath}`);
+      } else {
+        await fs.remove(dependabotPath);
+        printSuccess(`Removed Dependabot configuration: ${dependabotPath}`);
+      }
+      
+      // Check if .github directory is now empty and remove it if so
+      const githubDirPath = path.join(projectRoot, '.github');
+      try {
+        const githubDirContents = await fs.readdir(githubDirPath);
+        if (githubDirContents.length === 0) {
+          if (dryRun) {
+            printDebug(`Would remove empty .github directory: ${githubDirPath}`);
+          } else {
+            await fs.remove(githubDirPath);
+            printSuccess(`Removed empty .github directory: ${githubDirPath}`);
+          }
+        }
+      } catch (err) {
+        // Ignore errors reading directory
+        printDebug(`Note: Could not check if .github directory is empty: ${err.message}`);
+      }
+    } else {
+      printDebug('No Dependabot configuration found to remove.');
     }
     
     if (dryRun) {

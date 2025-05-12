@@ -5,13 +5,15 @@
  * checks like TypeScript type checking, linting, and formatting.
  */
 
-import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { getHookRegistry as _getHookRegistry, initializeHooks, setupHooks } from './index.js';
-import { applyHookTemplate } from './config-manager.js';
+import fs from 'fs';
+import inquirer from 'inquirer';
+import path from 'path';
 import { isClaudeCliAvailable } from '../integrations/claude-cli.js';
 import projectDetector from '../utils/project-detector.js';
 import codeQualityHooks from './code-quality-hooks.js';
+import { applyHookTemplate } from './config-manager.js';
+import { initializeHooks, setupHooks } from './index.js';
 
 /**
  * Run the enhanced hook setup wizard
@@ -261,7 +263,64 @@ export async function runEnhancedSetupWizard({
         logger
       });
     }
-    
+    // --- Add Dependabot Configuration Step ---
+    const { addDependabot } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'addDependabot',
+        message: 'Do you want to add GitHub Dependabot configuration to automatically check for dependency updates? (Y/n)',
+        default: true,
+      }
+    ]);
+
+    if (addDependabot) {
+      printInfo('Adding Dependabot configuration...');
+      try {
+        const _useNpm = fs.existsSync(path.join(projectRoot, 'package-lock.json'));
+        const useYarn = fs.existsSync(path.join(projectRoot, 'yarn.lock'));
+        const packageManager = useYarn ? 'yarn' : 'npm'; // Default to npm if yarn.lock not found or neither exists
+
+        const dependabotContent = `# .github/dependabot.yml
+version: 2
+updates:
+  - package-ecosystem: "${packageManager}" # or "yarn"
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "daily"
+    # Add assignees and reviewers if desired
+    # assignees:
+    #   - "octocat"
+    # reviewers:
+    #   - "octocat"
+    # labels:
+    #   - "dependencies"
+    # milestone: 1
+    # commit-message:
+    #   prefix: "chore"
+    #   include: "scope"
+
+  # Add configuration for GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+`;
+        const githubDir = path.join(projectRoot, '.github');
+        const dependabotPath = path.join(githubDir, 'dependabot.yml');
+
+        if (!fs.existsSync(githubDir)) {
+          fs.mkdirSync(githubDir, { recursive: true });
+          printInfo('Created .github directory.');
+        }
+
+        fs.writeFileSync(dependabotPath, dependabotContent);
+        printSuccess('Created .github/dependabot.yml');
+      } catch (error) {
+        printWarning(`Failed to create .github/dependabot.yml: ${error.message}`);
+      }
+    }
+    // --- End Dependabot Configuration Step ---
+
     // Set up hooks
     return setupHooks({
       projectRoot,
@@ -271,6 +330,52 @@ export async function runEnhancedSetupWizard({
     });
   }
   
+  // --- Add Dependabot Configuration Step (Custom Approach) ---
+  // Note: Duplicated logic for custom path, consider refactoring later
+  const { addDependabotCustom } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'addDependabotCustom',
+      message: 'Do you want to add GitHub Dependabot configuration? (Y/n)',
+      default: true,
+    }
+  ]);
+
+  if (addDependabotCustom) {
+    printInfo('Adding Dependabot configuration...');
+    try {
+      const _useNpm = fs.existsSync(path.join(projectRoot, 'package-lock.json'));
+      const useYarn = fs.existsSync(path.join(projectRoot, 'yarn.lock'));
+      const packageManager = useYarn ? 'yarn' : 'npm'; // Default to npm
+
+      const dependabotContent = `# .github/dependabot.yml
+version: 2
+updates:
+  - package-ecosystem: "${packageManager}"
+    directory: "/"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+`;
+      const githubDir = path.join(projectRoot, '.github');
+      const dependabotPath = path.join(githubDir, 'dependabot.yml');
+
+      if (!fs.existsSync(githubDir)) {
+        fs.mkdirSync(githubDir, { recursive: true });
+        printInfo('Created .github directory.');
+      }
+      fs.writeFileSync(dependabotPath, dependabotContent);
+      printSuccess('Created .github/dependabot.yml');
+    } catch (error) {
+      printWarning(`Failed to create .github/dependabot.yml: ${error.message}`);
+    }
+  }
+  // --- End Dependabot Configuration Step (Custom Approach) ---
+
   // Custom approach - call the setupHooks function
   return setupHooks({
     projectRoot,

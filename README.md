@@ -183,25 +183,29 @@ The interactive wizard will guide you through these steps:
    - Roo Code only
    - Update existing configurations
 
-2. **MCP Server Configuration**
+2. **API Key Collection**
+   - Securely collect Anthropic API key once upfront
+   - API key is shared between all components
+   - No duplicate prompts for the same credentials
+
+3. **MCP Server Configuration**
    - GitHub integration
    - Context7 documentation access
    - Memory graph capabilities
    - Custom MCP servers
 
-3. **Claude Code Configuration**
-   - API key setup
+4. **Claude Code Configuration**
    - Memory limits
    - Context settings
    - Project-specific configurations
 
-4. **Roo Code Configuration**
+5. **Roo Code Configuration**
    - Provider selection
    - Token limits
    - Custom modes
    - Auto-approval settings
 
-5. **Git Hooks Setup**
+6. **Git Hooks Setup**
    - AI-powered code review
    - Commit message assistance
    - Code quality integration
@@ -238,6 +242,13 @@ AI Coding Assistants Setup offers a comprehensive set of command-line options fo
 | `--remove` | Remove AI assistant configurations | `npx ai-coding-assistants-setup --remove` |
 | `--remove --dry-run` | Preview files to be removed | `npx ai-coding-assistants-setup --remove --dry-run` |
 | `--remove-all` | Remove all, including VS Code settings | `npx ai-coding-assistants-setup --remove-all` |
+
+### Post-Setup Steps
+
+After running the setup, depending on your configuration:
+
+- **For Claude Code**: No additional steps needed. Use `npx @anthropic/claude-code` to run Claude in the terminal.
+- **For Roo Code**: Install the Roo Code extension for VS Code and restart VS Code to apply the settings.
 
 ### Example Usage Scenarios
 
@@ -734,10 +745,11 @@ Run the script again when:
 ### How are API keys handled?
 
 API keys are:
-1. Encrypted using AES-256-CBC
-2. Stored in project-specific credential files
-3. Protected by a machine-specific encryption key
-4. Never committed to version control
+1. Collected only once during setup and shared between components
+2. Encrypted using AES-256-CBC
+3. Stored in project-specific credential files
+4. Protected by a machine-specific encryption key
+5. Never committed to version control
 
 ### How does it work with monorepos?
 

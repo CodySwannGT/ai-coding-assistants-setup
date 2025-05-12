@@ -260,8 +260,10 @@ Provides task management, tracking, and subtask organization capabilities. Helps
 |--------|---------|
 | **Capabilities** | Task creation, dependency management, complexity analysis, task expansion, organization |
 | **Configuration Requirements** | Storage location for tasks |
-| **API Keys/Credentials** | Anthropic API Key (for generating tasks) |
+| **API Keys/Credentials** | Anthropic API Key (for generating tasks, shared with Claude Code) |
 | **Rate Limits** | Costs based on token usage with Anthropic API |
+
+> **Note**: The Anthropic API Key is collected once during setup and shared between Claude Code and Task Master AI automatically.
 
 #### Example Configuration
 

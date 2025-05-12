@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.6](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.5...v1.1.6) (2025-05-12)
+
+
+### Bug Fixes
+
+* add JSON import assertion for ES modules compatibility ([15c5a72](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/15c5a7257d74fb77a68f75b3cb6921d6103507a2))
+
 ### [1.1.5](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.4...v1.1.5) (2025-05-12)
 
 

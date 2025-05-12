@@ -186,23 +186,19 @@ export async function setupClaudeCode(options) {
   // Ensure basic structure
   claudeConfig.mcpServers = claudeConfig.mcpServers || {};
   
-  // Get API key
-  let apiKey = '';
-  if (nonInteractive) {
-    printInfo('Non-interactive mode: Using existing API key or environment variable');
-    apiKey = process.env.ANTHROPIC_API_KEY || '';
-  } else {
-    const useExistingKey = configExists && await confirm({
-      message: 'Use existing Anthropic API key (if available)?',
-      default: true
+  // Get API key from environment or options
+  let apiKey = options.env?.ANTHROPIC_API_KEY || '';
+
+  // Only prompt if not present in environment and not in non-interactive mode
+  if (!apiKey && !nonInteractive) {
+    printInfo('No Anthropic API key found in environment, prompting for input');
+    apiKey = await password({
+      message: 'Enter your Anthropic API key:',
+      validate: input => input.trim() ? true : 'API key is required'
     });
-    
-    if (!useExistingKey) {
-      apiKey = await password({
-        message: 'Enter your Anthropic API key:',
-        validate: input => input.trim() ? true : 'API key is required'
-      });
-    }
+  } else if (nonInteractive) {
+    printInfo('Non-interactive mode: Using existing API key or environment variable');
+    apiKey = apiKey || process.env.ANTHROPIC_API_KEY || '';
   }
   
   // Configure memory settings
@@ -236,6 +232,12 @@ export async function setupClaudeCode(options) {
     if (!claudeConfig.apiKey) {
       claudeConfig.apiKey = encryptedKey;
     }
+
+    // Make sure we return the API key so other components can use it
+    if (!options.env) {
+      options.env = {};
+    }
+    options.env.ANTHROPIC_API_KEY = apiKey;
   }
 
   // Update additional settings
@@ -304,8 +306,11 @@ export async function setupClaudeCode(options) {
   }
 
   printSuccess('Claude Code configuration completed!');
-  
-  return { apiKey };
+
+  return {
+    apiKey,
+    env: options.env
+  };
 }
 
 export default {

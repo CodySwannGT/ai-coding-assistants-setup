@@ -187,7 +187,7 @@ async function main() {
     
     // Load environment variables
     const env = await loadEnvironmentVars(projectRoot);
-    
+
     // Get setup type
     let setupType = 'both';
     if (!nonInteractive) {
@@ -201,13 +201,32 @@ async function main() {
         ]
       });
     }
-    
+
+    // Collect Anthropic API key upfront if needed
+    if (['both', 'claude', 'update'].includes(setupType) && !nonInteractive && !env.ANTHROPIC_API_KEY) {
+      const useExistingKey = await confirm({
+        message: 'Use existing Anthropic API key (if available)?',
+        default: true
+      });
+
+      if (!useExistingKey) {
+        const apiKey = await password({
+          message: 'Enter your Anthropic API key:',
+          validate: input => input.trim() ? true : 'API key is required'
+        });
+
+        if (apiKey) {
+          env.ANTHROPIC_API_KEY = apiKey;
+        }
+      }
+    }
+
     // Configure MCP servers - do this first as both assistants need it
     const mcpConfigResult = await setupMcpConfig({
       ...sharedOptions,
       env
     });
-    
+
     // Update environment variables with any new ones from MCP config
     Object.assign(env, mcpConfigResult.env);
     
@@ -217,9 +236,12 @@ async function main() {
         ...sharedOptions,
         env
       });
-      
+
       // Update environment variables with any new ones from Claude config
-      if (claudeResult?.apiKey) {
+      if (claudeResult?.env) {
+        Object.assign(env, claudeResult.env);
+      } else if (claudeResult?.apiKey) {
+        // Backward compatibility with older versions
         env.ANTHROPIC_API_KEY = claudeResult.apiKey;
       }
     }

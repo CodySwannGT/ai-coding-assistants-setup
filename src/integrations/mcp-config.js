@@ -255,17 +255,22 @@ export async function setupMcpConfig(options) {
       env: {}
     };
 
-    // Use Anthropic API key from earlier prompt or environment
+    // Use Anthropic API key from environment - already collected in main.js
     const apiKey = getEnvValue('ANTHROPIC_API_KEY', env);
     if (apiKey) {
+      // Store API key in personalConfig without prompting again
       personalConfig.env.ANTHROPIC_API_KEY = apiKey;
-      
+
       // Create personal env config for taskmaster
       personalConfig.mcpServers['task-master-ai'] = {
         env: {
           ANTHROPIC_API_KEY: apiKey
         }
       };
+    } else if (!nonInteractive) {
+      // In interactive mode, provide guidance if API key is still missing
+      printInfo('Note: Task Master AI requires an Anthropic API key which was not found in environment');
+      printInfo('The key will be collected during Claude Code setup if needed');
     }
   }
 

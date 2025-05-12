@@ -80,3 +80,6 @@ tasks/
 .taskmasterconfig
 # Allow tracking tasks.json for project structure
 !tasks/tasks.json
+
+# Added by Claude Task Master
+tasks.json

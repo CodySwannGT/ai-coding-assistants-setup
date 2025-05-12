@@ -1,7 +1,7 @@
 # AI Coding Tool Enhancement PRD
 
 ## Project Overview
-Enhance the ai-coding-assistants-setup project with improved VS Code integration, expanded MCP support, and better contributor experience.
+Enhance the ai-coding-assistants-setup project with improved VS Code integration, expanded MCP support, better contributor experience, and support for non-JavaScript repositories.
 
 ## Key Requirements
 
@@ -40,7 +40,17 @@ Enhance the ai-coding-assistants-setup project with improved VS Code integration
 - Add optional configuration for review strictness
 - Explore additional AI CLI hooks
 
-### 7. Optional Future Features
+### 7. Add Support for Non-JavaScript Repositories
+- Modify project root detection to work without package.json
+- Implement graceful fallbacks for key functions that rely on package.json
+- Provide clear messaging about limited functionality in non-JavaScript repositories
+- Update error handling to be more informative
+- Add basic CLI flags for specifying project type
+- Add language detection for Python, Ruby, Shell, and other common languages
+- Update documentation with information about non-JavaScript repository support
+
+### 8. Optional Future Features
 - Auto-run Playwright tests after AI-generated code
 - Commands to reformat project-wide settings
 - AI onboarding script
+- Enhanced language-specific support for non-JavaScript repositories

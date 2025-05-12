@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.5](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.4...v1.1.5) (2025-05-12)
+
+
+### Bug Fixes
+
+* fixes default for memroy path ([7fadaf1](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/7fadaf19f15fc4d582608840bf3084465e790666))
+
 ### [1.1.4](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.3...v1.1.4) (2025-05-11)
 
 ## [1.1.2](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.1...v1.1.2) (2025-05-11)

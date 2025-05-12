@@ -268,9 +268,16 @@ async function main() {
     printHeader('Setup Complete!');
     console.log('Your project is now configured to use AI coding assistants.');
     console.log('\nManual steps required:');
-    console.log('1. Install the Claude extension for VS Code');
-    console.log('2. Install the Roo Code extension for VS Code');
-    console.log('3. Restart VS Code to apply the settings');
+
+    if (setupType === 'roo') {
+      console.log('1. Install the Roo Code extension for VS Code');
+      console.log('2. Restart VS Code to apply the settings');
+    } else if (setupType === 'claude') {
+      console.log('No additional steps required for Claude Code');
+    } else {
+      console.log('1. Install the Roo Code extension for VS Code');
+      console.log('2. Restart VS Code to apply the settings');
+    }
 
     if (setupType === 'claude' || setupType === 'both') {
       console.log('\nTo use Claude Code in terminal:');
@@ -278,10 +285,10 @@ async function main() {
     }
 
     console.log('\nTo uninstall AI assistant configurations later:');
-    console.log('  $ node index.js --list-files              # List all AI assistant files without removing');
-    console.log('  $ node index.js --remove --dry-run        # Show what would be removed (no actual changes)');
-    console.log('  $ node index.js --remove                  # Remove AI assistant configuration files');
-    console.log('  $ node index.js --remove-all              # Remove config files + VS Code settings');
+    console.log('  $ npx ai-coding-assistants-setup --list-files         # List all AI assistant files without removing');
+    console.log('  $ npx ai-coding-assistants-setup --remove --dry-run   # Show what would be removed (no actual changes)');
+    console.log('  $ npx ai-coding-assistants-setup --remove             # Remove AI assistant configuration files');
+    console.log('  $ npx ai-coding-assistants-setup --remove-all         # Remove config files + VS Code settings');
 
     console.log('\nThank you for using the AI Coding Assistants Setup Script!');
   } catch (err) {

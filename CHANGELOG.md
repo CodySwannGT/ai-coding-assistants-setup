@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.7...v1.2.0) (2025-05-12)
+
+
+### Features
+
+* **setup:** add dependabot removal to uninstall script ([7746400](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/77464003a7eb1d2cc4d23e53432b70fc9a036eb8))
+
 ### [1.1.7](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.6...v1.1.7) (2025-05-12)
 
 

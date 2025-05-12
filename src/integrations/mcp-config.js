@@ -5,21 +5,21 @@
  */
 
 import path from 'path';
-import { 
-  fileExists, 
-  safeReadJson, 
-  safeWriteJson 
-} from '../utils/file.js';
-import { 
-  printHeader, 
-  printInfo, 
-  printWarning, 
-  printSuccess 
-} from '../utils/logger.js';
-import { 
-  saveEnvironmentVars, 
-  getEnvValue 
+import {
+  getEnvValue,
+  saveEnvironmentVars
 } from '../config/environment.js';
+import {
+  fileExists,
+  safeReadJson,
+  safeWriteJson
+} from '../utils/file.js';
+import {
+  printHeader,
+  printInfo,
+  printSuccess,
+  printWarning
+} from '../utils/logger.js';
 import { detectGitHubRepository } from './git.js';
 
 /**
@@ -203,7 +203,7 @@ export async function setupMcpConfig(options) {
   // Configure memory
   if (selectedServers.includes('memory')) {
     // Default memory path
-    const defaultMemoryPath = path.join(path.resolve(projectRoot, '..'), 'db/memory.jsonl');
+    const defaultMemoryPath = path.join(path.resolve(projectRoot, '..'), 'db/memory.json');
 
     // Shared config with placeholder
     serverConfigs.memory = {

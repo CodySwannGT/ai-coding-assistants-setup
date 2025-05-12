@@ -4,22 +4,22 @@
  * Functions for configuring Git hooks and ignore patterns.
  */
 
+import { execSync } from 'child_process';
 import fs from 'fs-extra';
 import path from 'path';
-import { execSync } from 'child_process';
+import { loadEnvironmentVars } from '../config/environment.js';
 import {
   fileExists,
   // safeReadTextFile is unused,
   writeTextFile
 } from '../utils/file.js';
-import { 
-  printHeader, 
-  printInfo, 
-  printWarning, 
-  printSuccess, 
-  printDebug 
+import {
+  printDebug,
+  printHeader,
+  printInfo,
+  printSuccess,
+  printWarning
 } from '../utils/logger.js';
-import { loadEnvironmentVars } from '../config/environment.js';
 
 /**
  * Setup Git hooks with Claude integration
@@ -386,7 +386,7 @@ GITHUB_PERSONAL_ACCESS_TOKEN=your-github-token-here
 CONTEXT7_API_KEY=your-context7-key-here
 
 # Memory MCP Server
-MEMORY_PATH=/path/to/your/memory.jsonl
+MEMORY_PATH=/path/to/your/memory.json
 
 # StackOverflow MCP Server
 STACKEXCHANGE_API_KEY=your-stackexchange-key-here

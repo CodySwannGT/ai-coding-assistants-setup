@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.2](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.3.1...v1.3.2) (2025-05-15)
+
+
+### Bug Fixes
+
+* update git hooks to use npx and support non-interactive mode ([6ee0511](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/6ee051149c7b258fa549fd5380fb531ca3150c4a))
+
 ### [1.3.1](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.3.0...v1.3.1) (2025-05-15)
 
 ## [1.3.0](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.2.0...v1.3.0) (2025-05-15)

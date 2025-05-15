@@ -37,15 +37,19 @@ export async function getClaudeCliVersion() {
 }
 
 /**
- * Call Claude CLI with a prompt
+ * Call Claude CLI with a prompt and content file
  * @param {Object} options Options for the Claude CLI call
- * @param {string} options.prompt The prompt to send to Claude
- * @param {string} [options.format='text'] Output format ('json' or 'text')
- * @returns {Promise<Object|string>} Claude's response
+ * @param {string} options.prompt The instructions to send to Claude (via -p flag)
+ * @param {string} [options.contentFile] Path to a file to pipe to Claude as input
+ * @param {string} [options.content] Content to pipe to Claude as input (alternative to contentFile)
+ * @param {boolean} [options.json=false] Whether to expect JSON output
+ * @returns {Promise<string>} Claude's response
  */
 export async function callClaudeCli({ 
   prompt,
-  format = 'text'
+  contentFile,
+  content,
+  json = false
 }) {
   // Check if Claude CLI is available
   const cliAvailable = await isClaudeCliAvailable();
@@ -53,50 +57,60 @@ export async function callClaudeCli({
     throw new Error('Claude CLI is not available');
   }
   
-  // Create a temporary file for the prompt to avoid shell interpretation issues
-  const tempDir = path.join(process.cwd(), '.claude', 'temp');
-  await fs.ensureDir(tempDir);
-  const promptFile = path.join(tempDir, `prompt-${Date.now()}.txt`);
-  await fs.writeFile(promptFile, prompt);
+  // If content is provided but not a file, create a temporary file
+  let tempFile = null;
+  let fileToUse = contentFile;
+  
+  if (!contentFile && content) {
+    const tempDir = path.join(process.cwd(), '.claude', 'temp');
+    await fs.ensureDir(tempDir);
+    tempFile = path.join(tempDir, `content-${Date.now()}.txt`);
+    await fs.writeFile(tempFile, content);
+    fileToUse = tempFile;
+  }
   
   try {
-    // Create a safe command using the cat | claude pattern with the --print flag
-    // We write the prompt to a file to avoid shell interpretation issues
-    let command = `cat ${promptFile} | claude --print`;
+    // Prepare the command
+    // If there's a content file, pipe it to Claude
+    // Otherwise, use an empty echo command to pipe nothing
+    let command;
     
-    // Add output format if needed
-    if (format === 'json') {
+    if (fileToUse) {
+      command = `cat "${fileToUse}"`;
+    } else {
+      command = 'echo ""';
+    }
+    
+    // Safely escape the prompt for the -p parameter
+    const escapedPrompt = prompt.replace(/'/g, "'\\''");
+    
+    // Complete the command with claude and the -p (--print) flag
+    command += ` | claude -p '${escapedPrompt}' --print`;
+    
+    // Add JSON output format if requested
+    if (json) {
       command += ' --output-format json';
     }
     
-    // Log the command for debugging (with abbreviated prompt for readability)
-    const logPrompt = prompt.length > 50 
-      ? prompt.substring(0, 50) + '...' 
-      : prompt;
-      
-    console.log(`Executing Claude CLI command: cat prompt.txt | claude --print ${format === 'json' ? '--output-format json' : ''}`);
-    console.log(`Prompt content starts with: ${logPrompt}`);
+    // Log a simpler version of the command for debugging
+    console.log(`Executing Claude CLI command: cat [content] | claude -p [prompt] --print`);
+    
+    if (fileToUse) {
+      console.log(`Using content from file: ${fileToUse}`);
+    }
     
     // Execute the command
     const output = execSync(command, { encoding: 'utf8' });
-    
-    // Parse JSON if requested
-    if (format === 'json') {
-      try {
-        return JSON.parse(output);
-      } catch (parseErr) {
-        console.error('Failed to parse JSON output:', parseErr.message);
-        return output; // Return raw output if JSON parsing fails
-      }
-    }
     
     return output;
   } catch (err) {
     console.error(`Claude CLI error: ${err.message}`);
     throw new Error(`Failed to call Claude CLI: ${err.message}`);
   } finally {
-    // Clean up the temporary file
-    await fs.remove(promptFile);
+    // Clean up any temporary files
+    if (tempFile) {
+      await fs.remove(tempFile);
+    }
   }
 }
 

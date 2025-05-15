@@ -4,10 +4,10 @@
  * Functions for integrating with Claude CLI to provide AI-powered Git hooks.
  */
 
+import { execSync } from 'child_process';
 import fs from 'fs-extra';
 import path from 'path';
-import { execSync } from 'child_process';
-import { safeReadJson, fileExists } from '../utils/file.js';
+import { fileExists, safeReadJson } from '../utils/file.js';
 
 /**
  * Check if Claude CLI is installed and available
@@ -85,7 +85,7 @@ export async function callClaudeCli({
     const escapedPrompt = prompt.replace(/'/g, "'\\''");
     
     // Complete the command with claude and the -p (--print) flag
-    command += ` | claude -p '${escapedPrompt}' --print`;
+    command += ` | claude -p '${escapedPrompt}'`;
     
     // Add JSON output format if requested
     if (json) {
@@ -93,7 +93,7 @@ export async function callClaudeCli({
     }
     
     // Log a simpler version of the command for debugging
-    console.log(`Executing Claude CLI command: cat [content] | claude -p [prompt] --print`);
+    console.log(`Executing Claude CLI command: cat [content] | claude -p [prompt]`);
     
     if (fileToUse) {
       console.log(`Using content from file: ${fileToUse}`);

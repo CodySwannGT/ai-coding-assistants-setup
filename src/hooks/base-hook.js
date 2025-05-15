@@ -550,22 +550,90 @@ exit 0
    * @returns {Object} The loaded environment variables
    */
   loadEnv() {
+    // First check for environment variables already set in process.env
+    if (process.env.ANTHROPIC_API_KEY) {
+      this.debug('Using ANTHROPIC_API_KEY from process.env');
+      return { ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY };
+    }
+    
     try {
+      // Try loading from .env file in project root
       const envPath = path.join(this.projectRoot, '.env');
       if (fs.existsSync(envPath)) {
+        this.debug(`Loading .env file from ${envPath}`);
         const envContent = fs.readFileSync(envPath, 'utf8');
         const env = {};
         
+        // Improved regex pattern for more reliable .env parsing
+        const envLineRegex = /^\s*([\w.-]+)\s*=\s*("[^"]*"|'[^']*'|[^#]*?)(\s*#.*)?$/;
+        
         envContent.split('\n').forEach(line => {
-          const match = line.match(/^([^=]+)=(.*)$/);
-          if (match) {
-            const key = match[1].trim();
-            const value = match[2].trim();
-            env[key] = value;
+          const match = line.match(envLineRegex);
+          if (!match) return;
+          
+          const key = match[1];
+          let value = match[2];
+          
+          // Remove quotes if present (both single and double quotes)
+          if ((value.startsWith('"') && value.endsWith('"')) || 
+              (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.substring(1, value.length - 1);
           }
+          
+          // Trim any trailing whitespace (but maintain internal whitespace)
+          value = value.trimRight();
+          
+          env[key] = value;
+          this.debug(`Loaded environment variable: ${key}`);
         });
         
+        // Print more verbose debug info for the API key
+        if (env.ANTHROPIC_API_KEY) {
+          const keyLength = env.ANTHROPIC_API_KEY.length;
+          this.debug(`Successfully loaded ANTHROPIC_API_KEY from .env file (length: ${keyLength})`);
+          
+          // Check if the key appears to be valid (usually starts with 'sk-')
+          if (!env.ANTHROPIC_API_KEY.startsWith('sk-')) {
+            this.debug(`Warning: ANTHROPIC_API_KEY from .env may not be valid (doesn't start with 'sk-')`);
+          }
+        } else {
+          // Look for any key in env that might be the API key
+          const possibleKeys = Object.keys(env).filter(k => 
+            k.includes('API') || k.includes('ANTHROPIC') || k.includes('KEY')
+          );
+          
+          if (possibleKeys.length > 0) {
+            this.debug(`No ANTHROPIC_API_KEY found, but found similar keys: ${possibleKeys.join(', ')}`);
+          } else {
+            this.debug('ANTHROPIC_API_KEY not found in .env file');
+          }
+        }
+        
+        // For debugging, log the first few characters of the API key if present
+        if (env.ANTHROPIC_API_KEY && env.ANTHROPIC_API_KEY.length > 6) {
+          const prefix = env.ANTHROPIC_API_KEY.substring(0, 5);
+          this.debug(`API key prefix: ${prefix}***`);
+        }
+        
         return env;
+      } else {
+        // Try alternate locations for .env file
+        const alternateEnvPaths = [
+          path.join(process.cwd(), '.env'),
+          path.join(process.cwd(), '.env.local'),
+          path.join(_os.homedir(), '.claude', '.env')
+        ];
+        
+        for (const altPath of alternateEnvPaths) {
+          if (fs.existsSync(altPath)) {
+            this.debug(`Found alternate .env file at ${altPath}, trying to load...`);
+            // Call loadEnv recursively with the new project root
+            this.projectRoot = path.dirname(altPath);
+            return this.loadEnv();
+          }
+        }
+        
+        this.debug(`.env file not found at ${envPath} or any alternate locations`);
       }
     } catch (err) {
       this.warn(`Failed to load .env file: ${err.message}`);

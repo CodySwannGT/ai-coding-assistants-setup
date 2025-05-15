@@ -68,21 +68,45 @@ export async function callClaudeCli({
   await fs.writeFile(promptFile, prompt);
   
   try {
-    // Build the Claude CLI command
-    let command = `claude --model ${model} --max-tokens ${maxTokens} --temperature ${temperature}`;
+    // Get the Claude CLI version to determine command format
+    const cliVersion = await getClaudeCliVersion();
+    let command;
     
-    // Add format-specific options
-    if (format === 'json') {
-      command += ' --format json';
-      if (jsonSchema) {
-        const schemaFile = path.join(tempDir, `schema-${Date.now()}.json`);
-        await fs.writeFile(schemaFile, JSON.stringify(jsonSchema));
-        command += ` --json-schema ${schemaFile}`;
+    // Handle different Claude CLI versions
+    if (cliVersion) {
+      const versionParts = cliVersion.split('.').map(Number);
+      const isMajorVersion0 = versionParts[0] === 0;
+      
+      if (isMajorVersion0) {
+        // Older versions (0.x) might not support --model flag
+        command = `claude`;
+        
+        // Some older versions use -m/--message instead of input file
+        command += ` < ${promptFile}`;
+      } else {
+        // Newer versions with --model support
+        command = `claude --model ${model} --max-tokens ${maxTokens} --temperature ${temperature}`;
+        
+        // Add format-specific options
+        if (format === 'json') {
+          command += ' --format json';
+          if (jsonSchema) {
+            const schemaFile = path.join(tempDir, `schema-${Date.now()}.json`);
+            await fs.writeFile(schemaFile, JSON.stringify(jsonSchema));
+            command += ` --json-schema ${schemaFile}`;
+          }
+        }
+        
+        // Add the prompt file
+        command += ` ${promptFile}`;
       }
+    } else {
+      // If version detection failed, try a basic fallback command
+      command = `claude < ${promptFile}`;
     }
     
-    // Add the prompt file
-    command += ` ${promptFile}`;
+    // Log the command for debugging
+    console.log(`Executing Claude CLI command: ${command}`);
     
     // Execute the command
     const output = execSync(command, { encoding: 'utf8' });

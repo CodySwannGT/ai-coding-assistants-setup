@@ -1,0 +1,1 @@
+# Mock CLAUDE.md file for tests

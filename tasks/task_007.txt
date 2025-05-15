@@ -1,0 +1,60 @@
+# Task ID: 7
+# Title: Implement Embedding Search MCP
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Create a Model Context Protocol that allows AI assistants to search vector databases like Weaviate or Chroma.
+# Details:
+Implement a new MCP that interfaces with vector databases for semantic search:
+
+1. Create a new MCP module for embedding search
+2. Support both Weaviate and Chroma databases
+3. Implement vector query construction and result parsing
+4. Add configuration for database connection and search parameters
+5. Format search results for AI consumption
+
+Pseudo-code:
+```javascript
+class EmbeddingSearchMCP {
+  constructor(config) {
+    this.dbType = config.dbType; // 'weaviate' or 'chroma'
+    this.client = this.createClient(config);
+    this.defaultLimit = config.defaultLimit || 5;
+  }
+
+  createClient(config) {
+    switch(this.dbType) {
+      case 'weaviate':
+        return weaviate.client({
+          scheme: config.scheme || 'http',
+          host: config.host || 'localhost:8080',
+        });
+      case 'chroma':
+        return new ChromaClient({
+          path: config.path || 'http://localhost:8000'
+        });
+      default:
+        throw new Error(`Unsupported vector database type: ${this.dbType}`);
+    }
+  }
+
+  async search(query, collection, limit = this.defaultLimit) {
+    if (this.dbType === 'weaviate') {
+      return this.searchWeaviate(query, collection, limit);
+    } else if (this.dbType === 'chroma') {
+      return this.searchChroma(query, collection, limit);
+    }
+  }
+
+  async searchWeaviate(query, className, limit) {
+    // Implement Weaviate search
+  }
+
+  async searchChroma(query, collectionName, limit) {
+    // Implement Chroma search
+  }
+}
+```
+
+# Test Strategy:
+Create unit tests with mock vector database clients. Test search functionality, result formatting, and error handling. Test with different vector database types and configurations.

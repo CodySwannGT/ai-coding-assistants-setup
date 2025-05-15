@@ -11,18 +11,19 @@
         "ghcr.io/github/github-mcp-server"
       ],
       "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "your-actual-github-token-here"
       }
     },
     "context7-mcp": {
       "command": "npx",
       "args": [
         "-y",
-        "@upstash/context7-mcp@latest"
-      ],
-      "env": {
-        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
-      }
+        "@smithery/cli@latest",
+        "run",
+        "@upstash/context7-mcp",
+        "--key",
+        "your-actual-context7-key-here"
+      ]
     },
     "memory": {
       "command": "npx",
@@ -30,7 +31,7 @@
         "-y",
         "mcp-knowledge-graph",
         "--memory-path",
-        "${MEMORY_PATH}"
+        "/Users/cody/workspace/db/memory.jsonl"
       ],
       "autoapprove": [
         "create_entities",
@@ -51,23 +52,16 @@
         "--package=task-master-ai",
         "task-master-ai"
       ],
-      "env": {}
+      "env": {
+        "ANTHROPIC_API_KEY": "your-actual-anthropic-key-here"
+      }
     },
     "fetch": {
-      "command": "uvx",
-      "args": [
-        "mcp-server-fetch"
-      ]
-    },
-    "brave-search": {
       "command": "npx",
       "args": [
         "-y",
-        "brave-search-mcp-server"
-      ],
-      "env": {
-        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
-      }
+        "mcp-fetch"
+      ]
     }
   }
 }

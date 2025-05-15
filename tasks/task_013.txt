@@ -1,0 +1,45 @@
+# Task ID: 13
+# Title: Create MCP Documentation Table
+# Status: pending
+# Dependencies: 4, 5, 6, 7, 8
+# Priority: medium
+# Description: Create a comprehensive table of all supported MCPs, including purpose and requirements.
+# Details:
+Create a markdown document with a comprehensive table of all supported MCPs:
+
+1. List all MCPs with their names, descriptions, and purposes
+2. Include requirements and dependencies for each MCP
+3. Add configuration options and examples
+4. Include usage examples and code snippets
+5. Add troubleshooting information
+
+Example table structure:
+```markdown
+# Model Context Protocols (MCPs)
+
+This document provides information about all supported Model Context Protocols (MCPs) in the AI Coding Tool.
+
+## Overview
+
+MCPs allow AI assistants to access external information and perform actions beyond their training data.
+
+## Supported MCPs
+
+| MCP Name | Purpose | Requirements | Configuration |
+|----------|---------|--------------|---------------|
+| Filesystem | Access and modify files in the workspace | None | `{ "enabled": true, "rootDir": "./" }` |
+| StackOverflow | Search StackOverflow for code examples and solutions | API Key | `{ "enabled": true, "apiKey": "your-api-key" }` |
+| Command Shell | Execute shell commands and capture output | None | `{ "enabled": true, "allowedCommands": ["ls", "cat"] }` |
+| Database Query | Query databases and retrieve results | Database credentials | `{ "enabled": true, "dbType": "mysql", ... }` |
+| Embedding Search | Search vector databases for semantic information | Vector database | `{ "enabled": true, "dbType": "weaviate", ... }` |
+
+## Detailed Configuration
+
+### Filesystem MCP
+...
+```
+
+Integrate this documentation into the project's docs directory and link it from the main README.md.
+
+# Test Strategy:
+Review documentation for accuracy, clarity, and completeness. Verify all configuration examples are valid and up-to-date. Have team members review the documentation for technical accuracy.

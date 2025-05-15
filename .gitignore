@@ -27,7 +27,6 @@ yarn-error.log*
 # Environment files
 .env
 .env.*
-!.env.example
 
 # Test coverage
 coverage/
@@ -53,8 +52,6 @@ temp/
 # .roo/rules-*/
 
 # AI Assistant files (sensitive/personal configurations)
-.mcp.json.local
-.roo/mcp.json.local
 .claude/credentials.json.enc
 .roo/credentials.json.enc
 .ai-credentials/
@@ -76,8 +73,8 @@ dev-debug.log
 *.sw?
 # OS specific
 # Task files
-tasks/
-.taskmasterconfig
+
+
 # Allow tracking tasks.json for project structure
 !tasks/tasks.json
 

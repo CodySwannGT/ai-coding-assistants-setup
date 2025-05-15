@@ -1,0 +1,73 @@
+# Task ID: 16
+# Title: Add Basic Tests for Config Generation
+# Status: completed
+# Dependencies: 8, 9
+# Priority: high
+# Description: Add snapshot or functional tests for configuration generation.
+# Details:
+Implement basic tests for configuration generation:
+
+1. Set up Jest or another testing framework:
+   ```bash
+   npm install --save-dev jest
+   ```
+
+2. Create test fixtures in `tests/fixtures/`:
+   - Sample input configurations
+   - Expected output configurations
+
+3. Create snapshot tests for configuration generation:
+   ```javascript
+   const { generateConfig } = require('../src/config/generator');
+   
+   describe('Configuration Generator', () => {
+     test('generates default configuration correctly', () => {
+       const input = {}; // Empty input = use defaults
+       const config = generateConfig(input);
+       expect(config).toMatchSnapshot();
+     });
+     
+     test('respects user overrides', () => {
+       const input = {
+         vscode: {
+           extensions: ['custom.extension']
+         },
+         mcps: {
+           stackoverflow: {
+             enabled: true
+           }
+         }
+       };
+       const config = generateConfig(input);
+       expect(config).toMatchSnapshot();
+     });
+     
+     // Add more test cases for different scenarios
+   });
+   ```
+
+4. Create functional tests that verify specific aspects of the configuration:
+   ```javascript
+   test('correctly merges MCP configurations', () => {
+     const input = {
+       mcps: {
+         stackoverflow: {
+           enabled: true,
+           apiKey: 'test-key'
+         }
+       }
+     };
+     const config = generateConfig(input);
+     expect(config.mcps.stackoverflow.enabled).toBe(true);
+     expect(config.mcps.stackoverflow.apiKey).toBe('test-key');
+     // Verify default values are set for unspecified properties
+     expect(config.mcps.stackoverflow.maxResults).toBeDefined();
+   });
+   ```
+
+5. Add tests for error cases and validation
+
+6. Integrate tests with the build process in package.json
+
+# Test Strategy:
+Run tests automatically as part of CI. Verify that tests catch regressions in configuration generation. Update snapshots when configuration format intentionally changes.

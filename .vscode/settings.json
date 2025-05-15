@@ -4,5 +4,8 @@
   "claude.enableAutoCompletion": true,
   "rooCode.useIgnoreFiles": true,
   "rooCode.autoApproveReads": true,
-  "git.ignoreLimitWarning": true
+  "git.ignoreLimitWarning": true,
+  "editor.inlineSuggest.suppressSuggestions": false,
+  "github.copilot.inlineSuggest.enable": true,
+  "github.copilot.inlineSuggest.count": 1
 }

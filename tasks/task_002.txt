@@ -1,0 +1,28 @@
+# Task ID: 2
+# Title: Add Copilot Override Configuration
+# Status: pending
+# Dependencies: 1
+# Priority: medium
+# Description: Implement functionality to disable or override GitHub Copilot when using other AI assistants.
+# Details:
+Create configuration options that allow users to:
+1. Temporarily disable Copilot when using Claude or Roo
+2. Set preferences for which AI assistant to use by default
+
+Implementation should modify VS Code settings.json to toggle Copilot's enabled state:
+
+```javascript
+function toggleCopilot(enable) {
+  const settingsPath = path.join(getUserHome(), '.config', 'Code', 'User', 'settings.json');
+  const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+  
+  settings['github.copilot.enabled'] = enable;
+  
+  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+}
+```
+
+Add this as an option in the CLI setup process.
+
+# Test Strategy:
+Test with mock settings file to ensure proper modification. Verify that settings are correctly updated and restored. Test edge cases like missing settings file or malformed JSON.

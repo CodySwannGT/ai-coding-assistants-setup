@@ -1,0 +1,56 @@
+# Task ID: 8
+# Title: Update Configuration Files for New MCPs
+# Status: pending
+# Dependencies: 4, 5, 6, 7
+# Priority: medium
+# Description: Update configuration files and documentation to include the newly added Model Context Protocols.
+# Details:
+Update configuration files to include settings for the new MCPs:
+
+1. Add configuration templates for each new MCP
+2. Update the configuration schema to include new options
+3. Add validation for the new configuration options
+4. Update the configuration generation logic in the CLI
+5. Add documentation for each configuration option
+
+Example configuration additions:
+```javascript
+// Add to config schema
+const configSchema = {
+  // Existing schema
+  mcps: {
+    stackOverflow: {
+      enabled: Boolean,
+      apiKey: String,
+      // Other options
+    },
+    commandShell: {
+      enabled: Boolean,
+      allowedCommands: Array,
+      workingDirectory: String,
+      timeout: Number,
+    },
+    // Other MCPs
+  }
+};
+
+// Update config generation
+function generateConfig(userInputs) {
+  // Existing logic
+  
+  if (userInputs.enableStackOverflowMCP) {
+    config.mcps.stackOverflow = {
+      enabled: true,
+      apiKey: userInputs.stackOverflowApiKey,
+      // Other options
+    };
+  }
+  
+  // Other MCPs
+  
+  return config;
+}
+```
+
+# Test Strategy:
+Test configuration generation with various combinations of MCP settings. Verify that the generated configuration is valid according to the schema. Test with both complete and partial configurations.

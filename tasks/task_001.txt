@@ -1,0 +1,25 @@
+# Task ID: 1
+# Title: Implement GitHub Copilot Detection
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Add functionality to detect existing GitHub Copilot installations in the user's VS Code environment.
+# Details:
+Create a utility function that checks for the presence of GitHub Copilot extension in VS Code. This can be done by examining the extensions directory or using VS Code's extension API if available.
+
+Pseudo-code:
+```javascript
+function detectCopilot() {
+  // Check common extension paths
+  const extensionPath = path.join(getUserHome(), '.vscode', 'extensions');
+  const copilotExtensions = fs.readdirSync(extensionPath)
+    .filter(ext => ext.startsWith('github.copilot'));
+  
+  return copilotExtensions.length > 0;
+}
+```
+
+Integrate this detection into the initial setup flow to inform users if Copilot is already installed.
+
+# Test Strategy:
+Create unit tests with mock filesystem to verify detection logic works correctly. Test with various scenarios (Copilot installed, not installed, different versions).

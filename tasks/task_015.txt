@@ -1,0 +1,181 @@
+# Task ID: 15
+# Title: Add Support for Non-JavaScript Repositories
+# Status: pending
+# Dependencies: 9
+# Priority: high
+# Description: Modify the project to work with non-JavaScript repositories by implementing language detection and graceful fallbacks.
+# Details:
+Implement support for non-JavaScript repositories:
+
+1. Modify project root detection to work without package.json
+2. Implement language detection for Python, Ruby, Shell, and other languages
+3. Create graceful fallbacks for functions that rely on package.json
+4. Add CLI flags for specifying project type
+5. Update error handling to be more informative
+
+Implementation steps:
+
+1. Create a language detection module:
+```javascript
+// src/utils/language-detection.js
+const fs = require('fs');
+const path = require('path');
+
+function detectLanguage(projectPath) {
+  // Check for language-specific files
+  if (fs.existsSync(path.join(projectPath, 'package.json'))) {
+    return 'javascript';
+  }
+  if (fs.existsSync(path.join(projectPath, 'requirements.txt')) || 
+      fs.existsSync(path.join(projectPath, 'setup.py'))) {
+    return 'python';
+  }
+  if (fs.existsSync(path.join(projectPath, 'Gemfile'))) {
+    return 'ruby';
+  }
+  
+  // Count file extensions
+  const fileExtensions = countFileExtensions(projectPath);
+  const dominantExtension = findDominantExtension(fileExtensions);
+  
+  // Map extension to language
+  const extensionMap = {
+    'js': 'javascript',
+    'py': 'python',
+    'rb': 'ruby',
+    'sh': 'shell',
+    // Add more mappings
+  };
+  
+  return extensionMap[dominantExtension] || 'unknown';
+}
+
+function countFileExtensions(dir) {
+  // Implementation to count file extensions recursively
+}
+
+function findDominantExtension(extensionCounts) {
+  // Find the most common extension
+}
+
+module.exports = { detectLanguage };
+```
+
+2. Modify project root detection:
+```javascript
+// src/utils/project.js
+const fs = require('fs');
+const path = require('path');
+
+function findProjectRoot(startPath) {
+  let currentPath = startPath;
+  
+  while (currentPath !== '/') {
+    // Check for common project root indicators
+    if (fs.existsSync(path.join(currentPath, 'package.json')) ||
+        fs.existsSync(path.join(currentPath, '.git')) ||
+        fs.existsSync(path.join(currentPath, 'requirements.txt')) ||
+        fs.existsSync(path.join(currentPath, 'Gemfile'))) {
+      return currentPath;
+    }
+    
+    currentPath = path.dirname(currentPath);
+  }
+  
+  // If no root found, return the starting path
+  return startPath;
+}
+
+module.exports = { findProjectRoot };
+```
+
+3. Add CLI flags for project type:
+```javascript
+// src/cli/index.js
+yargs
+  .option('project-type', {
+    alias: 't',
+    describe: 'Specify the project type',
+    choices: ['javascript', 'python', 'ruby', 'shell', 'other'],
+  })
+  // Other options
+```
+
+4. Update configuration generation to handle different project types:
+```javascript
+// src/utils/config.js
+function generateConfig(userInputs) {
+  const projectType = userInputs.projectType || detectLanguage(userInputs.projectPath);
+  
+  const config = {
+    projectType,
+    // Base configuration
+  };
+  
+  // Add language-specific configuration
+  switch (projectType) {
+    case 'javascript':
+      // JavaScript-specific config
+      break;
+    case 'python':
+      // Python-specific config
+      break;
+    // Other languages
+  }
+  
+  return config;
+}
+```
+
+# Test Strategy:
+Create test fixtures for different project types. Test language detection with various repository structures. Test configuration generation for each supported language. Verify graceful fallbacks work correctly when language-specific features are not available.
+
+# Subtasks:
+## 1. Create Language Detection Module [pending]
+### Dependencies: None
+### Description: Implement a module that can detect the primary programming language of a repository based on file extensions and common project files.
+### Details:
+Create src/utils/language-detection.js with functions to scan directories, count file extensions, and identify language-specific files like requirements.txt (Python), Gemfile (Ruby), etc. Implement the detectLanguage function that returns the primary language based on these indicators. Include support for JavaScript, Python, Ruby, Shell, and a fallback for unknown languages.
+
+## 2. Modify Project Root Detection [pending]
+### Dependencies: 15.1
+### Description: Update the project root detection logic to work without relying on package.json by checking for various project indicators.
+### Details:
+Modify src/utils/project.js to enhance findProjectRoot function to recognize project roots based on multiple indicators like .git directory, requirements.txt, Gemfile, etc. Ensure backward compatibility with JavaScript projects while adding support for other language repositories.
+
+## 3. Implement Graceful Fallbacks for Package.json Dependencies [pending]
+### Dependencies: 15.1, 15.2
+### Description: Modify functions that currently rely on package.json to gracefully handle its absence and use alternative sources of information.
+### Details:
+Identify all functions that read from package.json and modify them to first check if the file exists. Implement alternative logic for each function when package.json is missing, using information from the detected language. Update dependency analysis, script execution, and configuration generation to work with limited information.
+
+## 4. Add CLI Flags for Project Type Specification [pending]
+### Dependencies: 15.1
+### Description: Enhance the CLI to allow users to explicitly specify the project type when automatic detection is insufficient.
+### Details:
+Update src/cli/index.js to add a --project-type (-t) option with choices for supported languages. Ensure this user-specified type overrides the automatic detection when provided. Update help documentation to explain this option.
+
+## 5. Update Configuration Generation for Multiple Languages [pending]
+### Dependencies: 15.1, 15.3, 15.4
+### Description: Modify the configuration generation process to create appropriate configs based on the detected or specified project language.
+### Details:
+Update src/utils/config.js to generate language-specific configurations. Implement a switch statement to handle different project types and apply appropriate defaults and settings for each language. Ensure configurations are still valid and useful even with limited information.
+
+## 6. Enhance Error Handling and User Messaging [pending]
+### Dependencies: 15.3, 15.5
+### Description: Improve error messages and user feedback when working with non-JavaScript repositories to clearly communicate limitations.
+### Details:
+Audit all error messages related to missing package.json or JavaScript-specific features. Replace generic errors with informative messages that explain the limitation and suggest alternatives or workarounds. Add warnings when running in limited functionality mode on non-JavaScript repositories.
+
+## 7. Create Language-Specific Utility Functions [pending]
+### Dependencies: 15.1, 15.5
+### Description: Implement utility functions for each supported language to handle language-specific operations.
+### Details:
+Create a new module src/utils/language-utils.js with functions for each supported language. Implement functions to identify dependencies, entry points, and other project information for Python, Ruby, and Shell projects. These utilities will replace JavaScript-specific functions when working with other languages.
+
+## 8. Update Documentation and Examples [pending]
+### Dependencies: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7
+### Description: Update all documentation and examples to reflect multi-language support and explain limitations.
+### Details:
+Update README.md and other documentation to clearly explain multi-language support. Add examples for using the tool with different project types. Document any limitations when working with non-JavaScript repositories. Create language-specific sections in the documentation to help users with different project types.
+

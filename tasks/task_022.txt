@@ -1,0 +1,62 @@
+# Task ID: 22
+# Title: Update Setup Script to Add Task Master AI Files to .gitignore
+# Status: completed
+# Dependencies: None
+# Priority: medium
+# Description: Modify the setup script to automatically add Task Master AI configuration and task files to the project's .gitignore file during installation, preventing sensitive or user-specific files from being committed to version control.
+# Details:
+The implementation should:
+
+1. Update the setup script to include a function that handles .gitignore modifications
+2. When Task Master AI is installed, the script should:
+   - Check if a .gitignore file exists in the project root
+   - Create a new .gitignore file if one doesn't exist
+   - Add the following patterns if they don't already exist:
+     * .taskmasterconfig
+     * tasks/*.txt
+     * tasks/task_*.txt
+3. Implement pattern checking to prevent duplicate entries
+4. Use appropriate file handling techniques to:
+   - Read the existing .gitignore content
+   - Check for existing patterns
+   - Append new patterns only when needed
+   - Write back to the file
+5. Add appropriate logging to inform the user about the changes made
+6. Handle potential errors gracefully (file permissions, etc.)
+7. Document the behavior in the setup script's help text and README
+8. Ensure this functionality runs during initial installation and can be triggered separately during updates
+
+This feature helps maintain a clean repository by preventing user-specific task files and configuration from being committed, while still allowing the core functionality to be version controlled.
+
+# Test Strategy:
+Testing should verify:
+
+1. **New Installation Test**:
+   - Run the setup script in a fresh project without a .gitignore
+   - Verify a .gitignore file is created with the correct patterns
+
+2. **Existing .gitignore Test**:
+   - Create a test project with an existing .gitignore containing some patterns
+   - Run the setup script
+   - Verify the Task Master AI patterns are added without disturbing existing content
+
+3. **Duplicate Prevention Test**:
+   - Create a test project with a .gitignore that already contains some of the Task Master AI patterns
+   - Run the setup script
+   - Verify no duplicates are created and all required patterns exist
+
+4. **File Permission Test**:
+   - Create a read-only .gitignore file
+   - Run the setup script
+   - Verify appropriate error handling and user feedback
+
+5. **Integration Test**:
+   - After installation, create some task files in the tasks/ directory
+   - Run git status
+   - Verify the task files are ignored by git
+
+6. **Manual Verification**:
+   - Review the modified setup script code for proper error handling and edge cases
+   - Ensure the implementation follows best practices for file manipulation
+
+Document all test cases and results to confirm the feature works as expected across different scenarios.

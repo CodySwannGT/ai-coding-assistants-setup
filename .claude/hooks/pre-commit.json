@@ -1,0 +1,12 @@
+{
+  "linting": {
+    "enabled": true,
+    "linter": "eslint",
+    "scriptName": "lint"
+  },
+  "formatting": {
+    "enabled": true,
+    "formatter": "eslint+prettier",
+    "scriptName": "format"
+  }
+}

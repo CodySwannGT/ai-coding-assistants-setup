@@ -40,20 +40,12 @@ export async function getClaudeCliVersion() {
  * Call Claude CLI with a prompt
  * @param {Object} options Options for the Claude CLI call
  * @param {string} options.prompt The prompt to send to Claude
- * @param {string} [options.model='claude-3-opus-20240229'] The Claude model to use
- * @param {number} [options.maxTokens=2000] Maximum number of tokens to generate
- * @param {number} [options.temperature=0.7] Temperature for generation
- * @param {string} [options.format='json'] Output format ('json' or 'text')
- * @param {string} [options.jsonSchema] JSON schema for structured output (if format is 'json')
+ * @param {string} [options.format='text'] Output format ('json' or 'text')
  * @returns {Promise<Object|string>} Claude's response
  */
 export async function callClaudeCli({ 
-  prompt, 
-  model = 'claude-3-opus-20240229', 
-  maxTokens = 2000, 
-  temperature = 0.7,
-  format = 'json',
-  jsonSchema
+  prompt,
+  format = 'text'
 }) {
   // Check if Claude CLI is available
   const cliAvailable = await isClaudeCliAvailable();
@@ -61,70 +53,50 @@ export async function callClaudeCli({
     throw new Error('Claude CLI is not available');
   }
   
-  // Split the content into instructions (for -p flag) and data (for piping)
-  // For our use case, we'll treat everything as instructions
-  const instructions = prompt;
-  
-  // Create a temporary file for any data that needs to be piped
+  // Create a temporary file for the prompt to avoid shell interpretation issues
   const tempDir = path.join(process.cwd(), '.claude', 'temp');
   await fs.ensureDir(tempDir);
-  const dataFile = path.join(tempDir, `data-${Date.now()}.txt`);
-  
-  // We'll create an empty file - our prompt will go in the -p parameter
-  // In hooks that need to pipe git data, they should modify this approach
-  await fs.writeFile(dataFile, '');
+  const promptFile = path.join(tempDir, `prompt-${Date.now()}.txt`);
+  await fs.writeFile(promptFile, prompt);
   
   try {
-    // Build the Claude CLI command using the pipe approach
-    let command = `cat ${dataFile} | claude`;
+    // Create a safe command using the cat | claude pattern with the --print flag
+    // We write the prompt to a file to avoid shell interpretation issues
+    let command = `cat ${promptFile} | claude --print`;
     
-    // Add command-line options
-    command += ` -p "${instructions.replace(/"/g, '\\"')}"`;
-    command += ` --max-tokens ${maxTokens}`;
-    command += ` --temperature ${temperature}`;
-    
-    if (model) {
-      command += ` --model ${model}`;
-    }
-    
-    // Add format-specific options
+    // Add output format if needed
     if (format === 'json') {
-      command += ' --format json';
-      
-      if (jsonSchema) {
-        const schemaFile = path.join(tempDir, `schema-${Date.now()}.json`);
-        await fs.writeFile(schemaFile, JSON.stringify(jsonSchema));
-        command += ` --json-schema ${schemaFile}`;
-      }
+      command += ' --output-format json';
     }
     
     // Log the command for debugging (with abbreviated prompt for readability)
-    const logPrompt = instructions.length > 50 
-      ? instructions.substring(0, 50) + '...' 
-      : instructions;
+    const logPrompt = prompt.length > 50 
+      ? prompt.substring(0, 50) + '...' 
+      : prompt;
       
-    console.log(`Executing Claude CLI command: cat ${dataFile} | claude -p "${logPrompt}" [... args]`);
+    console.log(`Executing Claude CLI command: cat prompt.txt | claude --print ${format === 'json' ? '--output-format json' : ''}`);
+    console.log(`Prompt content starts with: ${logPrompt}`);
     
     // Execute the command
     const output = execSync(command, { encoding: 'utf8' });
     
-    // Parse the output
+    // Parse JSON if requested
     if (format === 'json') {
       try {
         return JSON.parse(output);
       } catch (parseErr) {
         console.error('Failed to parse JSON output:', parseErr.message);
-        console.error('Raw output:', output);
         return output; // Return raw output if JSON parsing fails
       }
     }
     
     return output;
   } catch (err) {
+    console.error(`Claude CLI error: ${err.message}`);
     throw new Error(`Failed to call Claude CLI: ${err.message}`);
   } finally {
-    // Clean up temporary files
-    await fs.remove(dataFile);
+    // Clean up the temporary file
+    await fs.remove(promptFile);
   }
 }
 

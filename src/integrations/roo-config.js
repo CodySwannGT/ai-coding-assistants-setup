@@ -5,22 +5,22 @@
  */
 
 import path from 'path';
-import { 
-  fileExists, 
-  safeReadJson, 
-  safeWriteJson, 
-  ensureDirectory, 
-  writeTextFile 
-} from '../utils/file.js';
-import { 
-  printHeader, 
-  printInfo, 
-  printSuccess 
-} from '../utils/logger.js';
-import { 
-  getEncryptionKey, 
-  encryptValue 
+import {
+  encryptValue,
+  getEncryptionKey
 } from '../utils/encryption.js';
+import {
+  ensureDirectory,
+  fileExists,
+  safeReadJson,
+  safeWriteJson,
+  writeTextFile
+} from '../utils/file.js';
+import {
+  printHeader,
+  printInfo,
+  printSuccess
+} from '../utils/logger.js';
 
 /**
  * Setup Roo Code configuration

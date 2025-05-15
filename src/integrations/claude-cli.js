@@ -61,59 +61,62 @@ export async function callClaudeCli({
     throw new Error('Claude CLI is not available');
   }
   
-  // Create a temporary file for the prompt
+  // Split the content into instructions (for -p flag) and data (for piping)
+  // For our use case, we'll treat everything as instructions
+  const instructions = prompt;
+  
+  // Create a temporary file for any data that needs to be piped
   const tempDir = path.join(process.cwd(), '.claude', 'temp');
   await fs.ensureDir(tempDir);
-  const promptFile = path.join(tempDir, `prompt-${Date.now()}.txt`);
-  await fs.writeFile(promptFile, prompt);
+  const dataFile = path.join(tempDir, `data-${Date.now()}.txt`);
+  
+  // We'll create an empty file - our prompt will go in the -p parameter
+  // In hooks that need to pipe git data, they should modify this approach
+  await fs.writeFile(dataFile, '');
   
   try {
-    // Get the Claude CLI version to determine command format
-    const cliVersion = await getClaudeCliVersion();
-    let command;
+    // Build the Claude CLI command using the pipe approach
+    let command = `cat ${dataFile} | claude`;
     
-    // Handle different Claude CLI versions
-    if (cliVersion) {
-      const versionParts = cliVersion.split('.').map(Number);
-      const isMajorVersion0 = versionParts[0] === 0;
-      
-      if (isMajorVersion0) {
-        // Older versions (0.x) might not support --model flag
-        command = `claude`;
-        
-        // Some older versions use -m/--message instead of input file
-        command += ` < ${promptFile}`;
-      } else {
-        // Newer versions with --model support
-        command = `claude --model ${model} --max-tokens ${maxTokens} --temperature ${temperature}`;
-        
-        // Add format-specific options
-        if (format === 'json') {
-          command += ' --format json';
-          if (jsonSchema) {
-            const schemaFile = path.join(tempDir, `schema-${Date.now()}.json`);
-            await fs.writeFile(schemaFile, JSON.stringify(jsonSchema));
-            command += ` --json-schema ${schemaFile}`;
-          }
-        }
-        
-        // Add the prompt file
-        command += ` ${promptFile}`;
-      }
-    } else {
-      // If version detection failed, try a basic fallback command
-      command = `claude < ${promptFile}`;
+    // Add command-line options
+    command += ` -p "${instructions.replace(/"/g, '\\"')}"`;
+    command += ` --max-tokens ${maxTokens}`;
+    command += ` --temperature ${temperature}`;
+    
+    if (model) {
+      command += ` --model ${model}`;
     }
     
-    // Log the command for debugging
-    console.log(`Executing Claude CLI command: ${command}`);
+    // Add format-specific options
+    if (format === 'json') {
+      command += ' --format json';
+      
+      if (jsonSchema) {
+        const schemaFile = path.join(tempDir, `schema-${Date.now()}.json`);
+        await fs.writeFile(schemaFile, JSON.stringify(jsonSchema));
+        command += ` --json-schema ${schemaFile}`;
+      }
+    }
+    
+    // Log the command for debugging (with abbreviated prompt for readability)
+    const logPrompt = instructions.length > 50 
+      ? instructions.substring(0, 50) + '...' 
+      : instructions;
+      
+    console.log(`Executing Claude CLI command: cat ${dataFile} | claude -p "${logPrompt}" [... args]`);
     
     // Execute the command
     const output = execSync(command, { encoding: 'utf8' });
     
     // Parse the output
     if (format === 'json') {
-      return JSON.parse(output);
+      try {
+        return JSON.parse(output);
+      } catch (parseErr) {
+        console.error('Failed to parse JSON output:', parseErr.message);
+        console.error('Raw output:', output);
+        return output; // Return raw output if JSON parsing fails
+      }
     }
     
     return output;
@@ -121,7 +124,7 @@ export async function callClaudeCli({
     throw new Error(`Failed to call Claude CLI: ${err.message}`);
   } finally {
     // Clean up temporary files
-    await fs.remove(promptFile);
+    await fs.remove(dataFile);
   }
 }
 

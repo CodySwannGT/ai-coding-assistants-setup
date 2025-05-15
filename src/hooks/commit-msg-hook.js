@@ -32,19 +32,14 @@ class CommitMsgHook extends BaseHook {
    * @returns {string} The hook script content
    */
   generateHookScript() {
-    // Get the Node executable path
-    const nodePath = process.execPath;
-
-    // Get the script path - this will be installed in the project's bin directory
-    const scriptPath = path.join(this.projectRoot, 'node_modules', '.bin', 'claude-hook-runner');
-
+    // Get the script path - using npx for portability
     return `#!/bin/sh
 # AI Coding Assistants Hook: ${this.name}
 # Description: ${this.description}
 # Generated: ${new Date().toISOString()}
 
 # Run the hook script
-"${nodePath}" "${scriptPath}" commit-msg "$@"
+npx ai-coding-assistants-setup claude-hook-runner commit-msg --non-interactive "$@"
 exit $?
 `;
   }
@@ -148,6 +143,12 @@ exit $?
    * @returns {Promise<Object>} Validation results
    */
   async validateCommitMessage(message) {
+    // If running in non-interactive mode, use the fallback validation
+    if (this.isNonInteractive()) {
+      this.debug('Running in non-interactive mode, using fallback validation');
+      return this.validateCommitMessageFallback(message);
+    }
+
     // Check if Claude is available
     if (this.claudeAvailable === null) {
       await this.checkClaudeAvailability();

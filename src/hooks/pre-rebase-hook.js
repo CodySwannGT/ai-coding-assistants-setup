@@ -33,19 +33,13 @@ class PreRebaseHook extends BaseHook {
    * @returns {string} The hook script content
    */
   generateHookScript() {
-    // Get the Node executable path
-    const nodePath = process.execPath;
-
-    // Get the script path - this will be installed in the project's bin directory
-    const scriptPath = path.join(this.projectRoot, 'node_modules', '.bin', 'claude-hook-runner');
-
     return `#!/bin/sh
 # AI Coding Assistants Hook: ${this.name}
 # Description: ${this.description}
 # Generated: ${new Date().toISOString()}
 
 # Run the hook script, passing all arguments received by the hook
-"${nodePath}" "${scriptPath}" pre-rebase "$@"
+npx ai-coding-assistants-setup claude-hook-runner pre-rebase --non-interactive "$@"
 
 # Check the exit code from the hook script
 exit_code=$?

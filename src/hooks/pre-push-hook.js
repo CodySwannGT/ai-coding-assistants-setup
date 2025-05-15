@@ -29,12 +29,6 @@ class PrePushHook extends BaseHook {
    * @returns {string} The hook script content
    */
   generateHookScript() {
-    // Get the Node executable path
-    const nodePath = process.execPath;
-    
-    // Get the script path - this will be installed in the project's bin directory
-    const scriptPath = path.join(this.projectRoot, 'node_modules', '.bin', 'claude-hook-runner');
-    
     return `#!/bin/sh
 # AI Coding Assistants Hook: ${this.name}
 # Description: ${this.description}
@@ -48,7 +42,7 @@ if [ -z "$BRANCH_NAME" ]; then
 fi
 
 # Run the hook script
-"${nodePath}" "${scriptPath}" pre-push "$BRANCH_NAME" "$@"
+npx ai-coding-assistants-setup claude-hook-runner pre-push --non-interactive "$BRANCH_NAME" "$@"
 exit $?
 `;
   }

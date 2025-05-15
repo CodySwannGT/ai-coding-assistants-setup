@@ -42,6 +42,7 @@ export class BaseHook {
     this.claudeAvailable = null; // Will track Claude availability
     this.claudeCliAvailable = null; // Will track Claude CLI availability
     this.preferCli = config.preferCli !== undefined ? config.preferCli : true; // Whether to prefer Claude CLI over API
+    this.nonInteractive = config.nonInteractive || false; // Whether to run in non-interactive mode
   }
 
   /**
@@ -122,6 +123,22 @@ export class BaseHook {
    */
   isEnabled() {
     return this.enabled;
+  }
+
+  /**
+   * Set non-interactive mode
+   * @param {boolean} nonInteractive Whether to run in non-interactive mode
+   */
+  setNonInteractive(nonInteractive) {
+    this.nonInteractive = nonInteractive;
+  }
+
+  /**
+   * Check if non-interactive mode is enabled
+   * @returns {boolean} Whether non-interactive mode is enabled
+   */
+  isNonInteractive() {
+    return this.nonInteractive || process.env.CLAUDE_NON_INTERACTIVE === 'true';
   }
 
   /**

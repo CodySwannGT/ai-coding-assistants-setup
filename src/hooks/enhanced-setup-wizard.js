@@ -10,6 +10,7 @@ import fs from 'fs';
 import inquirer from 'inquirer';
 import path from 'path';
 import { isClaudeCliAvailable } from '../integrations/claude-cli.js';
+import { setupRooCode } from '../integrations/roo-config.js';
 import projectDetector from '../utils/project-detector.js';
 import codeQualityHooks from './code-quality-hooks.js';
 import { applyHookTemplate } from './config-manager.js';
@@ -263,6 +264,67 @@ export async function runEnhancedSetupWizard({
         logger
       });
     }
+    
+    // --- Set up Roo with SPARC modes ---
+    printInfo('Setting up Roo with SPARC modes...');
+    try {
+      await setupRooCode({ 
+        projectRoot, 
+        dryRun: false, 
+        nonInteractive: false,
+        checkbox: async (options) => {
+          const { choices } = options;
+          const results = await inquirer.prompt([
+            {
+              type: 'checkbox',
+              name: 'selected',
+              message: options.message,
+              choices,
+              default: options.default || []
+            }
+          ]);
+          return results.selected;
+        },
+        password: async (options) => {
+          const results = await inquirer.prompt([
+            {
+              type: 'password',
+              name: 'value',
+              message: options.message,
+              validate: options.validate
+            }
+          ]);
+          return results.value;
+        },
+        input: async (options) => {
+          const results = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'value',
+              message: options.message,
+              default: options.default
+            }
+          ]);
+          return results.value;
+        },
+        confirm: async (options) => {
+          const results = await inquirer.prompt([
+            {
+              type: 'confirm',
+              name: 'value',
+              message: options.message,
+              default: options.default || true
+            }
+          ]);
+          return results.value;
+        }
+      });
+      printSuccess('Roo with SPARC modes set up successfully');
+    } catch (error) {
+      printWarning(`Failed to set up Roo: ${error.message}`);
+    }
+    // --- End Roo with SPARC modes setup ---
+    
     // --- Add Dependabot Configuration Step ---
     const { addDependabot } = await inquirer.prompt([
       {
@@ -330,6 +392,66 @@ updates:
     });
   }
   
+  // --- Set up Roo with SPARC modes (Custom Approach) ---
+  printInfo('Setting up Roo with SPARC modes...');
+  try {
+    await setupRooCode({ 
+      projectRoot, 
+      dryRun: false, 
+      nonInteractive: false,
+      checkbox: async (options) => {
+        const { choices } = options;
+        const results = await inquirer.prompt([
+          {
+            type: 'checkbox',
+            name: 'selected',
+            message: options.message,
+            choices,
+            default: options.default || []
+          }
+        ]);
+        return results.selected;
+      },
+      password: async (options) => {
+        const results = await inquirer.prompt([
+          {
+            type: 'password',
+            name: 'value',
+            message: options.message,
+            validate: options.validate
+          }
+        ]);
+        return results.value;
+      },
+      input: async (options) => {
+        const results = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'value',
+            message: options.message,
+            default: options.default
+          }
+        ]);
+        return results.value;
+      },
+      confirm: async (options) => {
+        const results = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'value',
+            message: options.message,
+            default: options.default || true
+          }
+        ]);
+        return results.value;
+      }
+    });
+    printSuccess('Roo with SPARC modes set up successfully');
+  } catch (error) {
+    printWarning(`Failed to set up Roo: ${error.message}`);
+  }
+  // --- End Roo with SPARC modes setup (Custom Approach) ---
+
   // --- Add Dependabot Configuration Step (Custom Approach) ---
   // Note: Duplicated logic for custom path, consider refactoring later
   const { addDependabotCustom } = await inquirer.prompt([

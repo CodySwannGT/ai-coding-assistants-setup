@@ -100,12 +100,6 @@ class EnhancedPreCommitHook extends EnhancedBaseHook {
    * @returns {string} The hook script content
    */
   generateHookScript() {
-    // Get the Node executable path
-    const nodePath = process.execPath;
-    
-    // Get the script path - this will be installed in the project's bin directory
-    const scriptPath = path.join(this.projectRoot, 'node_modules', '.bin', 'claude-hook-runner');
-    
     return `#!/bin/sh
 # AI Coding Assistants Hook: ${this.name}
 # Description: ${this.description}
@@ -118,7 +112,7 @@ if [ -z "$(git diff --cached --name-only)" ]; then
 fi
 
 # Run the hook script
-"${nodePath}" "${scriptPath}" enhanced-pre-commit "$@"
+npx ai-coding-assistants-setup claude-hook-runner enhanced-pre-commit --non-interactive "$@"
 exit $?
 `;
   }

@@ -56,13 +56,26 @@ async function main() {
       process.exit(1);
     }
     
+    // Check for non-interactive flag
+    const args = process.argv.slice(3);
+    const nonInteractiveFlag = args.includes('--non-interactive');
+    
+    // If --non-interactive is found, remove it from args and set environment variable
+    let hookArgs = args;
+    if (nonInteractiveFlag) {
+      hookArgs = args.filter(arg => arg !== '--non-interactive');
+      process.env.CLAUDE_NON_INTERACTIVE = 'true';
+      logger.debug('Running in non-interactive mode');
+    }
+    
     // Find the Git repository root
     const projectRoot = findGitRoot();
     
     // Create the hook registry
     const registry = new HookRegistry({
       projectRoot,
-      logger
+      logger,
+      nonInteractive: nonInteractiveFlag // Pass non-interactive flag to registry
     });
     
     // Load hook implementations
@@ -84,8 +97,13 @@ async function main() {
       process.exit(0);
     }
     
+    // Set non-interactive mode on the hook if flag was provided
+    if (nonInteractiveFlag && hook.setNonInteractive) {
+      hook.setNonInteractive(true);
+    }
+    
     // Execute the hook
-    await hook.execute(process.argv.slice(3));
+    await hook.execute(hookArgs);
     
     // Exit successfully
     process.exit(0);

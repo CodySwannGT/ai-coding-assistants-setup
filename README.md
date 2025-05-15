@@ -425,6 +425,7 @@ Modular Capability Providers (MCPs) extend AI assistants with specialized capabi
 | **Task Master** | Project management, task organization | Anthropic API Key |
 | **Filesystem** | Secure file operations | Path restrictions |
 | **Browser** | Web search, interaction simulation | None required |
+| **Brave Search** | Web search via Brave Search API | Brave API Key |
 
 ### Configuration Hierarchy
 
@@ -472,6 +473,13 @@ The system employs a multi-level configuration approach:
         "delete_entities", "delete_observations", "delete_relations",
         "read_graph", "search_nodes", "open_nodes"
       ]
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "brave-search-mcp-server"],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      }
     }
   }
 }

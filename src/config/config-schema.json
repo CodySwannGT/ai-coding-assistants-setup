@@ -186,6 +186,25 @@
           "required": ["BLOCKED_COMMANDS", "COMMAND_TIMEOUT_MS"]
         }
       }
+    },
+    "braveSearchMcp": {
+      "type": "object",
+      "description": "Brave Search MCP server configuration",
+      "allOf": [
+        { "$ref": "#/definitions/mcpServer" }
+      ],
+      "properties": {
+        "env": {
+          "type": "object",
+          "properties": {
+            "BRAVE_API_KEY": {
+              "type": "string",
+              "description": "Brave Search API Key"
+            }
+          },
+          "required": ["BRAVE_API_KEY"]
+        }
+      }
     }
   }
 }

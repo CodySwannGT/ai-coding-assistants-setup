@@ -47,6 +47,14 @@ export function getCommandShellMcpSchema() {
 }
 
 /**
+ * Get Brave Search MCP schema
+ * @returns {Object} Brave Search MCP schema
+ */
+export function getBraveSearchMcpSchema() {
+  return configSchema.definitions.braveSearchMcp;
+}
+
+/**
  * Get default StackOverflow MCP configuration
  * @returns {Object} Default StackOverflow MCP configuration
  */
@@ -62,6 +70,23 @@ export function getDefaultStackOverflowMcpConfig() {
       SEARCH_TIMEOUT_MS: '5000',
       INCLUDE_CODE_SNIPPETS: 'true',
       PREFER_ACCEPTED_ANSWERS: 'true'
+    }
+  };
+}
+
+/**
+ * Get default Brave Search MCP configuration
+ * @returns {Object} Default Brave Search MCP configuration
+ */
+export function getDefaultBraveSearchMcpConfig() {
+  return {
+    command: 'npx',
+    args: [
+      '-y',
+      'brave-search-mcp-server'
+    ],
+    env: {
+      BRAVE_API_KEY: '${BRAVE_API_KEY}'
     }
   };
 }
@@ -91,6 +116,8 @@ export default {
   validateMcpConfig,
   getStackOverflowMcpSchema,
   getCommandShellMcpSchema,
+  getBraveSearchMcpSchema,
   getDefaultStackOverflowMcpConfig,
+  getDefaultBraveSearchMcpConfig,
   getDefaultCommandShellMcpConfig
 };

@@ -71,7 +71,8 @@ export async function setupMcpConfig(options) {
     { name: 'jira (Task integration)', value: 'jira' },
     { name: 'playwright (Testing automation)', value: 'playwright' },
     { name: 'fetch (API communication)', value: 'fetch' },
-    { name: 'browser (Web content retrieval)', value: 'browser' }
+    { name: 'browser (Web content retrieval)', value: 'browser' },
+    { name: 'brave-search (Web search)', value: 'brave-search' }
   ];
   
   // Select servers
@@ -279,6 +280,36 @@ export async function setupMcpConfig(options) {
     serverConfigs.fetch = {
       command: 'uvx',
       args: ['mcp-server-fetch']
+    };
+  }
+  
+  // Configure brave-search MCP
+  if (selectedServers.includes('brave-search')) {
+    // Get default configuration from schema
+    const { getDefaultBraveSearchMcpConfig } = await import('../config/mcp-config-schema.js');
+    serverConfigs['brave-search'] = getDefaultBraveSearchMcpConfig();
+    
+    // Ask for Brave Search API key
+    if (!nonInteractive) {
+      const braveApiKey = await password({
+        message: 'Enter your Brave Search API key:',
+        validate: input => input.trim() ? true : 'API key is required for Brave Search'
+      });
+
+      if (braveApiKey) {
+        personalConfig.env.BRAVE_API_KEY = braveApiKey;
+      }
+    } else {
+      // In non-interactive mode, try to get from environment
+      const apiKey = getEnvValue('BRAVE_API_KEY', env);
+      if (apiKey) {
+        personalConfig.env.BRAVE_API_KEY = apiKey;
+      }
+    }
+    
+    // Add the environment variable to the server config
+    serverConfigs['brave-search'].env = {
+      BRAVE_API_KEY: '${BRAVE_API_KEY}'
     };
   }
 
@@ -588,6 +619,22 @@ export async function setupMcpConfig(options) {
         }
         localConfig.mcpServers['stackoverflow'].env = localConfig.mcpServers['stackoverflow'].env || {};
         localConfig.mcpServers['stackoverflow'].env.STACKEXCHANGE_API_KEY = personalConfig.env.STACKEXCHANGE_API_KEY;
+      }
+      
+      // For Brave Search MCP, set the Brave API key
+      if (selectedServers.includes('brave-search') && personalConfig.env.BRAVE_API_KEY) {
+        if (!localConfig.mcpServers['brave-search']) {
+          localConfig.mcpServers['brave-search'] = {
+            command: 'npx',
+            args: [
+              '-y',
+              'brave-search-mcp-server'
+            ],
+            env: {}
+          };
+        }
+        localConfig.mcpServers['brave-search'].env = localConfig.mcpServers['brave-search'].env || {};
+        localConfig.mcpServers['brave-search'].env.BRAVE_API_KEY = personalConfig.env.BRAVE_API_KEY;
       }
 
       // For Command Shell MCP, set the configuration

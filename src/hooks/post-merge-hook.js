@@ -45,8 +45,9 @@ if [ -f ".git/SQUASH_MSG" ]; then
   IS_SQUASH=1
 fi
 
-# Skip post-merge hook to avoid running setup script
-exit 0
+# Run the Claude hook for post-merge validation
+npx ai-coding-assistants-setup claude-hook-runner post-merge --non-interactive "$1" "$IS_SQUASH"
+exit $?
 `;
   }
 

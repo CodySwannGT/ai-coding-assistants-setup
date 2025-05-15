@@ -41,8 +41,9 @@ if [ -z "$BRANCH_NAME" ]; then
   BRANCH_NAME=$(git rev-parse HEAD)
 fi
 
-# Skip pre-push hook to avoid running setup script
-exit 0
+# Run the Claude hook for pre-push validation
+npx ai-coding-assistants-setup claude-hook-runner pre-push --non-interactive "$BRANCH_NAME" "$@"
+exit $?
 `;
   }
 

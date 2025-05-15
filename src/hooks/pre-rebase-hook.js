@@ -38,17 +38,9 @@ class PreRebaseHook extends BaseHook {
 # Description: ${this.description}
 # Generated: ${new Date().toISOString()}
 
-# Skip pre-rebase hook to avoid running setup script
-exit 0
-
-# Check the exit code from the hook script
-exit_code=$?
-if [ $exit_code -ne 0 ]; then
-  echo "Pre-rebase hook failed with exit code $exit_code"
-  exit $exit_code
-fi
-
-exit 0
+# Run the Claude hook for pre-rebase validation
+npx ai-coding-assistants-setup claude-hook-runner pre-rebase --non-interactive "$@"
+exit $?
 `;
   }
 

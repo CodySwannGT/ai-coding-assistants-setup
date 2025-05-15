@@ -49,9 +49,9 @@ if [ -z "$(git diff --cached --name-only)" ]; then
   exit 0
 fi
 
-# Skip prepare-commit-msg hook to avoid running setup script
-# Original commit message will be used as-is
-exit 0
+# Run the Claude hook for prepare-commit-msg
+npx ai-coding-assistants-setup claude-hook-runner prepare-commit-msg --non-interactive "$@"
+exit $?
 `;
   }
 

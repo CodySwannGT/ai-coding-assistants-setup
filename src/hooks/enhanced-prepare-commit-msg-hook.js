@@ -88,9 +88,9 @@ if [ -z "$(git diff --cached --name-only)" ] && [ "${this.skipEmptyCommits}" = "
   exit 0
 fi
 
-# Skip the enhanced prepare-commit-msg hook to avoid running setup script
-# Original commit message will be used as-is
-exit 0
+# Run the enhanced Claude hook for prepare-commit-msg
+npx ai-coding-assistants-setup claude-hook-runner enhanced-prepare-commit-msg --non-interactive "$@"
+exit $?
 `;
   }
 

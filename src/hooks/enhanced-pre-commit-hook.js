@@ -111,14 +111,14 @@ if [ -z "$(git diff --cached --name-only)" ]; then
   exit 0
 fi
 
-# Skip the enhanced validation to avoid running setup script
-# Run any standard linting if needed
+# Run linting if available
 if [ -f "package.json" ] && grep -q "\"lint\"" package.json; then
-  npm run lint || true
+  npm run lint
 fi
 
-# Return success regardless to prevent hooks from blocking commits
-exit 0
+# Run the enhanced Claude hook for pre-commit validation
+npx ai-coding-assistants-setup claude-hook-runner enhanced-pre-commit --non-interactive "$@"
+exit $?
 `;
   }
 

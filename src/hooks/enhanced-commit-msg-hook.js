@@ -84,13 +84,12 @@ class EnhancedCommitMsgHook extends EnhancedBaseHook {
 # Description: ${this.description}
 # Generated: ${new Date().toISOString()}
 
-# Skip the enhanced validation to avoid running setup script
-if command -v commitlint >/dev/null 2>&1; then
-  commitlint --edit ${1} || true
-fi
+# Validate commit message with commitlint
+npx --no -- commitlint --edit ${1}
 
-# Return success regardless to prevent hooks from blocking commits
-exit 0
+# Run the enhanced Claude hook to validate commit message
+npx ai-coding-assistants-setup claude-hook-runner enhanced-commit-msg --non-interactive "$@"
+exit $?
 `;
   }
 

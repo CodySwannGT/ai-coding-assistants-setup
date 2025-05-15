@@ -260,34 +260,101 @@ This project is organized as follows:
   // Workflow guide for handling tasks
   const workflowGuide = `# Workflow Guide
 
+## Initialization
 - If available, use memory MCP for project information and history
-- Before undertaking a prompt:
-  - Check the project memory using the memory MCP if available for relevant information
-  - Analyze existing codebase structure, architecture, and project standards
-  - Do research on the prompt/issue using brave-search if available, aws-documentation-mcp-server if available, github MCP if available, context7 MCP if available
-  - Ask any clarifying questions
-  - With the research and clarifying questions, architect a solution and a plan of action to fulfill the prompt
-  - Consider performance implications, potential edge cases, and error handling
-  - Ask the human to confirm the plan
-  - Break the plan into logical, manageable tasks
-  - For each task:
-    - Provide estimated complexity and time requirements
-    - (if a coding task): Write failing tests that define and cover the task, including edge cases
-    - (if a coding task): Write code that adheres to the project's standards and follows best practices of the language and/or library/framework while not overcomplicating the implementation
-    - (if a coding task): Run tests
-    - (if a coding task): Fix issues and optimize code
-    - (if a coding task): Repeat until all tests pass (do not do anything unconventional to make tests pass. If you think the tests are getting too complicated or brittle, stop and tell the human)
-    - (if a non-coding task): Define clear success criteria and follow structured approach
-    - Check for integration issues with existing code
-    - Document design decisions and tradeoffs considered
-    - Provide intermediate results for complex tasks and seek feedback
-  - Document the task and how it was completed in the @docs/ folder, including:
-    - Problem definition
-    - Solution approach
-    - Implementation details
-    - Usage examples where appropriate
-  - Make sure the project memory is updated using the memory MCP if available
-  - Prepare summary of changes and recommendations for further improvements
+- Determine the appropriate role (Architect, TDD Developer, Security Reviewer, Documentation Writer, Data Analyst, DevOps Engineer, Code Reviewer, Ask, Debug, or Coder) based on the task at hand
+
+## Pre-Task Analysis
+- Check the project memory using the memory MCP if available for relevant information
+- Analyze existing codebase structure, architecture, and project standards
+- Research the prompt/issue using available tools:
+  - Brave-search if available
+  - AWS-documentation-MCP-server if available
+  - GitHub MCP if available
+  - Context7 MCP if available
+- Ask any clarifying questions needed based on role perspective
+- For complex tasks, consider delegating research to the Ask role for deeper investigation
+
+## Planning Phase
+- Based on role specialization, architect a solution and plan of action:
+  - Architect: Focus on system design, interfaces, and overall structure
+  - TDD Developer: Plan with testability as primary concern
+  - Security Reviewer: Prioritize security implications
+  - Documentation Writer: Plan documentation needs
+  - Data Analyst: Focus on data processing and visualization approaches
+  - DevOps Engineer: Consider deployment and infrastructure needs
+  - Code Reviewer: Focus on standards compliance and quality
+  - Debug: Plan systematic debugging approach
+  - Ask: Research and knowledge gathering
+- Consider performance implications, potential edge cases, and error handling
+- Present the plan to the human for confirmation, highlighting role-specific considerations
+
+## Task Breakdown
+- Break the plan into logical, manageable tasks
+- Assign appropriate roles to each task
+- For each task:
+  - Provide estimated complexity and role-specific considerations
+  - If debugging is required, delegate to the Debug role:
+    - Reflect on possible problem sources
+    - Distill to most likely causes
+    - Add logging/validation
+    - Report findings
+  - If research is required, delegate to the Ask role:
+    - Define specific questions or topics
+    - Use appropriate tools for information gathering
+    - Report findings with diagrams if helpful
+
+## Implementation (by Task Type)
+- For coding tasks (Coder or TDD Developer role):
+  - TDD approach:
+    - Write failing tests including edge cases
+    - Write minimal code to make tests pass
+    - Refactor while maintaining passing tests
+    - If tests become complicated/brittle, alert the human
+  - Security considerations (consult Security Reviewer role):
+    - Check for injection vulnerabilities, authentication flaws, XSS, etc.
+  - Code review standards (consult Code Reviewer role):
+    - Ensure code quality, readability, and adherence to project standards
+
+- For architecture tasks (Architect role):
+  - Create modular design with clear separation of concerns
+  - Define interfaces between components
+  - Document architectural decisions
+
+- For documentation tasks (Documentation Writer role):
+  - Create clear, concise, well-structured documentation
+  - Include examples and explain both "how" and "why"
+  - Use consistent terminology
+
+- For data analysis tasks (Data Analyst role):
+  - Focus on data cleaning, analysis, and visualization
+  - Interpret results and communicate insights clearly
+
+- For DevOps tasks (DevOps Engineer role):
+  - Implement infrastructure as code
+  - Optimize CI/CD pipelines
+  - Follow security best practices
+  - Set up monitoring and observability
+
+## Quality Assurance
+- For each completed task:
+  - Check for integration issues with existing code
+  - Verify against security best practices
+  - Run appropriate tests
+  - Perform role-specific quality checks
+
+## Documentation
+- Document each task in the @docs/ folder, including:
+  - Problem definition
+  - Solution approach and role-specific insights
+  - Implementation details
+  - Usage examples where appropriate
+  - Update project documentation as needed
+
+## Knowledge Retention
+- Update project memory using the memory MCP if available
+- Include role-specific insights and lessons learned
+- Prepare summary of changes and recommendations for future improvements
 `;
   
   await writeTextFile(path.join(rooRulesDir, '01-coding-standards.md'), codingStandards, dryRun);

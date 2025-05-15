@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.2.0...v1.3.0) (2025-05-15)
+
+
+### Features
+
+* **mcp:** add brave-search MCP server with API key support ([856be1f](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/856be1f7ede20ae5de2ce3b81504d724f5800f15))
+
 ## [1.2.0](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.1.7...v1.2.0) (2025-05-12)
 
 

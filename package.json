@@ -1,6 +1,6 @@
 {
   "name": "ai-coding-assistants-setup",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Setup script for AI coding assistants like Claude Code and Roo Code",
   "main": "index.js",
   "bin": {

@@ -18,11 +18,13 @@
   - [Commit-Msg Hook](#commit-msg-hook)
   - [Pre-Push Hook](#pre-push-hook)
   - [Post-Merge Hook](#post-merge-hook)
+  <!-- The following hooks have been removed:
   - [Post-Checkout Hook](#post-checkout-hook)
   - [Post-Rewrite Hook](#post-rewrite-hook)
+  - [Test-First Development Hook](#test-first-development-hook)
+  -->
   - [Pre-Rebase Hook](#pre-rebase-hook)
   - [Branch-Strategy Hook](#branch-strategy-hook)
-  - [Test-First Development Hook](#test-first-development-hook)
 - [Setup and Configuration](#-setup-and-configuration)
   - [Initial Setup](#initial-setup)
   - [Configuration Templates](#configuration-templates)
@@ -71,7 +73,7 @@ All hooks are designed to be:
 - **Non-intrusive** - They help but don't get in the way
 - **Configurable** - Adaptable to your team's workflow
 - **Intelligent** - Leverages Claude AI for smart assistance
-- **Resilient** - Falls back gracefully when AI is unavailable
+- **Resilient** - Handles gracefully when AI is unavailable
 - **Extensible** - A framework you can extend for specific needs
 
 ## 📋 Available Hooks
@@ -117,8 +119,7 @@ The pre-commit hook runs before a commit is created and analyzes your staged cha
         "model": "claude-3-sonnet-20240229",
         "temperature": 0.7,
         "useLocalBackend": false,
-        "preferCli": true,       // Use Claude CLI if available
-        "fallbackToApi": true,   // Use API if CLI unavailable
+        "preferCli": true       // Use Claude CLI
         "localConfig": ".claude/pre-commit-config.json"
       }
     }
@@ -183,8 +184,7 @@ The prepare-commit-msg hook runs when Git creates a commit message template, and
       "claude": {
         "model": "claude-3-opus-20240229",
         "temperature": 0.5,
-        "preferCli": true,
-        "fallbackToApi": true
+        "preferCli": true
       },
       "template": {
         "path": ".github/commit-template",
@@ -258,8 +258,7 @@ The commit-msg hook validates commit messages to ensure they follow project stan
       "claude": {
         "model": "claude-3-sonnet-20240229",
         "temperature": 0.3,
-        "preferCli": true,
-        "fallbackToApi": true
+        "preferCli": true
       }
     }
   }
@@ -333,7 +332,7 @@ The pre-push hook runs before pushing commits to a remote repository, providing 
         "enabled": true,
         "model": "claude-3-sonnet-20240229",
         "preferCli": true,
-        "fallbackToApi": true
+        
       }
     }
   }
@@ -392,7 +391,7 @@ The post-merge hook runs after a merge or pull operation completes, providing su
         "enabled": true,
         "model": "claude-3-haiku-20240307",
         "preferCli": true,
-        "fallbackToApi": true
+        
       }
     }
   }
@@ -426,130 +425,9 @@ For details, see 5 commits including:
 - feat(email): add welcome email template (c72e9b3)
 ```
 
-### Post-Checkout Hook
+<!-- Post-Checkout Hook section has been removed -->
 
-The post-checkout hook runs after switching branches, providing context and setup assistance for the new branch.
-
-#### Features
-- **Branch Context**: Summarizes what the branch is for
-- **Environment Setup**: Identifies required environment changes
-- **Dependency Check**: Notifies about dependency changes between branches
-- **Setup Commands**: Suggests or runs setup commands when needed
-- **Feature Flag Awareness**: Notifies about feature flag requirements
-
-#### Configuration Options
-
-```json
-{
-  "hooks": {
-    "post-checkout": {
-      "enabled": true,
-      "summaryFormat": "concise", // "concise" or "detailed"
-      "includeStats": true,
-      "includeDependencies": true,
-      "detectBreakingChanges": true,
-      "skipInitialCheckout": true, // Skip on initial repository clone
-      "skipTagCheckout": true,     // Skip when checking out tags
-      "notificationMethod": "terminal",
-      "runCommands": {
-        "enabled": false,
-        "commands": {             // Commands to run on specific branches
-          "develop": "npm install && npm run migrate",
-          "feature/docker": "docker-compose up -d"
-        },
-        "askBeforeRunning": true
-      },
-      "claude": {
-        "enabled": true,
-        "model": "claude-3-haiku-20240307",
-        "preferCli": true,
-        "fallbackToApi": true
-      }
-    }
-  }
-}
-```
-
-#### Example Output
-
-```
-🔀 Branch Checkout: feature/payment-gateway
------------------------------------------
-
-📋 Branch Purpose:
-This branch implements Stripe payment gateway integration.
-
-📊 Changes from develop:
-- 4 new files, 2 modified files
-- New dependencies: stripe, stripe-webhook-middleware
-- Modified .env.example with new STRIPE_* variables
-
-💡 Setup Required:
-The following setup may be needed for this branch:
-- npm install (new dependencies)
-- Add STRIPE_API_KEY and STRIPE_WEBHOOK_SECRET to .env
-- Run stripe listen command for webhook testing
-
-Run setup commands now? (y/n)
-```
-
-### Post-Rewrite Hook
-
-The post-rewrite hook runs after commands that rewrite commits such as `git commit --amend` and `git rebase`, providing clarity on what changed.
-
-#### Features
-- **Rewrite Summary**: Explains what commits were rewritten
-- **Comparison Summary**: Shows differences before and after the rewrite
-- **Impacted Branches**: Identifies branches affected by the rewrite
-- **Potentially Disruptive Changes**: Warns about changes that might cause issues for collaborators
-
-#### Configuration Options
-
-```json
-{
-  "hooks": {
-    "post-rewrite": {
-      "enabled": true,
-      "summaryFormat": "concise", // "concise" or "detailed"
-      "includeStats": true,
-      "includeDiff": false,       // Include detailed diff in output
-      "showOriginalCommits": true,
-      "showRewrittenCommits": true,
-      "maxCommits": 5,
-      "notificationMethod": "terminal",
-      "claude": {
-        "enabled": true,
-        "model": "claude-3-haiku-20240307",
-        "preferCli": true,
-        "fallbackToApi": true
-      }
-    }
-  }
-}
-```
-
-#### Example Output
-
-```
-✏️ Git Rewrite Summary
---------------------
-Operation: rebase
-
-📊 Summary: 3 commits were rewritten
-
-Original commits:
-- fix: correct user validation logic (a7b291c)
-- test: add integration tests for auth flow (e2d4f12)
-- feat: implement password reset API (f9c8e34)
-
-Rewritten as:
-- fix: correct user validation logic (9d5a72b)
-- feat: implement password reset API (8b4c65a)
-- test: add integration tests for auth flow (3f7d92e)
-
-Note: The commit order has changed during the rebase.
-Force push will be needed if these changes were previously pushed.
-```
+<!-- Post-Rewrite Hook section has been removed -->
 
 ### Pre-Rebase Hook
 
@@ -577,7 +455,7 @@ The pre-rebase hook runs before a rebase operation starts, predicting potential 
         "enabled": true,
         "model": "claude-3-sonnet-20240229",
         "preferCli": true,
-        "fallbackToApi": true
+        
       }
     }
   }
@@ -632,8 +510,8 @@ The branch-strategy hook enforces branch naming conventions and workflow rules, 
         "release": "release/",
         "support": "support/"
       },
-      "mainBranches": ["main", "master", "develop"],
-      "protectedBranches": ["main", "master", "develop", "release/*"],
+      "mainBranches": ["main", "master", "dev", "staging"],
+      "protectedBranches": ["main", "master", "staging", "dev", "release/*"],
       "releasePattern": "^release\\/v?(\\d+\\.\\d+\\.\\d+)$",
       "validateWithClaude": true,
       "jiraIntegration": true,
@@ -642,7 +520,7 @@ The branch-strategy hook enforces branch naming conventions and workflow rules, 
       "claude": {
         "model": "claude-3-haiku-20240307",
         "preferCli": true,
-        "fallbackToApi": true
+        
       }
     }
   }
@@ -664,76 +542,7 @@ Checking branch: feature/add-user-profile
 Branch validation passed!
 ```
 
-### Test-First Development Hook
-
-The test-first-development hook promotes test-driven development by detecting when new files are added without corresponding test files.
-
-#### Features
-- **Missing Test Detection**: Identifies when code is added without tests
-- **Test Suggestion**: Uses Claude to suggest appropriate tests
-- **Test Framework Awareness**: Adapts to your project's testing framework
-- **Test Location Flexibility**: Works with various test directory structures
-
-#### Configuration Options
-
-```json
-{
-  "hooks": {
-    "test-first-development": {
-      "enabled": true,
-      "blockingMode": "warn",    // "block", "warn", or "none"
-      "fileExtensions": [".js", ".ts", ".jsx", ".tsx"],
-      "testDirectories": ["__tests__", "test", "tests", "spec", "specs"],
-      "testFilePattern": "{name}.test.{ext}|{name}.spec.{ext}|{name}.tests.{ext}",
-      "testFramework": "auto-detect", // "jest", "mocha", "vitest", etc.
-      "suggestWithClaude": true,
-      "exclusionPatterns": [
-        "**/node_modules/**",
-        "**/dist/**",
-        "**/build/**",
-        "**/*.d.ts"
-      ],
-      "claude": {
-        "model": "claude-3-sonnet-20240229",
-        "preferCli": true,
-        "fallbackToApi": true
-      }
-    }
-  }
-}
-```
-
-#### Example Output
-
-```
-🧪 Test-First Development Check
-----------------------------
-New files detected without corresponding tests:
-
-src/utils/validation.js missing test file
-
-Suggested test structure for validation.js:
-
-```javascript
-import { validateEmail, validatePassword } from '../src/utils/validation';
-
-describe('validation utilities', () => {
-  describe('validateEmail', () => {
-    test('should return true for valid email addresses', () => {
-      expect(validateEmail('user@example.com')).toBe(true);
-    });
-    
-    test('should return false for invalid email addresses', () => {
-      expect(validateEmail('invalid-email')).toBe(false);
-    });
-  });
-  
-  // More tests...
-});
-```
-
-Would you like to create this test file now? (y/n)
-```
+<!-- Test-First Development Hook section has been removed -->
 
 ## 🔧 Setup and Configuration
 
@@ -796,7 +605,7 @@ You can also directly edit the configuration file at `.claude/hooks.json`:
   "global": {
     "claude": {
       "preferCli": true,
-      "fallbackToApi": true,
+      
       "defaultModel": "claude-3-sonnet-20240229"
     },
     "logging": {
@@ -859,7 +668,7 @@ When a Git action triggers a hook, the following process occurs:
 
 3. **Core Execution**:
    - If Claude integration is enabled, the hook prepares input for Claude
-   - The hook calls Claude (via CLI or API) or runs without AI if unavailable
+   - The hook calls Claude via CLI or runs without AI if unavailable
    - The hook processes Claude's response
 
 4. **Post-Processing**:
@@ -885,7 +694,7 @@ git commit --hook-blocking=warn
 # Specify a different Claude model
 git commit --hook-model=claude-3-opus-20240229
 
-# Skip Claude API calls but still run the hook
+# Skip Claude CLI calls but still run the hook
 git commit --hook-no-claude
 ```
 
@@ -940,13 +749,16 @@ The following environment variables can be used to control hooks:
 | `CLAUDE_SKIP_COMMIT_MSG=true` | Skip commit-msg hook | `CLAUDE_SKIP_COMMIT_MSG=true git commit -m "message"` |
 | `CLAUDE_SKIP_PRE_PUSH=true` | Skip pre-push hook | `CLAUDE_SKIP_PRE_PUSH=true git push` |
 | `CLAUDE_SKIP_POST_MERGE=true` | Skip post-merge hook | `CLAUDE_SKIP_POST_MERGE=true git pull` |
-| `CLAUDE_SKIP_POST_CHECKOUT=true` | Skip post-checkout hook | `CLAUDE_SKIP_POST_CHECKOUT=true git checkout branch` |
-| `CLAUDE_SKIP_POST_REWRITE=true` | Skip post-rewrite hook | `CLAUDE_SKIP_POST_REWRITE=true git rebase` |
 | `CLAUDE_SKIP_PRE_REBASE=true` | Skip pre-rebase hook | `CLAUDE_SKIP_PRE_REBASE=true git rebase` |
 | `CLAUDE_SKIP_BRANCH_STRATEGY=true` | Skip branch-strategy hook | `CLAUDE_SKIP_BRANCH_STRATEGY=true git checkout -b branch` |
-| `CLAUDE_SKIP_TEST_FIRST=true` | Skip test-first hook | `CLAUDE_SKIP_TEST_FIRST=true git add newfile.js` |
 | `CLAUDE_DEBUG=true` | Enable debug logging | `CLAUDE_DEBUG=true git commit` |
-| `CLAUDE_USE_CLI=false` | Force API usage instead of CLI | `CLAUDE_USE_CLI=false git commit` |
+| `CLAUDE_USE_CLI=false` | Disable Claude CLI | `CLAUDE_USE_CLI=false git commit` |
+
+<!-- The following environment variables have been removed:
+- `CLAUDE_SKIP_POST_CHECKOUT=true` - Skip post-checkout hook - Was used as: `CLAUDE_SKIP_POST_CHECKOUT=true git checkout branch`
+- `CLAUDE_SKIP_POST_REWRITE=true` - Skip post-rewrite hook - Was used as: `CLAUDE_SKIP_POST_REWRITE=true git rebase`
+- `CLAUDE_SKIP_TEST_FIRST=true` - Skip test-first hook - Was used as: `CLAUDE_SKIP_TEST_FIRST=true git add newfile.js`
+-->
 
 ## 🏗️ Hooks Architecture
 
@@ -1004,29 +816,20 @@ Middleware phases:
 
 ### Claude Integration
 
-Hooks can integrate with Claude in two ways:
+Hooks integrate with Claude through the Claude CLI:
 
-1. **Claude CLI**:
-   - Uses the locally installed Claude CLI
-   - Requires `claude login` to be run
-   - Faster for small prompts
-   - No API key management needed
-
-2. **Claude API**:
-   - Uses the Anthropic API directly
-   - Requires an API key in the `.env` file
-   - More reliable for large prompts
-   - Works in environments without Claude CLI
-
-The hooks system tries Claude CLI first (if `preferCli: true`) and falls back to the API (if `fallbackToApi: true`).
+- Uses the locally installed Claude CLI
+- Requires `claude login` to be run
+- Fast and efficient for hook operations
+- No API key management needed
 
 ### Fallback Mechanisms
 
 Hooks are designed to be resilient:
 
-1. If Claude CLI is unavailable and preferred, the system can:
-   - Fall back to Claude API if configured
-   - Use built-in rules without AI if neither is available
+1. If Claude CLI is unavailable:
+   - Use built-in rules without AI
+   - Continue operation with limited functionality
 
 2. If network issues prevent Claude access:
    - Hooks can run in degraded mode with limited functionality
@@ -1051,22 +854,23 @@ The complete `.claude/hooks.json` configuration supports:
     "commit-msg": {/* hook-specific config */},
     "pre-push": {/* hook-specific config */},
     "post-merge": {/* hook-specific config */},
-    "post-checkout": {/* hook-specific config */},
-    "post-rewrite": {/* hook-specific config */},
+    // The following hooks have been removed:
+    // "post-checkout": {/* hook-specific config */},
+    // "post-rewrite": {/* hook-specific config */},
     "pre-rebase": {/* hook-specific config */},
-    "branch-strategy": {/* hook-specific config */},
-    "test-first-development": {/* hook-specific config */}
+    "branch-strategy": {/* hook-specific config */}
+    // "test-first-development": {/* hook-specific config */}
   },
   "global": {
     "enabled": true,
     "blockingMode": "warn",
     "claude": {
       "preferCli": true,
-      "fallbackToApi": true,
+      
       "defaultModel": "claude-3-sonnet-20240229",
       "temperature": 0.7,
       "maxTokens": 4000,
-      "apiKey": "${ANTHROPIC_API_KEY}"
+      
     },
     "logging": {
       "level": "info",
@@ -1127,33 +931,14 @@ export { CustomHook };
 
 ### Common Issues
 
-#### Claude API vs Claude CLI
-
-By default, the hooks will use Claude CLI if it's available, with fallback to the Claude API. This behavior can be configured:
-
-- Set `preferCli: false` in hook configuration to prefer API over CLI for a specific hook
-- Set environment variable `CLAUDE_USE_CLI=false` to prefer API for all hooks
-
-If you're seeing "No Claude API key found" errors and Claude CLI is not installed, you need to add your Anthropic API key to the `.env` file:
-
-```
-ANTHROPIC_API_KEY=your-api-key-here
-```
-
-#### Missing API Key
-
-If you see "No Claude API key found" errors and Claude CLI is not installed, you need to add your Anthropic API key to the `.env` file:
-
-```
-ANTHROPIC_API_KEY=your-api-key-here
-```
-
 #### Claude CLI Setup
 
-To use Claude CLI:
+The hooks system uses Claude CLI. This behavior can be configured:
 
-1. Install Claude CLI: `npm install -g @anthropic-ai/claude-cli`
-2. Log in using `claude login`
+- Set `preferCli: false` in hook configuration to disable CLI for a specific hook
+- Set environment variable `CLAUDE_USE_CLI=false` to disable CLI for all hooks
+
+When Claude CLI is not available, hooks will use built-in rules and provide more limited functionality.
 
 #### Hook Not Executing
 
@@ -1163,13 +948,13 @@ If a hook isn't executing:
 2. Ensure the hook script is executable (`chmod +x .git/hooks/pre-commit`)
 3. Verify that Git hooks are not disabled globally
 
-#### API Request Failures
+#### Connection Issues
 
-If you see API request failures:
+If you see connection issues:
 
 1. Check your internet connection
-2. Verify that your API key is valid
-3. Check the Claude API status
+2. Verify that Claude CLI is properly installed and logged in
+3. Check Claude service status
 
 ### Diagnostic Commands
 
@@ -1194,9 +979,6 @@ cat .git/hooks/commit-msg
 # Check Claude CLI installation
 which claude
 claude --version
-
-# Verify API key is set
-grep -l "ANTHROPIC_API_KEY" .env
 
 # Run with debug logging
 CLAUDE_DEBUG=true git commit
@@ -1229,12 +1011,6 @@ For more in-depth debugging:
    claude "Hello, world!"
    ```
    Ensure Claude CLI is working properly.
-
-5. **Check API Key**:
-   ```bash
-   grep ANTHROPIC_API_KEY .env
-   ```
-   Make sure your API key is correctly set in the `.env` file.
 
 ## 🔧 Extending the Hook System
 

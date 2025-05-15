@@ -1,0 +1,15 @@
+{
+  "name": "test-project",
+  "version": "1.0.0",
+  "description": "Test project for AI coding assistants",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "test"
+  ],
+  "author": "Test User",
+  "license": "MIT"
+}

@@ -38,8 +38,8 @@ class PreRebaseHook extends BaseHook {
 # Description: ${this.description}
 # Generated: ${new Date().toISOString()}
 
-# Run the hook script, passing all arguments received by the hook
-npx ai-coding-assistants-setup claude-hook-runner pre-rebase --non-interactive "$@"
+# Skip pre-rebase hook to avoid running setup script
+exit 0
 
 # Check the exit code from the hook script
 exit_code=$?

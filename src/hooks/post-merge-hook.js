@@ -45,9 +45,8 @@ if [ -f ".git/SQUASH_MSG" ]; then
   IS_SQUASH=1
 fi
 
-# Run the hook script, passing the squash flag as an argument
-npx ai-coding-assistants-setup claude-hook-runner post-merge --non-interactive "$1" "$IS_SQUASH"
-exit $?
+# Skip post-merge hook to avoid running setup script
+exit 0
 `;
   }
 

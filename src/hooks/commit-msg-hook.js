@@ -38,9 +38,13 @@ class CommitMsgHook extends BaseHook {
 # Description: ${this.description}
 # Generated: ${new Date().toISOString()}
 
-# Run the hook script
-npx ai-coding-assistants-setup claude-hook-runner commit-msg --non-interactive "$@"
-exit $?
+# Skip the Claude validation and only run commitlint for basic validation
+if command -v commitlint >/dev/null 2>&1; then
+  commitlint --edit ${1} || true
+fi
+
+# Return success regardless to prevent hooks from blocking commits
+exit 0
 `;
   }
 

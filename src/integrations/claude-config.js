@@ -54,18 +54,7 @@ export async function setupClaudeMd(options) {
   // Check if Copilot is installed
   const { installed: copilotInstalled } = await detectGitHubCopilot();
 
-  // Check for test-first development preference
-  const sharedPrefsPath = path.join(projectRoot, '.ai-assistants', 'shared-preferences.json');
-  let testFirstEnabled = false;
-
-  if (await fileExists(sharedPrefsPath)) {
-    try {
-      const sharedPrefs = await safeReadJson(sharedPrefsPath);
-      testFirstEnabled = sharedPrefs?.codingPreferences?.testFirstDevelopment === true;
-    } catch (err) {
-      printInfo(`Could not read shared preferences: ${err.message}`);
-    }
-  }
+  // Test-first development preference check has been removed
 
   // Check for available Roo modes
   const roomodesPath = path.join(projectRoot, '.roomodes');
@@ -110,11 +99,31 @@ When the user requests ${mode.slug.replace('tdd', 'test-driven development').rep
 ## Overview
 This is a ${projectType} project.
 
+## Roo Integration
+For consistency with Roo Code assistant, always follow these guidelines:
+
+1. Use general rules from Roo when working on any task:
+   @/.roo/rules/* to ./CLAUDE.md
+
+2. Check the Roo modes configuration to determine which role to use:
+   @/.roomodes to ./CLAUDE.md
+
+3. Use role-specific rules when the task matches a specific role:
+${availableRooModes.map(mode => `   - ${mode.name}: @/.roo/rules-${mode.slug}/* to ./CLAUDE.md`).join('\n')}
+
 ## MCP Tool Usage
 Always check for available MCP tools before attempting to solve a problem directly.
 Prioritize using MCP tools when they can help with a task - they provide enhanced
 capabilities beyond your base functionality.
 @/.roo/rules/03-mcp-tools.md to ./CLAUDE.md
+
+## Project Documentation References
+Always refer to project documentation when making changes.
+@/.roo/rules/04-documentation-references.md to ./CLAUDE.md
+
+## Standard Workflow
+Always follow this structured workflow when undertaking tasks.
+@/.roo/rules/05-workflow-guide.md to ./CLAUDE.md
 
 ## Key Files
 @/package.json to ./CLAUDE.md
@@ -128,14 +137,7 @@ ${isMonorepoProject && await fileExists(path.join(projectRoot, 'turbo.json')) ? 
 ## Architecture Guide
 @/.roo/rules/02-architecture-guide.md to ./CLAUDE.md
 
-${testFirstEnabled && !modeInstructions.some(s => s.includes('TDD Developer')) ? `
-## Test-First Development
-This project uses test-first development practices:
-- Always ask if the user wants to write tests first for new code
-- Suggest writing failing tests before implementation code
-- Prioritize test coverage for all new features and bug fixes
-- When implementing a feature, first discuss the testing approach
-` : ''}
+<!-- Test-First Development section has been removed -->
 
 ${modeInstructions.join('\n')}
 
@@ -274,13 +276,7 @@ export async function setupClaudeCode(options) {
   if (await fileExists(sharedPrefsPath)) {
     try {
       const sharedPrefs = await safeReadJson(sharedPrefsPath);
-      if (sharedPrefs?.codingPreferences?.testFirstDevelopment) {
-        projectSettings.codingPreferences = {
-          ...projectSettings.codingPreferences,
-          testFirstDevelopment: true,
-          askAboutTestsWhenCoding: true
-        };
-      }
+      // Test-first development preferences have been removed
     } catch (err) {
       printInfo(`Could not read shared preferences: ${err.message}`);
     }

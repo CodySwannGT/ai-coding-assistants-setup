@@ -72,7 +72,8 @@ export async function setupMcpConfig(options) {
     { name: 'playwright (Testing automation)', value: 'playwright' },
     { name: 'fetch (API communication)', value: 'fetch' },
     { name: 'browser (Web content retrieval)', value: 'browser' },
-    { name: 'brave-search (Web search)', value: 'brave-search' }
+    { name: 'brave-search (Web search)', value: 'brave-search' },
+    { name: 'aws-documentation (AWS docs access)', value: 'aws-documentation' }
   ];
   
   // Select servers
@@ -204,7 +205,7 @@ export async function setupMcpConfig(options) {
   // Configure memory
   if (selectedServers.includes('memory')) {
     // Default memory path
-    const defaultMemoryPath = path.join(path.resolve(projectRoot, '..'), 'db/memory.json');
+    const defaultMemoryPath = './.ai/memory.jsonl';
 
     // Shared config with placeholder
     serverConfigs.memory = {
@@ -289,27 +290,40 @@ export async function setupMcpConfig(options) {
     const { getDefaultBraveSearchMcpConfig } = await import('../config/mcp-config-schema.js');
     serverConfigs['brave-search'] = getDefaultBraveSearchMcpConfig();
     
-    // Ask for Brave Search API key
-    if (!nonInteractive) {
-      const braveApiKey = await password({
+    // First check if we already have a Brave API key from the env
+    let braveApiKey = getEnvValue('BRAVE_API_KEY', env);
+    
+    // Only prompt if we don't have a key and we're in interactive mode
+    if (!braveApiKey && !nonInteractive) {
+      braveApiKey = await password({
         message: 'Enter your Brave Search API key:',
         validate: input => input.trim() ? true : 'API key is required for Brave Search'
       });
-
-      if (braveApiKey) {
-        personalConfig.env.BRAVE_API_KEY = braveApiKey;
-      }
-    } else {
-      // In non-interactive mode, try to get from environment
-      const apiKey = getEnvValue('BRAVE_API_KEY', env);
-      if (apiKey) {
-        personalConfig.env.BRAVE_API_KEY = apiKey;
-      }
     }
     
-    // Add the environment variable to the server config
+    // Store the API key if we have one
+    if (braveApiKey) {
+      personalConfig.env.BRAVE_API_KEY = braveApiKey;
+    }
+    
+    // Add the environment variable to the server config as a placeholder
     serverConfigs['brave-search'].env = {
       BRAVE_API_KEY: '${BRAVE_API_KEY}'
+    };
+  }
+  
+  // Configure AWS documentation MCP
+  if (selectedServers.includes('aws-documentation')) {
+    serverConfigs['aws-documentation-mcp-server'] = {
+      command: 'uvx',
+      args: [
+        'awslabs.aws-documentation-mcp-server@latest'
+      ],
+      env: {
+        FASTMCP_LOG_LEVEL: 'ERROR'
+      },
+      disabled: false,
+      autoApprove: []
     };
   }
 

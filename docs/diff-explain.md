@@ -131,12 +131,12 @@ npx ai-coding-assistants-setup diff-explain --staged --verbosity brief --output-
 ## Requirements
 
 - Git must be installed and accessible from the command line
-- Claude API access (via API key or Claude CLI) is required
+- Claude CLI is required
 - Node.js v14+ is recommended
 
 ## Privacy Considerations
 
-The diff-explain command sends git diff output to the Claude API. This may include code from your project. Please ensure you're comfortable sharing this code with Anthropic's servers before using this feature.
+The diff-explain command sends git diff output to Claude. This may include code from your project. Please ensure you're comfortable sharing this code with Anthropic's servers before using this feature.
 
 ## Advanced Usage
 
@@ -167,6 +167,6 @@ npx ai-coding-assistants-setup diff-explain --staged --output-format summary-onl
 ## Troubleshooting
 
 - **Error: Diff too large**: Reduce the size of the diff by specifying files or a more recent starting point
-- **Error: Claude API key not found**: Set the ANTHROPIC_API_KEY environment variable or install Claude CLI
+- **Error: Claude CLI not found**: Install Claude CLI using `npm install -g @anthropic-ai/claude-cli`
 - **No output or empty explanation**: Ensure there are actual changes to explain (run `git diff` to verify)
 - **Unexpected output format**: Check your configuration file and command line options for conflicts

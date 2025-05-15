@@ -10,8 +10,8 @@
   },
   "type": "module",
   "scripts": {
-    "pretest": "node scripts/setup-ci.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "pretest": "node --no-warnings scripts/setup-ci.js",
+    "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js",
     "lint": "eslint .",
     "lint-md": "markdownlint '**/*.md' --ignore node_modules --config .markdownlint.json",
     "format": "eslint --fix .",

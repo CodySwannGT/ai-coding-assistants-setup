@@ -55,7 +55,7 @@ Enhanced Git hooks extend the standard Git hooks system with intelligent code qu
 
 - **Middleware Pipeline**: Extensible hook execution flow with before/during/after phases
 - **Event System**: Hook events that you can listen to and respond to
-- **Graceful Fallbacks**: Works with or without Claude AI connectivity
+- **Claude Integration**: Seamless integration with Claude CLI
 - **Performance Optimization**: Smart caching to avoid redundant operations
 - **Configurable Strictness**: Choose how strict the hook validation should be
 
@@ -185,7 +185,6 @@ flowchart TD
       "claudeReview": {
         "enabled": true,
         "useCli": true,          // Use Claude CLI if available
-        "fallbackToApi": true,   // Fall back to API if CLI not available
         "sendFullFiles": false,   // Send entire files or just changes
         "maxFiles": 10,          // Maximum files to review
         "maxSizePerFile": 50000  // Maximum file size in bytes
@@ -244,7 +243,6 @@ flowchart TD
       "issuePattern": "[A-Z]+-\\d+",
       "claude": {
         "useCli": true,
-        "fallbackToApi": true,
         "model": "claude-3-opus-20240229"
       },
       "template": {
@@ -318,7 +316,6 @@ flowchart TD
       },
       "claude": {
         "useCli": true,
-        "fallbackToApi": true,
         "model": "claude-3-sonnet-20240229"
       }
     }
@@ -396,7 +393,6 @@ Full configuration options can be defined in `.claude/hooks.json`:
       "claudeReview": {
         "enabled": true,
         "useCli": true,
-        "fallbackToApi": true,
         "model": "claude-3-opus-20240229",
         "temperature": 0.7,
         "maxOutputTokens": 2000,
@@ -420,7 +416,6 @@ Full configuration options can be defined in `.claude/hooks.json`:
       "issuePattern": "[A-Z]+-\\d+",
       "claude": {
         "useCli": true,
-        "fallbackToApi": true,
         "model": "claude-3-sonnet-20240229",
         "temperature": 0.7,
         "maxOutputTokens": 1000,
@@ -452,7 +447,6 @@ Full configuration options can be defined in `.claude/hooks.json`:
       },
       "claude": {
         "useCli": true,
-        "fallbackToApi": true,
         "model": "claude-3-sonnet-20240229",
         "temperature": 0.5,
         "maxOutputTokens": 500,
@@ -570,7 +564,7 @@ If issues are found, please suggest improvements.
 | "No npm script found for TypeScript" | Missing type check script | Add `"types:check": "tsc --noEmit"` to package.json scripts |
 | "Cannot find module 'typescript'" | TypeScript not installed | Install TypeScript: `npm install --save-dev typescript` |
 | "ESLint not configured" | Missing ESLint configuration | Run `npx eslint --init` to configure ESLint |
-| "Claude API error" | API key issues or rate limits | Check ANTHROPIC_API_KEY in .env or switch to Claude CLI |
+| "Claude CLI error" | Claude CLI not installed or configured | Ensure Claude CLI is properly installed and configured |
 | "Hook exited with code 1" | Blocking validation issue | Fix the reported issues or use `git commit --no-verify` to bypass |
 | "Hook taking too long" | Large codebase or slow validation | Add `.claudeignore` patterns to exclude large directories |
 | "Operation not permitted" | Hook script not executable | Run `chmod +x .git/hooks/pre-commit` |
@@ -701,8 +695,8 @@ __mocks__/
 
 ## 🔒 Security Considerations
 
-- **Code Transmission**: Code changes are sent to Claude API for analysis
-- **API Key Security**: Keep API keys secure; use Claude CLI when possible
+- **Code Transmission**: Code changes are processed by Claude CLI
+- **Security**: Only uses local Claude CLI for code analysis
 - **Generated Code**: Review AI-generated commit messages before accepting
 - **Auto-fixing**: Be cautious with auto-fix features for critical code
 - **Bypass Risks**: Using `--no-verify` bypasses all quality checks

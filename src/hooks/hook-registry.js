@@ -269,28 +269,12 @@ class HookRegistry {
           hookConfig.excludePatterns = hook.excludePatterns;
         }
 
-        // Add post-checkout specific configurations
-        if (id === 'post-checkout') {
-          hookConfig.summaryFormat = hook.summaryFormat;
-          hookConfig.includeStats = hook.includeStats;
-          hookConfig.includeDependencies = hook.includeDependencies;
-          hookConfig.includeBreakingChanges = hook.includeBreakingChanges;
-          hookConfig.notifyMethod = hook.notifyMethod;
-          hookConfig.outputFile = hook.outputFile;
-          hookConfig.skipInitialCheckout = hook.skipInitialCheckout;
-          hookConfig.skipTagCheckout = hook.skipTagCheckout;
-          hookConfig.maxDiffSize = hook.maxDiffSize;
-        }
-
-        // Add post-rewrite specific configurations
-        if (id === 'post-rewrite') {
-          hookConfig.summaryFormat = hook.summaryFormat;
-          hookConfig.includeStats = hook.includeStats;
-          hookConfig.includeDependencies = hook.includeDependencies;
-          hookConfig.includeBreakingChanges = hook.includeBreakingChanges;
-          hookConfig.notifyMethod = hook.notifyMethod;
-          hookConfig.outputFile = hook.outputFile;
-          hookConfig.maxDiffSize = hook.maxDiffSize;
+        // Post-checkout and post-rewrite specific configurations have been removed
+        
+        // Add post-commit specific configurations
+        if (id === 'post-commit') {
+          hookConfig.memoryPath = hook.memoryPath;
+          hookConfig.extractTypes = hook.extractTypes;
         }
 
         // Add pre-rebase specific configurations
@@ -317,17 +301,7 @@ class HookRegistry {
           hookConfig.customRules = hook.customRules;
         }
 
-        // Add test-first development specific configurations
-        if (id === 'test-first-development') {
-          hookConfig.blockingMode = hook.blockingMode;
-          hookConfig.fileExtensions = hook.fileExtensions;
-          hookConfig.testDirectories = hook.testDirectories;
-          hookConfig.testPatterns = hook.testPatterns;
-          hookConfig.excludePatterns = hook.excludePatterns;
-          hookConfig.testFramework = hook.testFramework;
-          hookConfig.suggestWithClaude = hook.suggestWithClaude;
-          hookConfig.maxFileSize = hook.maxFileSize;
-        }
+        // Test-first development specific configurations have been removed
 
         config.hooks[id] = hookConfig;
       });
@@ -396,73 +370,16 @@ class HookRegistry {
               }
             }
 
-            // Apply post-checkout specific configurations
-            if (id === 'post-checkout') {
-              if (hookConfig.summaryFormat) {
-                hook.summaryFormat = hookConfig.summaryFormat;
+            // Post-checkout and post-rewrite specific configurations loading has been removed
+            
+            // Apply post-commit specific configurations
+            if (id === 'post-commit') {
+              if (hookConfig.memoryPath) {
+                hook.memoryPath = hookConfig.memoryPath;
               }
-
-              if (hookConfig.includeStats !== undefined) {
-                hook.includeStats = hookConfig.includeStats;
-              }
-
-              if (hookConfig.includeDependencies !== undefined) {
-                hook.includeDependencies = hookConfig.includeDependencies;
-              }
-
-              if (hookConfig.includeBreakingChanges !== undefined) {
-                hook.includeBreakingChanges = hookConfig.includeBreakingChanges;
-              }
-
-              if (hookConfig.notifyMethod) {
-                hook.notifyMethod = hookConfig.notifyMethod;
-              }
-
-              if (hookConfig.outputFile) {
-                hook.outputFile = hookConfig.outputFile;
-              }
-
-              if (hookConfig.skipInitialCheckout !== undefined) {
-                hook.skipInitialCheckout = hookConfig.skipInitialCheckout;
-              }
-
-              if (hookConfig.skipTagCheckout !== undefined) {
-                hook.skipTagCheckout = hookConfig.skipTagCheckout;
-              }
-
-              if (hookConfig.maxDiffSize) {
-                hook.maxDiffSize = hookConfig.maxDiffSize;
-              }
-            }
-
-            // Apply post-rewrite specific configurations
-            if (id === 'post-rewrite') {
-              if (hookConfig.summaryFormat) {
-                hook.summaryFormat = hookConfig.summaryFormat;
-              }
-
-              if (hookConfig.includeStats !== undefined) {
-                hook.includeStats = hookConfig.includeStats;
-              }
-
-              if (hookConfig.includeDependencies !== undefined) {
-                hook.includeDependencies = hookConfig.includeDependencies;
-              }
-
-              if (hookConfig.includeBreakingChanges !== undefined) {
-                hook.includeBreakingChanges = hookConfig.includeBreakingChanges;
-              }
-
-              if (hookConfig.notifyMethod) {
-                hook.notifyMethod = hookConfig.notifyMethod;
-              }
-
-              if (hookConfig.outputFile) {
-                hook.outputFile = hookConfig.outputFile;
-              }
-
-              if (hookConfig.maxDiffSize) {
-                hook.maxDiffSize = hookConfig.maxDiffSize;
+              
+              if (hookConfig.extractTypes !== undefined) {
+                hook.extractTypes = hookConfig.extractTypes;
               }
             }
 
@@ -536,40 +453,7 @@ class HookRegistry {
               }
             }
 
-            // Apply test-first development specific configurations
-            if (id === 'test-first-development') {
-              if (hookConfig.blockingMode) {
-                hook.blockingMode = hookConfig.blockingMode;
-              }
-
-              if (hookConfig.fileExtensions) {
-                hook.fileExtensions = hookConfig.fileExtensions;
-              }
-
-              if (hookConfig.testDirectories) {
-                hook.testDirectories = hookConfig.testDirectories;
-              }
-
-              if (hookConfig.testPatterns) {
-                hook.testPatterns = hookConfig.testPatterns;
-              }
-
-              if (hookConfig.excludePatterns) {
-                hook.excludePatterns = hookConfig.excludePatterns;
-              }
-
-              if (hookConfig.testFramework) {
-                hook.testFramework = hookConfig.testFramework;
-              }
-
-              if (hookConfig.suggestWithClaude !== undefined) {
-                hook.suggestWithClaude = hookConfig.suggestWithClaude;
-              }
-
-              if (hookConfig.maxFileSize) {
-                hook.maxFileSize = hookConfig.maxFileSize;
-              }
-            }
+            // Test-first development specific configurations loading has been removed
           }
         });
         

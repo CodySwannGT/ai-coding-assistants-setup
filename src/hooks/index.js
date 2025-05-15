@@ -15,11 +15,13 @@ import PrepareCommitMsgHook from './prepare-commit-msg-hook.js';
 import CommitMsgHook from './commit-msg-hook.js';
 import PrePushHook from './pre-push-hook.js';
 import PostMergeHook from './post-merge-hook.js';
-import PostCheckoutHook from './post-checkout-hook.js';
-import PostRewriteHook from './post-rewrite-hook.js';
+import PostCommitHook from './post-commit-hook.js';
 import PreRebaseHook from './pre-rebase-hook.js';
 import BranchStrategyHook from './branch-strategy-hook.js';
-import TestFirstDevelopmentHook from './test-first-development-hook.js';
+// The following hooks have been removed:
+// - post-checkout-hook.js
+// - post-rewrite-hook.js
+// - test-first-development-hook.js
 import DiffExplainHook from './diff-explain-hook.js';
 
 /**
@@ -76,16 +78,14 @@ const HOOK_DESCRIPTIONS = {
     description: 'Uses Claude to generate a summary of merged changes',
     details: 'This hook activates after a merge or pull and provides a human-readable summary of what changed. It helps you understand exactly what you just integrated into your branch.'
   },
-  'post-checkout': {
-    title: 'Branch Context',
-    description: 'Uses Claude to provide context when switching branches',
-    details: 'This hook runs when you check out a different branch and provides a summary of recent activity, open issues, and key files in that branch. It helps you quickly get oriented when switching contexts.'
+  'post-commit': {
+    title: 'Commit Memory',
+    description: 'Stores commit information in project memory for AI assistants',
+    details: 'This hook runs after a commit is made and stores information about the commit in the project memory. It extracts metadata and stores it in a structured format that Claude and Roo can access, enabling them to reference commit history when providing assistance.'
   },
-  'post-rewrite': {
-    title: 'Rebase Summary',
-    description: 'Uses Claude to explain what changed during a rebase or amend',
-    details: 'This hook activates after a rebase or commit --amend operation and explains what changed in plain language. It helps you understand the effects of complex rewrite operations.'
-  },
+  // The following hook descriptions have been removed:
+  // - post-checkout
+  // - post-rewrite
   'pre-rebase': {
     title: 'Conflict Prediction',
     description: 'Uses Claude to predict potential merge conflicts before rebasing',
@@ -96,11 +96,7 @@ const HOOK_DESCRIPTIONS = {
     description: 'Enforces branch naming conventions and workflow rules',
     details: 'This hook validates that your branches follow the chosen branching strategy (GitFlow, Trunk-based, GitHub Flow, or custom). It checks branch naming conventions, workflow rules, and can use Claude to validate branch purpose based on its name and commits.'
   },
-  'test-first-development': {
-    title: 'Test-First Development Enforcement',
-    description: 'Detects new files without tests and suggests test cases',
-    details: 'This hook promotes test-first development by checking for new files that lack corresponding test files. It can suggest appropriate test cases using Claude and optionally block commits until tests are created.'
-  }
+  // The test-first-development hook description has been removed
 };
 
 /**
@@ -170,32 +166,17 @@ export function getHookRegistry(config) {
     maxDiffSize: 100000,
     preferCli: useClaudeCli
   });
-
-  // Register post-checkout hook
-  registry.registerHook('post-checkout', PostCheckoutHook, {
+  
+  // Register post-commit hook
+  registry.registerHook('post-commit', PostCommitHook, {
     enabled: false, // Default to disabled
-    summaryFormat: 'detailed', // 'concise' or 'detailed'
-    includeStats: true,
-    includeDependencies: true,
-    includeBreakingChanges: true,
-    notifyMethod: 'terminal', // 'terminal', 'file', or 'notification'
-    skipInitialCheckout: true,
-    skipTagCheckout: false,
-    maxDiffSize: 100000,
-    preferCli: useClaudeCli
+    memoryPath: '.ai/memory.jsonl',
+    extractTypes: true
   });
 
-  // Register post-rewrite hook
-  registry.registerHook('post-rewrite', PostRewriteHook, {
-    enabled: false, // Default to disabled
-    summaryFormat: 'detailed', // 'concise' or 'detailed'
-    includeStats: true,
-    includeDependencies: true,
-    includeBreakingChanges: true,
-    notifyMethod: 'terminal', // 'terminal', 'file', or 'notification'
-    maxDiffSize: 100000,
-    preferCli: useClaudeCli
-  });
+  // The following hook registrations have been removed:
+  // - post-checkout
+  // - post-rewrite
 
   // Register pre-rebase hook
   registry.registerHook('pre-rebase', PreRebaseHook, {
@@ -221,24 +202,15 @@ export function getHookRegistry(config) {
       release: 'release/',
       support: 'support/'
     },
-    mainBranches: ['main', 'master', 'develop'],
-    protectedBranches: ['main', 'master', 'develop', 'release/*'],
+    mainBranches: ['main', 'master', 'dev', 'staging'],
+    protectedBranches: ['main', 'master', 'staging', 'dev', 'release/*'],
     releasePattern: '^release\\/v?(\\d+\\.\\d+\\.\\d+)$',
     validateWithClaude: true,
     jiraIntegration: false,
     preferCli: useClaudeCli
   });
 
-  // Register test-first development hook
-  registry.registerHook('test-first-development', TestFirstDevelopmentHook, {
-    enabled: false, // Default to disabled
-    blockingMode: 'warn', // 'block', 'warn', or 'none'
-    fileExtensions: ['.js', '.jsx', '.ts', '.tsx', '.py', '.rb'], // File extensions to check
-    testDirectories: ['test', 'tests', '__tests__', 'spec'], // Directories where tests should be located
-    suggestWithClaude: true, // Whether to use Claude for test suggestions
-    testFramework: 'auto', // Auto-detect test framework
-    preferCli: useClaudeCli
-  });
+  // Test-first development hook registration has been removed
 
   // Register diff-explain feature
   registry.registerHook('diff-explain', DiffExplainHook, {
@@ -706,154 +678,35 @@ export async function setupHooks(config) {
         hook.includeBreakingChanges = includeBreakingChanges;
       }
     }
-
-    // Configure post-checkout hook
-    else if (hookId === 'post-checkout') {
-      const { summaryFormat, includeStats, notifyMethod } = await inquirer.prompt([
+    
+    // Configure post-commit hook
+    else if (hookId === 'post-commit') {
+      const { memoryPath, extractTypes } = await inquirer.prompt([
         {
-          type: 'list',
-          name: 'summaryFormat',
-          message: 'How detailed should branch summaries be?',
-          choices: [
-            { name: 'Concise - Short overview of branch changes', value: 'concise' },
-            { name: 'Detailed - Comprehensive explanation of branch changes', value: 'detailed' }
-          ],
-          default: 'detailed'
+          type: 'input',
+          name: 'memoryPath',
+          message: 'Path to store commit memory (relative to project root):',
+          default: hook.memoryPath || '.ai/memory.jsonl',
+          validate: input => input.trim() ? true : 'Memory path is required'
         },
         {
           type: 'confirm',
-          name: 'includeStats',
-          message: 'Include statistics in branch summaries?',
-          default: true
-        },
-        {
-          type: 'list',
-          name: 'notifyMethod',
-          message: 'How should branch summaries be delivered?',
-          choices: [
-            { name: 'Terminal output', value: 'terminal' },
-            { name: 'Write to file', value: 'file' },
-            { name: 'System notification (where supported)', value: 'notification' }
-          ],
-          default: 'terminal'
+          name: 'extractTypes',
+          message: 'Extract commit types from conventional commits? (e.g., feat, fix, docs)',
+          default: hook.extractTypes !== undefined ? hook.extractTypes : true
         }
       ]);
 
-      hook.summaryFormat = summaryFormat;
-      hook.includeStats = includeStats;
-      hook.notifyMethod = notifyMethod;
-
-      // Ask about advanced options
-      const { configureAdvanced } = await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'configureAdvanced',
-          message: 'Configure advanced options for branch summaries?',
-          default: false
-        }
-      ]);
-
-      if (configureAdvanced) {
-        const { includeDependencies, includeBreakingChanges, skipInitialCheckout, skipTagCheckout } = await inquirer.prompt([
-          {
-            type: 'confirm',
-            name: 'includeDependencies',
-            message: 'Highlight dependency changes in summaries?',
-            default: hook.includeDependencies
-          },
-          {
-            type: 'confirm',
-            name: 'includeBreakingChanges',
-            message: 'Highlight potential breaking changes in summaries?',
-            default: hook.includeBreakingChanges
-          },
-          {
-            type: 'confirm',
-            name: 'skipInitialCheckout',
-            message: 'Skip summaries for initial checkouts?',
-            default: hook.skipInitialCheckout
-          },
-          {
-            type: 'confirm',
-            name: 'skipTagCheckout',
-            message: 'Skip summaries when checking out tags?',
-            default: hook.skipTagCheckout
-          }
-        ]);
-
-        hook.includeDependencies = includeDependencies;
-        hook.includeBreakingChanges = includeBreakingChanges;
-        hook.skipInitialCheckout = skipInitialCheckout;
-        hook.skipTagCheckout = skipTagCheckout;
-      }
+      hook.memoryPath = memoryPath;
+      hook.extractTypes = extractTypes;
+      
+      console.log(chalk.yellow(`\nNote: This hook will store commit information in ${memoryPath}, which Claude and Roo can access.`));
+      console.log(chalk.yellow(`Memory will include commit message, author, date, and relationship to the project.`));
     }
 
-    // Configure post-rewrite hook
-    else if (hookId === 'post-rewrite') {
-      const { summaryFormat, includeStats, notifyMethod } = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'summaryFormat',
-          message: 'How detailed should rewrite summaries be?',
-          choices: [
-            { name: 'Concise - Short overview of rewritten changes', value: 'concise' },
-            { name: 'Detailed - Comprehensive explanation of rewritten changes', value: 'detailed' }
-          ],
-          default: 'detailed'
-        },
-        {
-          type: 'confirm',
-          name: 'includeStats',
-          message: 'Include statistics in rewrite summaries?',
-          default: true
-        },
-        {
-          type: 'list',
-          name: 'notifyMethod',
-          message: 'How should rewrite summaries be delivered?',
-          choices: [
-            { name: 'Terminal output', value: 'terminal' },
-            { name: 'Write to file', value: 'file' },
-            { name: 'System notification (where supported)', value: 'notification' }
-          ],
-          default: 'terminal'
-        }
-      ]);
+    // Configuration code for post-checkout hook has been removed
 
-      hook.summaryFormat = summaryFormat;
-      hook.includeStats = includeStats;
-      hook.notifyMethod = notifyMethod;
-
-      // Ask about advanced options
-      const { configureAdvanced } = await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'configureAdvanced',
-          message: 'Configure advanced options for rewrite summaries?',
-          default: false
-        }
-      ]);
-
-      if (configureAdvanced) {
-        const { includeDependencies, includeBreakingChanges } = await inquirer.prompt([
-          {
-            type: 'confirm',
-            name: 'includeDependencies',
-            message: 'Highlight dependency changes in summaries?',
-            default: hook.includeDependencies
-          },
-          {
-            type: 'confirm',
-            name: 'includeBreakingChanges',
-            message: 'Highlight potential breaking changes in summaries?',
-            default: hook.includeBreakingChanges
-          }
-        ]);
-
-        hook.includeDependencies = includeDependencies;
-        hook.includeBreakingChanges = includeBreakingChanges;
-      }
-    }
+    // Configuration code for post-rewrite hook has been removed
 
     // Configure pre-rebase hook
     else if (hookId === 'pre-rebase') {
@@ -1188,110 +1041,7 @@ export async function setupHooks(config) {
       }
     }
 
-    // Configure test-first development hook
-    else if (hookId === 'test-first-development') {
-      const { blockingMode, fileExtensions, testFramework, suggestWithClaude } = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'blockingMode',
-          message: 'How should the hook respond when files are missing tests?',
-          choices: [
-            { name: 'Block - Prevent commit until tests are created', value: 'block' },
-            { name: 'Warn - Show warnings but allow commit to proceed', value: 'warn' },
-            { name: 'None - Just provide suggestions, no warnings', value: 'none' }
-          ],
-          default: 'warn'
-        },
-        {
-          type: 'checkbox',
-          name: 'fileExtensions',
-          message: 'Which file types should require tests?',
-          choices: [
-            { name: 'JavaScript (.js)', value: '.js', checked: true },
-            { name: 'TypeScript (.ts)', value: '.ts', checked: true },
-            { name: 'JSX React (.jsx)', value: '.jsx', checked: true },
-            { name: 'TSX React (.tsx)', value: '.tsx', checked: true },
-            { name: 'Python (.py)', value: '.py', checked: true },
-            { name: 'Ruby (.rb)', value: '.rb', checked: false }
-          ],
-          validate: input => input.length > 0 ? true : 'Please select at least one file type'
-        },
-        {
-          type: 'list',
-          name: 'testFramework',
-          message: 'Which test framework are you using?',
-          choices: [
-            { name: 'Auto-detect from project', value: 'auto' },
-            { name: 'Jest', value: 'jest' },
-            { name: 'Mocha', value: 'mocha' },
-            { name: 'Pytest', value: 'pytest' },
-            { name: 'Jasmine', value: 'jasmine' },
-            { name: 'Vitest', value: 'vitest' },
-            { name: 'React Testing Library', value: 'rtl' }
-          ],
-          default: 'auto'
-        },
-        {
-          type: 'confirm',
-          name: 'suggestWithClaude',
-          message: 'Use Claude to suggest test cases for new files?',
-          default: true
-        }
-      ]);
-
-      hook.blockingMode = blockingMode;
-      hook.fileExtensions = fileExtensions;
-      hook.testFramework = testFramework;
-      hook.suggestWithClaude = suggestWithClaude;
-
-      // Ask about test directories and patterns
-      const { customizeTestLocations } = await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'customizeTestLocations',
-          message: 'Do you want to customize where tests should be located?',
-          default: false
-        }
-      ]);
-
-      if (customizeTestLocations) {
-        const { testDirectories } = await inquirer.prompt([
-          {
-            type: 'input',
-            name: 'testDirectories',
-            message: 'Enter comma-separated list of test directories:',
-            default: hook.testDirectories.join(','),
-            filter: value => value.split(',').map(d => d.trim()).filter(d => d)
-          }
-        ]);
-
-        hook.testDirectories = testDirectories;
-      }
-
-      // Ask about excluded patterns
-      const { customizeExcludes } = await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'customizeExcludes',
-          message: 'Do you want to customize patterns to exclude from test checks?',
-          default: false
-        }
-      ]);
-
-      if (customizeExcludes) {
-        const { excludePatterns } = await inquirer.prompt([
-          {
-            type: 'input',
-            name: 'excludePatterns',
-            message: 'Enter comma-separated exclude patterns (e.g., node_modules/**,dist/**):',
-            default: hook.excludePatterns ? hook.excludePatterns.join(',') : '**/node_modules/**,**/dist/**,**/build/**,**/coverage/**,**/.git/**',
-            filter: value => value.split(',').map(p => p.trim()).filter(p => p)
-          }
-        ]);
-
-        hook.excludePatterns = excludePatterns;
-      }
-    }
+    // Configuration code for test-first development hook has been removed
   }
 
   // Save the configuration

@@ -10,6 +10,7 @@ This document provides examples of MCP server configurations for use in your pro
 - [Task Master AI MCP](#task-master-ai-mcp)
 - [StackOverflow MCP](#stackoverflow-mcp)
 - [Command Shell MCP](#command-shell-mcp)
+- [AWS Documentation MCP](#aws-documentation-mcp)
 
 ## GitHub MCP
 
@@ -207,3 +208,35 @@ The Command Shell MCP allows AI assistants to execute shell commands, which can 
 ### StackOverflow MCP
 
 The StackOverflow MCP interacts with the StackExchange API. Be mindful of rate limits, especially if not using an API key. The MCP only performs read operations and does not post to StackOverflow.
+
+## AWS Documentation MCP
+
+```json
+{
+  "mcpServers": {
+    "aws-documentation-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-documentation-mcp-server@latest"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+### Configuration Options
+
+The AWS Documentation MCP has minimal configuration options:
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `FASTMCP_LOG_LEVEL` | Level of logging (ERROR, WARN, INFO, DEBUG) | INFO |
+| `disabled` | Whether the MCP is disabled | false |
+| `autoApprove` | List of operations to auto-approve | [] |
+
+This MCP provides access to the AWS documentation and does not require any API keys or special permissions.

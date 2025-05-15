@@ -316,8 +316,8 @@ export const BranchStrategySchema = {
       release: 'release/',
       support: 'support/'
     },
-    mainBranches: ['main', 'master', 'develop'],
-    protectedBranches: ['main', 'master', 'develop', 'release/*'],
+    mainBranches: ['main', 'master', 'dev', 'staging'],
+    protectedBranches: ['main', 'master', 'staging', 'dev', 'release/*'],
     releasePattern: '^release\\/v?(\\d+\\.\\d+\\.\\d+)$',
     validateWithClaude: true,
     jiraIntegration: false,
@@ -326,46 +326,8 @@ export const BranchStrategySchema = {
 };
 
 /**
- * Schema for test-first-development hook
+ * Schema for test-first-development hook has been removed
  */
-export const TestFirstDevelopmentSchema = {
-  properties: {
-    ...BaseHookSchema.properties,
-    fileExtensions: { 
-      type: 'array',
-      items: { type: 'string' },
-      description: 'File extensions to check'
-    },
-    testDirectories: { 
-      type: 'array',
-      items: { type: 'string' },
-      description: 'Directories where tests should be located'
-    },
-    suggestWithClaude: { 
-      type: 'boolean',
-      description: 'Whether to use Claude for test suggestions'
-    },
-    testFramework: { 
-      type: 'string', 
-      enum: ['auto', 'jest', 'mocha', 'jasmine', 'pytest', 'vitest', 'rtl'],
-      description: 'Test framework to use'
-    },
-    excludePatterns: { 
-      type: 'array',
-      items: { type: 'string' },
-      description: 'File patterns to exclude from test checks'
-    }
-  },
-  required: [...BaseHookSchema.required],
-  defaults: {
-    ...BaseHookSchema.defaults,
-    fileExtensions: ['.js', '.jsx', '.ts', '.tsx', '.py', '.rb'],
-    testDirectories: ['test', 'tests', '__tests__', 'spec'],
-    suggestWithClaude: true,
-    testFramework: 'auto',
-    excludePatterns: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/coverage/**']
-  }
-};
 
 /**
  * Schema for diff-explain feature
@@ -435,11 +397,12 @@ export const HookSchemas = {
   'commit-msg': CommitMsgSchema,
   'pre-push': PrePushSchema,
   'post-merge': PostHookSchema,
-  'post-checkout': PostHookSchema,
-  'post-rewrite': PostHookSchema,
+  // The following hooks have been removed:
+  // 'post-checkout': PostHookSchema,
+  // 'post-rewrite': PostHookSchema,
   'pre-rebase': PreRebaseSchema,
   'branch-strategy': BranchStrategySchema,
-  'test-first-development': TestFirstDevelopmentSchema,
+  // 'test-first-development': TestFirstDevelopmentSchema,
   'diff-explain': DiffExplainSchema
 };
 

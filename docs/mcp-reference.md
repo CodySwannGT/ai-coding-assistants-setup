@@ -49,9 +49,12 @@
     - [Brave Search](#brave-search)
       - [Example Configuration](#example-configuration-10)
       - [Example Usage Prompts](#example-usage-prompts-10)
-    - [FileSystem](#filesystem)
+    - [AWS Documentation](#aws-documentation)
       - [Example Configuration](#example-configuration-11)
       - [Example Usage Prompts](#example-usage-prompts-11)
+    - [FileSystem](#filesystem)
+      - [Example Configuration](#example-configuration-12)
+      - [Example Usage Prompts](#example-usage-prompts-12)
   - [⚙️ Configuration Management](#️-configuration-management)
     - [Configuration Files](#configuration-files)
     - [Environment Variables](#environment-variables)
@@ -274,7 +277,6 @@ Provides task management, tracking, and subtask organization capabilities. Helps
       "command": "npx",
       "args": ["-y", "--package=task-master-ai", "task-master-ai"],
       "env": {
-        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
       }
     }
   }
@@ -620,6 +622,57 @@ Let me find nearby businesses matching that description.
 // Recent events
 Let me find the latest news about this technology.
 @brave-search brave_web_search --query "React 19 release date" --count 5
+```
+
+### AWS Documentation
+
+Provides access to AWS documentation, enabling up-to-date information about AWS services and APIs.
+
+| Aspect | Details |
+|--------|---------|
+| **Capabilities** | AWS service documentation, API references, best practices, implementation guidance |
+| **Configuration Requirements** | None |
+| **API Keys/Credentials** | None |
+| **Rate Limits** | None reported |
+
+#### Example Configuration
+
+```json
+{
+  "mcpServers": {
+    "aws-documentation-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-documentation-mcp-server@latest"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+#### Example Usage Prompts
+
+```
+// Get AWS service documentation
+Let me find information about AWS Lambda.
+@aws-documentation search_services --query "Lambda" --limit 5
+
+// Get API references
+I'll look up the API documentation for S3 operations.
+@aws-documentation search_api_references --query "S3 bucket creation" --limit 3
+
+// Find AWS best practices
+Let me find best practices for AWS security.
+@aws-documentation search_docs --query "AWS security best practices" --limit 5
+
+// Implementation guidance
+I'll get information about implementing serverless applications.
+@aws-documentation search_guides --query "serverless architecture AWS" --limit 3
 ```
 
 ### FileSystem

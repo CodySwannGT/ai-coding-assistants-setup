@@ -224,6 +224,7 @@ export async function setupRooRules(options) {
 - Write clear, descriptive comments for complex logic
 - Include appropriate error handling
 - Write unit tests for new functionality
+- Reference parent project coding standards in README.md and CONTRIBUTING.md files
 `;
   
   // Project architecture guide
@@ -235,6 +236,7 @@ This project is organized as follows:
 - Use absolute imports with module aliases when available
 - Keep files focused on a single responsibility
 - Limit file size to maintain readability (aim for under 500 lines)
+- Refer to parent project documentation for architectural guidelines
 `;
 
   // MCP tool usage guidelines
@@ -244,10 +246,55 @@ This project is organized as follows:
 2. Prioritize MCP tools over built-in capabilities when appropriate
 3. Suggest MCP tools to users when they would help solve a problem
 `;
+
+  // Project documentation references
+  const documentationReferences = `# Project Documentation References
+
+1. Always refer to the parent project README.md for an overview of the project
+2. Check the parent project documentation directory for detailed information
+3. Follow contribution guidelines in the parent project CONTRIBUTING.md file
+4. Reference the parent project coding standards when making changes
+5. Always maintain consistency with parent project patterns and conventions
+`;
+
+  // Workflow guide for handling tasks
+  const workflowGuide = `# Workflow Guide
+
+- If available, use memory MCP for project information and history
+- Before undertaking a prompt:
+  - Check the project memory using the memory MCP if available for relevant information
+  - Analyze existing codebase structure, architecture, and project standards
+  - Do research on the prompt/issue using brave-search if available, aws-documentation-mcp-server if available, github MCP if available, context7 MCP if available
+  - Ask any clarifying questions
+  - With the research and clarifying questions, architect a solution and a plan of action to fulfill the prompt
+  - Consider performance implications, potential edge cases, and error handling
+  - Ask the human to confirm the plan
+  - Break the plan into logical, manageable tasks
+  - For each task:
+    - Provide estimated complexity and time requirements
+    - (if a coding task): Write failing tests that define and cover the task, including edge cases
+    - (if a coding task): Write code that adheres to the project's standards and follows best practices of the language and/or library/framework while not overcomplicating the implementation
+    - (if a coding task): Run tests
+    - (if a coding task): Fix issues and optimize code
+    - (if a coding task): Repeat until all tests pass (do not do anything unconventional to make tests pass. If you think the tests are getting too complicated or brittle, stop and tell the human)
+    - (if a non-coding task): Define clear success criteria and follow structured approach
+    - Check for integration issues with existing code
+    - Document design decisions and tradeoffs considered
+    - Provide intermediate results for complex tasks and seek feedback
+  - Document the task and how it was completed in the @docs/ folder, including:
+    - Problem definition
+    - Solution approach
+    - Implementation details
+    - Usage examples where appropriate
+  - Make sure the project memory is updated using the memory MCP if available
+  - Prepare summary of changes and recommendations for further improvements
+`;
   
   await writeTextFile(path.join(rooRulesDir, '01-coding-standards.md'), codingStandards, dryRun);
   await writeTextFile(path.join(rooRulesDir, '02-architecture-guide.md'), architectureGuide, dryRun);
   await writeTextFile(path.join(rooRulesDir, '03-mcp-tools.md'), mcpToolGuidelines, dryRun);
+  await writeTextFile(path.join(rooRulesDir, '04-documentation-references.md'), documentationReferences, dryRun);
+  await writeTextFile(path.join(rooRulesDir, '05-workflow-guide.md'), workflowGuide, dryRun);
   
   printSuccess('Created standard rules for Roo Code');
 }
@@ -494,53 +541,7 @@ export async function setupRooModes(options) {
       .map(mode => mode.config)
   };
 
-  // Check for shared preferences to incorporate
-  const sharedPrefsPath = path.join(projectRoot, '.ai-assistants', 'shared-preferences.json');
-  if (await fileExists(sharedPrefsPath)) {
-    try {
-      const sharedPrefs = await safeReadJson(sharedPrefsPath);
-      if (sharedPrefs?.codingPreferences?.testFirstDevelopment) {
-        // Add or modify coding preferences in the modes configuration
-        modes.codingPreferences = {
-          ...(modes.codingPreferences || {}),
-          testFirstDevelopment: true,
-          askAboutTestsWhenCoding: true
-        };
-
-        // Ensure TDD mode is part of the selected modes if test-first is enabled
-        if (!selectedModes.includes('tdd')) {
-          const tddMode = availableModes.find(m => m.value === 'tdd');
-          if (tddMode) {
-            modes.customModes.push(tddMode.config);
-            printInfo('Added TDD mode to support test-first development preference');
-
-            // Also create the TDD mode rules directory
-            const tddRulesDir = path.join(projectRoot, '.roo', 'rules-tdd');
-            await ensureDirectory(tddRulesDir, dryRun);
-
-            const instructionsContent = `# 🧪 TDD Developer Mode Instructions
-
-Follow the test-driven development workflow:
-1. Write a failing test first
-2. Write minimal code to make the test pass
-3. Refactor while keeping tests green
-
-## Mode-Specific Guidelines
-
-1. Always ask about writing tests first for new features
-2. Suggest test cases before implementation
-3. Focus on test coverage and meaningful assertions
-4. Use appropriate testing frameworks for the project
-`;
-
-            await writeTextFile(path.join(tddRulesDir, '01-instructions.md'), instructionsContent, dryRun);
-          }
-        }
-      }
-    } catch (err) {
-      printInfo(`Could not read shared preferences: ${err.message}`);
-    }
-  }
+  // Test-first development shared preferences logic has been removed
   
   await safeWriteJson(roomodesPath, modes, dryRun);
   printSuccess('Created Roo custom modes configuration');

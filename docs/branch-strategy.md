@@ -87,8 +87,8 @@ Here's an example configuration:
     "release": "release/",
     "support": "support/"
   },
-  "mainBranches": ["main", "master", "develop"],
-  "protectedBranches": ["main", "master", "develop", "release/*"],
+  "mainBranches": ["main", "master", "dev", "staging"],
+  "protectedBranches": ["main", "master", "staging", "dev", "release/*"],
   "releasePattern": "^release\\/v?(\\d+\\.\\d+\\.\\d+)$",
   "validateWithClaude": true,
   "jiraIntegration": true,
@@ -173,7 +173,7 @@ You can customize the branch prefixes used for GitFlow or the patterns used for 
 
 ## Additional Notes
 
-- The hook falls back gracefully if Claude API key is not available
+- The hook uses Claude CLI for enhanced validation when available
 - Custom rules provide extensive flexibility for organization-specific needs
 - Branch age validation helps encourage short-lived feature branches
 - Protected branch rules help prevent accidental changes to important branches

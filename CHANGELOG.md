@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.3.2...v1.4.0) (2025-05-15)
+
+
+### Features
+
+* add direct hook runner execution to main entry point ([712c372](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/712c37240982c94a573e8e6bd4e7a5ad962fa3aa))
+
+
+### Bug Fixes
+
+* simplify git hooks to avoid running setup script unnecessarily ([e6eff16](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/e6eff16a0491fb5d5078bc130c0dc0dcd44b64a0))
+
 ### [1.3.2](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.3.1...v1.3.2) (2025-05-15)
 
 

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.3](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.4.2...v1.4.3) (2025-05-15)
+
+
+### Bug Fixes
+
+* simplify Claude CLI integration to use correct command pattern ([f5d419a](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/f5d419a50d46e1eb8db976114bdad18218fcdcb8))
+
 ### [1.4.2](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.4.1...v1.4.2) (2025-05-15)
 
 

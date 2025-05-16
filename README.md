@@ -54,6 +54,9 @@ npm install -g ai-coding-assistants-setup
 
 # Using yarn
 yarn global add ai-coding-assistants-setup
+
+# Using npx (no installation required)
+# Run directly with npx when needed
 ```
 
 ## 🏁 Usage
@@ -62,8 +65,11 @@ yarn global add ai-coding-assistants-setup
 # Navigate to your project root
 cd your-project
 
-# Run the setup tool
+# Run the setup tool (if installed globally)
 ai-coding-assistants-setup
+
+# Or run directly with npx (no installation required)
+npx ai-coding-assistants-setup
 ```
 
 The tool will guide you through the setup process with interactive prompts and clear feedback.

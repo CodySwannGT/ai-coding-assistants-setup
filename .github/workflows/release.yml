@@ -82,7 +82,7 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}
           git push --follow-tags origin ${{ needs.determine_environment.outputs.environment }}
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true

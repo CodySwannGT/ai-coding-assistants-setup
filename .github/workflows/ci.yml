@@ -2,80 +2,38 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Lint
-        run: npm run lint
-        
-      - name: Type check
-        run: npm run typecheck
-        
-      - name: Run tests
-        run: npm test
-        
-      - name: Check formatting
-        run: npm run format:check
-      
-      - name: Build
-        run: npm run build
-
-  security:
-    name: Security scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci
-        
-      - name: Run security audit
-        run: npm audit --production
-      
-  commitlint:
-    name: Lint commit messages
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Validate latest commit message
-        run: npx commitlint --from HEAD~1 --to HEAD
+  quality:
+    name: 🔍 Quality Checks
+    if: ${{ !inputs.skip_quality }}
+    # Reference to the quality checks workflow
+    uses: ./.github/workflows/quality.yml
+    with:
+      node_version: ${{ inputs.node_version }}
+      package_manager: ${{ inputs.package_manager }}
+      working_directory: ${{ inputs.working_directory }}
+      skip_lint: ${{ inputs.skip_lint }}
+      skip_typecheck: ${{ inputs.skip_typecheck }}
+      skip_test: ${{ inputs.skip_test }}
+      skip_format: ${{ inputs.skip_format }}
+      skip_build: ${{ inputs.skip_build }}
+      skip_security: ${{ inputs.skip_security }}
+    secrets:
+      PAT: ${{ secrets.PAT }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  create_github_issue_on_failure:
+    name: 🚨 Create Github Issue on Failure
+    needs: [quality]
+    if: ${{ failure() && !contains(github.event.head_commit.message, '[skip ci]') && (github.event.inputs.skip_github_issue != 'true' && inputs.skip_github_issue != true) }}
+    # Reference to the GitHub issue creation workflow
+    # Note: In actual usage, ensure this file exists in your repository
+    uses: ./.github/workflows/github-issue-on-failure.yml
+    with:
+      workflow_name: 'Version and Release'
+    secrets:
+      PAT: ${{ secrets.PAT }}

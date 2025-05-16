@@ -1,3 +1,11 @@
-tmp
-tmp.md
-dist
+
+# TypeScript
+dist/
+build/
+*.tsbuildinfo
+.tscache/
+node_modules/
+coverage/
+.nyc_output/
+
+.env

@@ -120,17 +120,72 @@ export class TemplateScanner {
 
   /**
    * Get a mapping of source to target paths for template files
-   * 
+   *
    * @returns Map of source paths to target paths
    */
   getTemplateMap(): Map<string, string> {
     const map = new Map<string, string>();
     
     for (const template of this.templates) {
-      map.set(template.sourcePath, template.targetPath);
+      // Special case for mcp.json - map it to both .mcp.json in the root and .roo/mcp.json
+      if (template.relativePath === '.roo/mcp.json') {
+        // Map to .mcp.json in the root
+        const rootTargetPath = path.join(this.targetDir, '.mcp.json');
+        map.set(template.sourcePath, rootTargetPath);
+        
+        // Also map to .roo/mcp.json in the parent project root
+        const rooTargetPath = path.join(this.targetDir, '.roo', 'mcp.json');
+        // We need to use a different key since Map can't have duplicate keys
+        // Using a modified path with a special prefix to ensure uniqueness
+        map.set(template.sourcePath + '.__roo_copy__', rooTargetPath);
+        
+        if (this.verbose) {
+          Feedback.info(`Special mapping: ${template.relativePath} -> .mcp.json and .roo/mcp.json`);
+        }
+      } else {
+        map.set(template.sourcePath, template.targetPath);
+      }
     }
     
     return map;
+  }
+
+  /**
+   * Ensure the .roo/mcp.json file is properly created
+   *
+   * @returns Promise resolving to true if setup was successful
+   */
+  async ensureMcpJson(): Promise<boolean> {
+    try {
+      // Find the mcp.json template
+      const mcpTemplate = this.templates.find(t => t.relativePath === '.roo/mcp.json');
+      
+      if (!mcpTemplate) {
+        Feedback.warning('mcp.json template not found. Skipping.');
+        return false;
+      }
+      
+      // Read the template content
+      const content = await fs.readFile(mcpTemplate.sourcePath, 'utf8');
+      
+      // Create .mcp.json in the root
+      const rootMcpPath = path.join(this.targetDir, '.mcp.json');
+      await fs.ensureFile(rootMcpPath);
+      await fs.writeFile(rootMcpPath, content);
+      Feedback.success(`Created .mcp.json at ${rootMcpPath}`);
+      
+      // Create .roo/mcp.json in the project root
+      const rooDir = path.join(this.targetDir, '.roo');
+      const rooMcpPath = path.join(rooDir, 'mcp.json');
+      await fs.ensureDir(rooDir);
+      await fs.writeFile(rooMcpPath, content);
+      Feedback.success(`Created .roo/mcp.json at ${rooMcpPath}`);
+      
+      return true;
+    } catch (error) {
+      Feedback.error(`Failed to create mcp.json: ${error instanceof Error ? error.message : String(error)}`);
+      return false;
+    }
   }
 
   /**

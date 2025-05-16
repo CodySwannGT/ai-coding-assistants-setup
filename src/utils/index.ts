@@ -1,5 +1,6 @@
 export * from './commit-lint-setup';
 export * from './config-merger';
+export * from './docs-setup';
 export * from './feedback';
 export * from './file-merger';
 export * from './formatting-setup';
@@ -13,6 +14,7 @@ export * from './vscode-setup';
 
 import CommitLintSetup from './commit-lint-setup';
 import { ConfigFileType, ConfigMerger, ConflictStrategy } from './config-merger';
+import DocsSetup from './docs-setup';
 import Feedback from './feedback';
 import { FileMerger, MergeOption } from './file-merger';
 import PrettierSetup from './formatting-setup';
@@ -37,6 +39,7 @@ export default {
   ESLintSetup,
   PrettierSetup,
   CommitLintSetup,
+  DocsSetup,
   GitHubActionsSetup,
   VSCodeSetup,
   Uninstaller

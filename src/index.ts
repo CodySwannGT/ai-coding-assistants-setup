@@ -1,16 +1,17 @@
 #!/usr/bin/env node
 
-import path from 'path';
-import fs from 'fs-extra';
 import { Command } from 'commander';
-import { FileMerger, MergeOption } from './utils/file-merger';
-import { ConfigMerger, ConflictStrategy } from './utils/config-merger';
-import { Feedback } from './utils/feedback';
-import { HuskySetup } from './utils/husky-setup';
-import { TemplateScanner, TemplateCategory } from './utils/template-scanner';
-import ESLintSetup from './utils/linting-setup';
-import PrettierSetup from './utils/formatting-setup';
+import fs from 'fs-extra';
+import path from 'path';
 import CommitLintSetup from './utils/commit-lint-setup';
+import { ConfigMerger, ConflictStrategy } from './utils/config-merger';
+import DocsSetup from './utils/docs-setup';
+import { Feedback } from './utils/feedback';
+import { MergeOption } from './utils/file-merger';
+import PrettierSetup from './utils/formatting-setup';
+import { HuskySetup } from './utils/husky-setup';
+import ESLintSetup from './utils/linting-setup';
+import { TemplateCategory, TemplateScanner } from './utils/template-scanner';
 import TypeScriptSetup from './utils/typescript-setup';
 
 // Initialize the command line parser
@@ -405,6 +406,23 @@ async function setupAiCodingAssistants(
     Feedback.info('TypeScript already installed. Skipping setup.');
   }
 
+  // Setup environment variables
+  Feedback.info('Setting up environment variables...');
+  const { EnvSetup } = await import('./utils/env-setup.js');
+  const envSetup = new EnvSetup(cwd);
+  await envSetup.setupEnv(interactive);
+  
+  // Setup AI memory file
+  Feedback.info('Setting up AI memory file...');
+  const { MemorySetup } = await import('./utils/memory-setup.js');
+  const memorySetup = new MemorySetup(cwd);
+  await memorySetup.setupMemory();
+  
+  // Setup documentation files
+  Feedback.info('Setting up documentation files...');
+  const docsSetup = new DocsSetup(cwd);
+  await docsSetup.setupDocs();
+
   // Set up file merging
   const filesToMerge = await getFilesToMerge(templateDir, cwd, verbose);
   
@@ -426,6 +444,12 @@ async function setupAiCodingAssistants(
   
   // Use the advanced ConfigMerger which handles both config and regular files
   const mergedCount = await ConfigMerger.mergeConfigFiles(filesToMerge, configOptions);
+  
+  // Ensure the .roo/mcp.json file is properly created
+  Feedback.info('Ensuring MCP configuration is properly set up...');
+  const scanner = new TemplateScanner(templateDir, cwd, verbose);
+  await scanner.scan();
+  await scanner.ensureMcpJson();
   
   // Final message
   if (mergedCount === filesToMerge.size) {

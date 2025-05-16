@@ -264,8 +264,27 @@ COMMIT_MSG=$(git log -1 --pretty=%B)
 COMMIT_AUTHOR=$(git log -1 --pretty=%an)
 COMMIT_DATE=$(git log -1 --pretty=%ad --date=format:'%Y-%m-%d %H:%M:%S')
 COMMIT_HASH=$(git log -1 --pretty=%H)
-PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel)")
-MEMORY_PATH="$(git rev-parse --show-toplevel)/.ai/memory.jsonl"
+
+# Try to determine the root directory and project name
+# First attempt to use git if available
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  ROOT_DIR="$(git rev-parse --show-toplevel)"
+  PROJECT_NAME=$(basename "$ROOT_DIR")
+else
+  # Fallback method if not in a git repository
+  # Get the absolute path of the current directory
+  CURRENT_DIR="$(pwd)"
+  
+  # Determine the parent directory (one level up)
+  # This assumes the ai-coding-assistants-setup is installed as a dependency
+  # in the parent project's node_modules
+  ROOT_DIR="$(dirname "$CURRENT_DIR")"
+  PROJECT_NAME=$(basename "$ROOT_DIR")
+  
+  echo "⚠️ Not in a git repository. Using parent directory as root: $ROOT_DIR"
+fi
+
+MEMORY_PATH="$ROOT_DIR/.ai/memory.jsonl"
 
 # Simple commit type extraction using standard shell commands
 COMMIT_TYPE="other"
@@ -280,7 +299,10 @@ echo "📥 Writing to memory: $COMMIT_MSG"
 echo "📁 Memory file: $MEMORY_PATH"
 echo "🏷️ Commit type detected: $COMMIT_TYPE"
 
-# Make sure the directory exists
+# Make sure the .ai directory exists in the root of the parent project
+mkdir -p "$ROOT_DIR/.ai"
+
+# Make sure the directory exists (redundant but keeping for safety)
 mkdir -p "$(dirname "$MEMORY_PATH")"
 
 # Create JSON in the same format as MCP-created entities

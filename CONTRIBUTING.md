@@ -1,6 +1,33 @@
 # Contributing to AI Coding Assistants Setup
 
-Thank you for considering contributing to this project! This guide will help you get started as a contributor and explain our development workflow.
+Thank you for considering contributing to AI Coding Assistants Setup! This document provides guidelines and instructions for contributing to the project.
+
+## Table of Contents
+
+- [Code of Conduct](#code-of-conduct)
+- [Ways to Contribute](#ways-to-contribute)
+- [Getting Started](#getting-started)
+  - [Setting Up the Development Environment](#setting-up-the-development-environment)
+  - [Project Structure](#project-structure)
+- [Development Workflow](#development-workflow)
+  - [Branching Strategy](#branching-strategy)
+  - [Commit Guidelines](#commit-guidelines)
+  - [Pull Request Process](#pull-request-process)
+- [Coding Standards](#coding-standards)
+  - [TypeScript Guidelines](#typescript-guidelines)
+  - [Testing](#testing)
+  - [Documentation](#documentation)
+- [Release Process](#release-process)
+- [Community](#community)
+
+## Code of Conduct
+
+By participating in this project, you agree to abide by our Code of Conduct:
+
+- Be respectful and inclusive
+- Be patient and welcoming
+- Be considerate
+- Be willing to accept constructive criticism
 
 ## Ways to Contribute
 
@@ -11,87 +38,70 @@ Thank you for considering contributing to this project! This guide will help you
 
 ## Getting Started
 
-### Forking and Cloning the Repository
+### Setting Up the Development Environment
 
-1. Fork the repository on GitHub by clicking the "Fork" button at the top right of the repository page
-2. Clone your fork to your local machine:
+1. **Fork and Clone the Repository**
+
    ```bash
+   # Fork the repository on GitHub first, then:
    git clone https://github.com/YOUR_USERNAME/ai-coding-assistants-setup.git
    cd ai-coding-assistants-setup
-   ```
-3. Add the original repository as an upstream remote:
-   ```bash
+   
+   # Add upstream remote
    git remote add upstream https://github.com/CodySwannGT/ai-coding-assistants-setup.git
    ```
 
-### Setting Up the Development Environment
+2. **Install dependencies**
 
-1. Ensure you have Node.js (v18+) and npm (v7+) installed
-2. Install dependencies:
    ```bash
    npm install
    ```
-3. Set up your environment variables by copying the example:
-   ```bash
-   cp .env.example .env
-   ```
-   Then edit `.env` to add your API keys and configuration
 
-### Making Your First Contribution
+3. **Build the project**
 
-1. Create a new branch for your contribution:
    ```bash
-   git checkout -b feature/your-feature-name
+   npm run build
    ```
-2. Make your changes to the codebase
-3. Run tests to ensure your changes don't break existing functionality:
+
+4. **Run tests**
+
    ```bash
    npm test
    ```
-4. Submit a pull request (see the "Development Workflow" section)
 
-## Project Structure
+### Project Structure
 
-The project is organized as follows:
-
-- `.ai-assistants/` - Configuration for various AI assistants
-- `.claude/` - Claude-specific configuration
-- `.cursor/` - Cursor-specific configuration
-- `.github/` - GitHub configuration including CI workflows
-- `.husky/` - Git hooks configuration
-- `.roo/` - Roo-specific configuration and rules
-- `.vscode/` - VS Code settings and recommendations
-- `docs/` - Documentation files including comparisons and guides
-- `scripts/` - Utility scripts
-- `src/` - Source code of the tool
-  - `config/` - Configuration and paths
-  - `hooks/` - Git hooks implementation
-  - `integrations/` - Integration with tools (Claude, Roo, VSCode, etc.)
-  - `utils/` - Utility functions
-- `tasks/` - Task documentation and tracking
-- `tests/` - Test files and fixtures
-
-Key files:
-- `index.js` - Main entry point
-- `package.json` - Project dependencies and scripts
-- `CLAUDE.md` - Instructions for Claude assistant
-- `README.md` - Project documentation and usage instructions
+```
+ai-coding-assistants-setup/
+├── .github/             # GitHub configuration files
+├── src/                 # Source code
+│   ├── config/          # Configuration management
+│   ├── hooks/           # Git hook implementation
+│   ├── integrations/    # AI assistant integrations
+│   ├── templates/       # Template files to copy
+│   └── utils/           # Utility functions
+├── tests/               # Test files mirroring src structure
+├── docs/                # Documentation
+└── scripts/             # Build and utility scripts
+```
 
 ## Development Workflow
 
-### Branch Naming Conventions
+### Branching Strategy
 
-- `feature/` - For new features
-- `fix/` - For bug fixes
-- `docs/` - For documentation changes
-- `refactor/` - For code refactoring
-- `test/` - For adding or updating tests
+We use a simplified Git flow:
 
-Example: `feature/add-cursor-support`
+- `main` - stable, released code
+- `feature/*` - new features and enhancements
+- `fix/*` - bug fixes
+- `docs/*` - documentation improvements
+- `refactor/*` - code refactoring without feature changes
 
-### Commit Message Format
+Example: `feature/add-support-for-github-mcp`
 
-Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+### Commit Guidelines
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/) to make the commit history more readable and facilitate automated releases:
 
 ```
 <type>(<scope>): <description>
@@ -101,165 +111,145 @@ Follow the [Conventional Commits](https://www.conventionalcommits.org/) specific
 [optional footer(s)]
 ```
 
-Types:
-- `feat`: A new feature
-- `fix`: A bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, semicolons, etc.)
-- `refactor`: Code changes that neither fix bugs nor add features
-- `test`: Adding or updating tests
-- `chore`: Changes to the build process or auxiliary tools
+**Types:**
+- `feat:` - a new feature
+- `fix:` - a bug fix
+- `docs:` - documentation changes
+- `style:` - formatting changes that don't affect code behavior
+- `refactor:` - code changes that neither fix bugs nor add features
+- `test:` - adding or modifying tests
+- `chore:` - changes to the build process, tooling, etc.
 
-Example: `feat(vscode): add support for Copilot configuration`
+**Example:**
+```
+feat(hooks): add AI-powered code review to pre-commit hook
+
+This enhances the pre-commit hook with Claude's code review capabilities.
+It analyzes staged changes for potential bugs, performance issues, and
+security vulnerabilities.
+
+Close #42
+```
 
 ### Pull Request Process
 
-1. Update your fork with the latest changes from the upstream repository:
+1. **Create a branch**
+
    ```bash
-   git fetch upstream
-   git rebase upstream/main
+   git checkout -b feature/your-feature-name
    ```
-2. Push your branch to your fork:
+
+2. **Make your changes**
+
+   Implement your changes, following the coding standards.
+
+3. **Add tests**
+
+   Ensure your code is covered by tests.
+
+4. **Run checks locally**
+
    ```bash
-   git push -u origin feature/your-feature-name
+   npm run lint
+   npm run typecheck
+   npm test
    ```
-3. Open a pull request on GitHub:
-   - Provide a clear, descriptive title
-   - Include a detailed description of the changes
-   - Reference any related issues using `#issue-number`
-   - Complete the pull request template
 
-### Code Review Expectations
+5. **Commit your changes**
 
-- All PRs must be reviewed by at least one maintainer
-- Address review comments promptly
-- Be open to feedback and willing to make requested changes
-- Maintainers will merge PRs once they meet all requirements
-- Be respectful and constructive in discussions
+   Follow the commit guidelines.
 
-## Testing
+6. **Push to your fork**
 
-### Running Tests
+   ```bash
+   git push origin feature/your-feature-name
+   ```
 
-The project uses Jest for testing. Run the test suite with:
+7. **Create a pull request**
+
+   Go to the repository page and click "New pull request".
+
+8. **Address review feedback**
+
+   The maintainers will review your PR and may request changes.
+
+9. **Merge**
+
+   Once approved, a maintainer will merge your PR.
+
+## Coding Standards
+
+### TypeScript Guidelines
+
+- Use strongly typed TypeScript - avoid `any` where possible
+- Follow the ESLint and Prettier configurations in the project
+- Document public APIs with JSDoc comments
+- Aim for modular, testable code
+
+### Testing
+
+We use Jest for testing:
 
 ```bash
+# Run all tests
 npm test
-```
 
-Run tests with coverage:
-
-```bash
+# Run tests with coverage
 npm run test:coverage
+
+# Watch mode during development
+npm run test:watch
 ```
 
-Run a specific test file:
+When writing tests:
 
-```bash
-npm test -- tests/file-name.test.js
-```
+- Write tests for all new features and bug fixes
+- Aim for high test coverage (goal: >80%)
+- Tests should be fast and deterministic
+- Use mocks for external dependencies
 
-### Writing Tests
+Example test:
 
-- Create test files in the `tests/` directory
-- Name test files with the `.test.js` extension
-- Use descriptive test and describe blocks
-- Cover both success and error cases
-- For integrations, use mock data from the `tests/fixtures/` directory
-
-Example test structure:
-
-```javascript
-describe('Module name', () => {
-  beforeEach(() => {
-    // Setup
-  });
-
-  test('should do something specific', () => {
-    // Test code
-    expect(result).toBe(expectedValue);
-  });
-
-  afterEach(() => {
-    // Cleanup
+```typescript
+describe('Feedback utility', () => {
+  it('should format success messages with checkmark emoji', () => {
+    const spy = jest.spyOn(console, 'log');
+    
+    Feedback.success('Operation completed');
+    
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('✅'));
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('Operation completed'));
+    
+    spy.mockRestore();
   });
 });
 ```
 
-## Documentation
+### Documentation
 
-### Updating Documentation
+- Update documentation for any feature changes
+- Add JSDoc comments to all functions, classes, and interfaces
+- Include usage examples for public APIs
+- Keep the README and other documentation up to date
 
-- Documentation lives in the `docs/` directory and at the root level
-- Each major feature should be documented either in-line or in separate files
-- Update the README.md when adding new features
-- Add usage examples where appropriate
+## Release Process
 
-### Documentation Style
+1. The project uses semantic versioning (MAJOR.MINOR.PATCH)
+2. Releases are managed by the maintainers
+3. A changelog is maintained automatically from commit messages
 
-- Use clear, concise language
-- Include code examples for complex features
-- Start each section with a brief overview
-- Use proper Markdown formatting
-- Include screenshots or diagrams where helpful
+## Community
 
-## Code Style
+- **Report Bugs**: Use the [issue tracker](https://github.com/CodySwannGT/ai-coding-assistants-setup/issues)
+- **Request Features**: Also through the issue tracker
+- **Ask Questions**: Create a discussion in the repository
 
-The project uses ESLint and Prettier for consistent code style. The configuration is provided in the root directory.
+Thank you for contributing to AI Coding Assistants Setup!
 
-### Linting and Formatting
+---
 
-Run the linter:
+<div align="center">
 
-```bash
-npm run lint
-```
+**Happy coding!** 🚀
 
-Fix linting issues automatically:
-
-```bash
-npm run lint:fix
-```
-
-Format code with Prettier:
-
-```bash
-npm run format
-```
-
-### Style Guidelines
-
-- Use ES6+ features
-- Use async/await for asynchronous operations
-- Add JSDoc comments for functions
-- Keep functions small and focused
-- Use descriptive variable and function names
-- Follow the existing code structure and patterns
-
-## MCP Server Contributions
-
-If you're adding support for new MCP servers:
-
-1. Add the server to the recommended list in the script
-2. Update the documentation with details about the server
-3. Provide a sample configuration
-4. Include information about any authentication or setup requirements
-5. Create appropriate test fixtures and unit tests
-
-### MCP Configuration Structure
-
-MCP configurations should follow this structure:
-
-```javascript
-{
-  name: 'MCP Name',
-  description: 'Brief description',
-  setup: async function() {
-    // Implementation
-  }
-}
-```
-
-## License
-
-By contributing, you agree that your contributions will be licensed under the project's MIT License.
+</div>

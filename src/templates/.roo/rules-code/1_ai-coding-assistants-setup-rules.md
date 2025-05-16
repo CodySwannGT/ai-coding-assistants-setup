@@ -1,0 +1,1 @@
+Locate any and all formatters, linters and code standard documents and make sure you follow them.

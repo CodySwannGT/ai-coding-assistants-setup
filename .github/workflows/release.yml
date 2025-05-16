@@ -9,7 +9,7 @@ on:
       environment:
         description: "Environment to deploy to"
         required: true
-        default: "dev"
+        default: "main"
         type: choice
         options:
           - main
@@ -56,14 +56,27 @@ jobs:
       - name: Bump version
         id: version
         run: |
-          npx standard-version --message "chore(release): %s [skip ci]"
-          echo "new_version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-          # Add environment suffix for staging and dev, but not for main
+          # Bump version, create changelog, and commit, but DO NOT tag yet.
+          # Use --releaseCommitMessageFormat instead of deprecated --message.
+          yarn standard-version --skip.tag --releaseCommitMessageFormat "chore(release): {{currentTag}} [skip ci]"
+          
+          # Get the new version from package.json
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          
+          # Determine the actual tag name based on the environment
+          ACTUAL_TAG_NAME=""
           if [ "${{ needs.determine_environment.outputs.environment }}" == "main" ]; then
-            echo "tag=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+            ACTUAL_TAG_NAME="v$NEW_VERSION"
           else
-            echo "tag=v$(node -p "require('./package.json').version")-${{ needs.determine_environment.outputs.environment }}" >> $GITHUB_OUTPUT
+            ACTUAL_TAG_NAME="v$NEW_VERSION-${{ needs.determine_environment.outputs.environment }}"
           fi
+          
+          # Output the determined tag name for subsequent steps
+          echo "tag=$ACTUAL_TAG_NAME" >> $GITHUB_OUTPUT
+          
+          # Now, create the git tag with the correct name and message
+          git tag -a "$ACTUAL_TAG_NAME" -m "chore(release): $NEW_VERSION [skip ci]"
       - name: Push changes
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}

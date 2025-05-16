@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * ESLint Setup Utility
  * 
  * Utility for setting up and configuring ESLint in projects.
  */
 
+import { execSync } from 'child_process';
 import fs from 'fs-extra';
 import path from 'path';
-import { execSync } from 'child_process';
 import { Feedback } from './feedback';
-import { ProjectDetector, PackageManager } from './project-detector';
+import { PackageManager, ProjectDetector } from './project-detector';
 
 /**
  * ESLint configuration options
@@ -24,6 +25,7 @@ export interface ESLintConfig {
       [key: string]: boolean | undefined;
     };
     project?: string | string[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
   };
   plugins?: string[];
@@ -172,7 +174,7 @@ export const DEFAULT_REACT_DEPENDENCIES: ESLintDependencies = {
 export class ESLintSetup {
   private projectRoot: string;
   private projectDetector: ProjectDetector;
-  private feedback: Feedback;
+  // Feedback is used statically
 
   /**
    * Constructor for ESLintSetup
@@ -182,7 +184,7 @@ export class ESLintSetup {
   constructor(projectRoot: string = process.cwd()) {
     this.projectRoot = projectRoot;
     this.projectDetector = new ProjectDetector(projectRoot);
-    this.feedback = new Feedback();
+    // Note: Feedback is not needed as an instance since all methods are static
   }
 
   /**
@@ -237,7 +239,7 @@ export class ESLintSetup {
   async installESLint(): Promise<boolean> {
     try {
       if (await this.isESLintInstalled()) {
-        this.feedback.info('ESLint is already installed');
+        Feedback.info('ESLint is already installed');
         return true;
       }
       
@@ -268,13 +270,13 @@ export class ESLintSetup {
           throw new Error(`Unsupported package manager: ${packageManager}`);
       }
       
-      this.feedback.info(`Installing ESLint and dependencies...`);
+      Feedback.info('Installing ESLint and dependencies...');
       execSync(installCommand, { cwd: this.projectRoot, stdio: 'inherit' });
       
-      this.feedback.success('ESLint installed successfully');
+      Feedback.success('ESLint installed successfully');
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to install ESLint: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to install ESLint: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -288,7 +290,7 @@ export class ESLintSetup {
       
       // Check if config already exists
       if (await fs.pathExists(configPath)) {
-        this.feedback.info('ESLint configuration file already exists');
+        Feedback.info('ESLint configuration file already exists');
         return true;
       }
       
@@ -298,10 +300,10 @@ export class ESLintSetup {
       // Write configuration file
       await fs.writeJson(configPath, config, { spaces: 2 });
       
-      this.feedback.success('ESLint configuration created successfully');
+      Feedback.success('ESLint configuration created successfully');
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to create ESLint config: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to create ESLint config: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -315,7 +317,7 @@ export class ESLintSetup {
       
       // Check if file already exists
       if (await fs.pathExists(ignorePath)) {
-        this.feedback.info('.eslintignore file already exists');
+        Feedback.info('.eslintignore file already exists');
         return true;
       }
       
@@ -333,10 +335,10 @@ export class ESLintSetup {
       // Write ignore file
       await fs.writeFile(ignorePath, ignorePatterns.join('\n') + '\n');
       
-      this.feedback.success('.eslintignore file created successfully');
+      Feedback.success('.eslintignore file created successfully');
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to create .eslintignore: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to create .eslintignore: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -368,10 +370,10 @@ export class ESLintSetup {
       // Write updated package.json
       await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
       
-      this.feedback.success('ESLint scripts added to package.json');
+      Feedback.success('ESLint scripts added to package.json');
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to add ESLint scripts: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to add ESLint scripts: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -397,10 +399,10 @@ export class ESLintSetup {
       const scriptsAdded = await this.addESLintScripts();
       if (!scriptsAdded) return false;
       
-      this.feedback.success('ESLint setup completed successfully');
+      Feedback.success('ESLint setup completed successfully');
       return true;
     } catch (error) {
-      this.feedback.error(`ESLint setup failed: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`ESLint setup failed: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -504,3 +506,4 @@ export class ESLintSetup {
 }
 
 export default ESLintSetup;
+/* eslint-enable @typescript-eslint/no-explicit-any */

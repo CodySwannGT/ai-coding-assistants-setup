@@ -29,7 +29,6 @@
   - [Pre-Commit Hook](#pre-commit-hook)
   - [Prepare-Commit-Msg Hook](#prepare-commit-msg-hook)
   - [Commit-Msg Hook](#commit-msg-hook)
-  - [Branch Strategy](#branch-strategy)
   - [Code Quality Checks](#code-quality-checks)
 - [MCP Server Prompts](#-mcp-server-prompts)
   - [GitHub MCP](#github-mcp)

@@ -70,33 +70,6 @@ npx claude-setup hooks
 
 Select "Branching Strategy Enforcement" from the list of available hooks to enable and configure it.
 
-### Advanced Configuration
-
-For more advanced configuration, you can create a `.claude/branch-strategy.json` file in your project root. This allows for more detailed customization, especially for custom branching strategies.
-
-Here's an example configuration:
-
-```json
-{
-  "strategyType": "gitflow",
-  "blockingMode": "warn",
-  "branchPrefixes": {
-    "feature": "feature/",
-    "bugfix": "bugfix/",
-    "hotfix": "hotfix/",
-    "release": "release/",
-    "support": "support/"
-  },
-  "mainBranches": ["main", "master", "dev", "staging"],
-  "protectedBranches": ["main", "master", "staging", "dev", "release/*"],
-  "releasePattern": "^release\\/v?(\\d+\\.\\d+\\.\\d+)$",
-  "validateWithClaude": true,
-  "jiraIntegration": true,
-  "jiraPattern": "[A-Z]+-\\d+",
-  "customRules": []
-}
-```
-
 ### Custom Rules
 
 For custom strategies, you can define specific rules in the `customRules` array:

@@ -1,28 +1,28 @@
+export * from './commit-lint-setup';
+export * from './config-merger';
 export * from './feedback';
 export * from './file-merger';
-export * from './config-merger';
-export * from './project-detector';
-export * from './husky-setup';
-export * from './template-scanner';
-export * from './linting-setup';
 export * from './formatting-setup';
-export * from './commit-lint-setup';
 export * from './github-actions-setup';
-export * from './vscode-setup';
+export * from './husky-setup';
+export * from './linting-setup';
+export * from './project-detector';
+export * from './template-scanner';
 export * from './uninstaller';
+export * from './vscode-setup';
 
+import CommitLintSetup from './commit-lint-setup';
+import { ConfigFileType, ConfigMerger, ConflictStrategy } from './config-merger';
 import Feedback from './feedback';
 import { FileMerger, MergeOption } from './file-merger';
-import { ConfigMerger, ConflictStrategy, ConfigFileType } from './config-merger';
-import ProjectDetector from './project-detector';
-import HuskySetup from './husky-setup';
-import TemplateScanner from './template-scanner';
-import ESLintSetup from './linting-setup';
 import PrettierSetup from './formatting-setup';
-import CommitLintSetup from './commit-lint-setup';
 import GitHubActionsSetup from './github-actions-setup';
-import VSCodeSetup from './vscode-setup';
+import { HuskySetup } from './husky-setup';
+import ESLintSetup from './linting-setup';
+import ProjectDetector from './project-detector';
+import { TemplateScanner } from './template-scanner';
 import Uninstaller from './uninstaller';
+import VSCodeSetup from './vscode-setup';
 
 export default {
   Feedback,

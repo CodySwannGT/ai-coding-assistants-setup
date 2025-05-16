@@ -75,9 +75,8 @@ This project is built using TypeScript and follows a modular structure:
    - AI-powered code review integration
 
 4. **Integrations**: External system connections in `src/integrations/`
-   - Claude API integrations
    - Diff explanation functionality
-   - Code review implementation
+   - Claude CLI integration for code reviews
 
 5. **Utilities**: Shared helpers in `src/utils/`
    - File and configuration merging
@@ -94,12 +93,19 @@ This project is built using TypeScript and follows a modular structure:
    - Pre-commit hooks for code quality checks
    - Commit message validation and generation
    - AI-powered code reviews
+   - Post-commit memory system for tracking project history
 
-3. **MCP Configuration**: Support for Model Control Panel servers:
+3. **Claude-Powered Code Review**: Command to run AI-powered code reviews on files:
+   - Uses Claude CLI for direct, efficient code analysis
+   - Supports reviewing staged changes or specific files
+   - Configurable focus areas (security, functionality, performance, style)
+   - Example: `npm run code-review -- --staged` or `npm run code-review -- -f src/index.ts`
+
+4. **MCP Configuration**: Support for Model Control Panel servers:
    - Configuration generation and validation
    - Local and shared configuration management
 
-4. **TypeScript Setup**: Utilities for configuring TypeScript in projects:
+5. **TypeScript Setup**: Utilities for configuring TypeScript in projects:
    - Auto-detection of project type (React, Node.js, etc.)
    - Integration with ESLint and other tools
 
@@ -138,6 +144,60 @@ The tool works with several configuration files:
 3. **Git Hook Configurations**:
    - `.husky/` - Git hook scripts
    - Commit message templates and validation rules
+
+## GitHub Actions Workflows
+
+The project provides reusable GitHub Actions workflows that can be copied into target repositories. These workflows use the `workflow_call` trigger so they can be referenced from other workflows.
+
+1. **Quality Checks Workflow** (`quality.yml`):
+   - Runs linting, type checking, tests, format checking, build verification, and security scanning
+   - Includes optional AI-powered code quality and security analysis with Claude
+   - Allows skipping individual checks as needed
+
+   Example usage:
+   ```yaml
+   quality:
+     uses: ./.github/workflows/quality.yml
+     with:
+       node_version: '20.x'
+       package_manager: 'npm'
+       skip_security: true
+     secrets:
+       PAT: ${{ secrets.GITHUB_TOKEN }}
+       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+   ```
+
+2. **Release Workflow** (`release.yml`):
+   - Handles versioning, tagging, and creating releases
+   - Creates GitHub releases and optionally Jira releases
+   - Includes version bumping with conventional commits
+
+   Example usage:
+   ```yaml
+   name: Release
+   on:
+     push:
+       branches: [main, dev, staging]
+
+   jobs:
+     release:
+       uses: ./.github/workflows/release.yml
+       with:
+         environment: ${{ github.ref_name }}
+       secrets:
+         PAT: ${{ secrets.GITHUB_TOKEN }}
+         JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+   ```
+
+3. **GitHub Issue Creation** (`github-issue-on-failure.yml`):
+   - Creates a GitHub issue when a workflow fails
+   - Includes detailed information about the failure
+
+4. **Jira Issue Creation** (`jira-issue-on-failure.yml`):
+   - Creates a Jira issue when a workflow fails
+   - Requires Jira API credentials
+
+These workflow templates are located in `src/templates/.github/workflows/` and should be copied to the target repository's `.github/workflows/` directory.
 
 ## Testing Strategy
 

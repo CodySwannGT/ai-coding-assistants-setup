@@ -1,25 +1,26 @@
+/* eslint-disable no-useless-escape */
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { ProjectDetector } from './project-detector';
 import { Feedback } from './feedback';
+import { PackageManager, ProjectDetector } from './project-detector';
 
 export class HuskySetup {
   private projectRoot: string;
   private projectDetector: ProjectDetector;
-  private feedback: Feedback;
+  // Feedback is used statically
 
   constructor(projectRoot: string = process.cwd()) {
     this.projectRoot = projectRoot;
     this.projectDetector = new ProjectDetector(this.projectRoot);
-    this.feedback = new Feedback();
+    // Note: Feedback is not needed as an instance since all methods are static
   }
 
   /**
    * Check if husky is already installed
    */
   isHuskyInstalled(): boolean {
-    return this.projectDetector.hasHusky();
+    return this.projectDetector.detectFeaturesSync().hasHusky;
   }
 
   /**
@@ -27,26 +28,26 @@ export class HuskySetup {
    */
   async installHusky(): Promise<boolean> {
     if (this.isHuskyInstalled()) {
-      this.feedback.info('Husky is already installed');
+      Feedback.info('Husky is already installed');
       return true;
     }
 
     try {
-      this.feedback.info('Installing husky...');
-      const packageManager = this.projectDetector.getPackageManager();
+      Feedback.info('Installing husky...');
+      const packageManager = this.projectDetector.getPackageManagerSync();
       
       let command = '';
       switch (packageManager) {
-        case 'npm':
+        case PackageManager.NPM:
           command = 'npm install --save-dev husky';
           break;
-        case 'yarn':
+        case PackageManager.YARN:
           command = 'yarn add --dev husky';
           break;
-        case 'pnpm':
+        case PackageManager.PNPM:
           command = 'pnpm add --save-dev husky';
           break;
-        case 'bun':
+        case PackageManager.BUN:
           command = 'bun add --dev husky';
           break;
         default:
@@ -58,10 +59,10 @@ export class HuskySetup {
       // Initialize husky
       execSync('npx husky init', { cwd: this.projectRoot, stdio: 'inherit' });
       
-      this.feedback.success('Husky installed successfully');
+      Feedback.success('Husky installed successfully');
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to install husky: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to install husky: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -74,7 +75,7 @@ export class HuskySetup {
       const hooksDir = path.join(this.projectRoot, '.husky');
       
       if (!fs.existsSync(hooksDir)) {
-        this.feedback.error(`Husky hooks directory not found. Make sure husky is installed properly.`);
+        Feedback.error('Husky hooks directory not found. Make sure husky is installed properly.');
         return false;
       }
       
@@ -86,10 +87,10 @@ ${command}
 `;
       
       fs.writeFileSync(hookPath, hookContent, { mode: 0o755 });
-      this.feedback.success(`Created ${hookName} hook`);
+      Feedback.success(`Created ${hookName} hook`);
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to create ${hookName} hook: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to create ${hookName} hook: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -100,10 +101,11 @@ ${command}
   setupCodeQualityHooks(): boolean {
     try {
       // Create pre-commit hook for linting and type checking
-      const hasTypeScript = this.projectDetector.hasTypeScript();
-      const hasEslint = this.projectDetector.hasEslint();
+      const features = this.projectDetector.detectFeaturesSync();
+      const hasTypeScript = features.hasTypeScript;
+      const hasEslint = features.hasEslint;
       
-      let preCommitCommands = [];
+      const preCommitCommands = [];
       
       if (hasEslint) {
         preCommitCommands.push('npx lint-staged');
@@ -116,26 +118,48 @@ ${command}
       if (preCommitCommands.length > 0) {
         this.createHook('pre-commit', preCommitCommands.join(' && '));
       } else {
-        this.feedback.warning('No linting or type checking tools detected for pre-commit hook');
+        Feedback.warning('No linting or type checking tools detected for pre-commit hook');
       }
       
       // Create commit-msg hook for commit message validation
       this.createHook('commit-msg', 'npx --no -- commitlint --edit ${1}');
       
       // Create prepare-commit-msg hook for AI assistance if available
-      if (this.projectDetector.hasClaude()) {
+      // Check for Claude synchronously by looking for the package in package.json
+      const packageJsonPath = path.join(this.projectRoot, 'package.json');
+      let hasClaude = false;
+      
+      if (fs.existsSync(packageJsonPath)) {
+        try {
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+          const allDependencies = {
+            ...(packageJson.dependencies || {}),
+            ...(packageJson.devDependencies || {})
+          };
+          
+          hasClaude = '@anthropic-ai/claude-code' in allDependencies ||
+                     'claude-cli' in allDependencies;
+        } catch (error) {
+          // Ignore errors reading package.json
+        }
+      }
+      
+      if (hasClaude) {
         this.createHook('prepare-commit-msg', 'npx claude review ${1}');
       }
       
       // Create pre-push hook for security scanning if Claude is available
-      if (this.projectDetector.hasClaude()) {
+      if (hasClaude) {
         this.setupSecurityScanHook();
       }
       
-      this.feedback.success('Code quality hooks set up successfully');
+      // Setup post-commit memory hook for AI context
+      this.setupMemoryHook();
+      
+      Feedback.success('Code quality hooks set up successfully');
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to set up code quality hooks: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to set up code quality hooks: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -222,7 +246,68 @@ exit 0
       // Create the pre-push hook
       return this.createHook('pre-push', prePushScript);
     } catch (error) {
-      this.feedback.error(`Failed to set up security scan hook: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to set up security scan hook: ${error instanceof Error ? error.message : String(error)}`);
+      return false;
+    }
+  }
+  
+  /**
+   * Setup post-commit memory hook for storing commit information
+   */
+  setupMemoryHook(): boolean {
+    try {
+      const postCommitScript = `#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Get more detailed commit info
+COMMIT_MSG=$(git log -1 --pretty=%B)
+COMMIT_AUTHOR=$(git log -1 --pretty=%an)
+COMMIT_DATE=$(git log -1 --pretty=%ad --date=format:'%Y-%m-%d %H:%M:%S')
+COMMIT_HASH=$(git log -1 --pretty=%H)
+PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel)")
+MEMORY_PATH="$(git rev-parse --show-toplevel)/.ai/memory.jsonl"
+
+# Simple commit type extraction using standard shell commands
+COMMIT_TYPE="other"
+for type in feat fix docs style refactor perf test build ci chore revert; do
+  if [[ "$COMMIT_MSG" == "$type:"* || "$COMMIT_MSG" == "$type("* ]]; then
+    COMMIT_TYPE="$type"
+    break
+  fi
+done
+
+echo "📥 Writing to memory: $COMMIT_MSG"
+echo "📁 Memory file: $MEMORY_PATH"
+echo "🏷️ Commit type detected: $COMMIT_TYPE"
+
+# Make sure the directory exists
+mkdir -p "$(dirname "$MEMORY_PATH")"
+
+# Create JSON in the same format as MCP-created entities
+OBSERVATION="{\\\"type\\\":\\\"entity\\\",\\\"name\\\":\\\"Commit:$COMMIT_HASH\\\",\\\"entityType\\\":\\\"Commit\\\",\\\"observations\\\":[\\\"[$COMMIT_TYPE] $COMMIT_MSG\\\",\\\"Author: $COMMIT_AUTHOR\\\",\\\"Date: $COMMIT_DATE\\\"]}"
+
+# Also create a relation from the project to this commit
+RELATION="{\\\"type\\\":\\\"relation\\\",\\\"from\\\":\\\"Project:$PROJECT_NAME\\\",\\\"to\\\":\\\"Commit:$COMMIT_HASH\\\",\\\"relationType\\\":\\\"HAS_COMMIT\\\"}"
+
+# Use printf for better control over newlines
+printf "%s\\n" "$OBSERVATION" >> "$MEMORY_PATH"
+printf "%s\\n" "$RELATION" >> "$MEMORY_PATH"
+
+echo "✅ Commit information stored in project memory"
+`;
+
+      // Create hidden directory for hook helpers if it doesn't exist
+      const hooksDir = path.join(this.projectRoot, '.husky', '_');
+      
+      if (!fs.existsSync(hooksDir)) {
+        fs.mkdirSync(hooksDir, { recursive: true });
+      }
+      
+      // Create the post-commit hook
+      Feedback.info('Setting up post-commit memory hook');
+      return this.createHook('post-commit', postCommitScript);
+    } catch (error) {
+      Feedback.error(`Failed to set up memory hook: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -234,6 +319,8 @@ exit 0
     const isInstalled = await this.installHusky();
     if (!isInstalled) return false;
     
+    // setupCodeQualityHooks returns boolean, not Promise<boolean>
     return this.setupCodeQualityHooks();
   }
 }
+/* eslint-enable no-useless-escape */

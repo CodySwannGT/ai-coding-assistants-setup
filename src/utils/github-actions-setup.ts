@@ -5,8 +5,8 @@
  * and automated issue creation on workflow failures.
  */
 
-import path from 'path';
 import fs from 'fs-extra';
+import path from 'path';
 import { Feedback } from './feedback';
 import { ProjectDetector } from './project-detector';
 
@@ -51,10 +51,11 @@ export class GitHubActionsSetup {
     this.githubDir = path.join(cwd, '.github');
     this.workflowsDir = path.join(this.githubDir, 'workflows');
     
-    // Detect project features
-    this.hasTypeScript = this.projectDetector.hasTypeScript();
-    this.hasEslint = this.projectDetector.hasEslint();
-    this.hasPrettier = this.projectDetector.hasPrettier();
+    // Detect project features synchronously
+    const features = this.projectDetector.detectFeaturesSync();
+    this.hasTypeScript = features.hasTypeScript;
+    this.hasEslint = features.hasEslint;
+    this.hasPrettier = features.hasPrettier;
   }
   
   /**

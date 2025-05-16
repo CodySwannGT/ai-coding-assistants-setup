@@ -18,6 +18,7 @@ Git hooks are scripts that Git executes before or after events such as commit, p
 | `pre-commit` | Before a commit is created | Run code quality checks and AI review |
 | `prepare-commit-msg` | Before commit message editor | Generate/modify commit messages |
 | `commit-msg` | After entering a commit message | Validate commit message format |
+| `post-commit` | After a commit is created | Store commit information in project memory |
 | `pre-push` | Before pushing to remote | Final checks before sharing code |
 | `post-merge` | After merge operations | Update dependencies or run migrations |
 
@@ -147,3 +148,39 @@ git commit --no-verify -m "Your message"
 2. **False positives**: Adjust the AI review settings or modify the prompt
 3. **Hook execution failures**: Check permissions and paths in hook scripts
 4. **Missing dependencies**: Ensure all required packages are installed
+
+## Project Memory Hook
+
+The `post-commit` hook includes a memory feature that stores information about each commit in a structured format. This creates a persistent memory that AI assistants can use to understand the project's history and development patterns.
+
+### How Memory Works
+
+After each commit, the hook:
+
+1. Extracts commit information (message, author, date, hash)
+2. Detects the conventional commit type (feat, fix, docs, etc.)
+3. Creates a structured JSON representation of the commit
+4. Adds a relation between the project and the commit
+5. Stores this information in `.ai/memory.jsonl`
+
+### Memory Format
+
+The memory is stored in JSON Lines format compatible with Claude's MCP memory system:
+
+```jsonl
+{"type":"entity","name":"Commit:a1b2c3d4...","entityType":"Commit","observations":["[feat] Add new feature","Author: Jane Doe","Date: 2023-05-15 10:30:45"]}
+{"type":"relation","from":"Project:my-project","to":"Commit:a1b2c3d4...","relationType":"HAS_COMMIT"}
+```
+
+### Benefits
+
+This memory system provides several advantages:
+
+1. **Persistent Context**: AI assistants can reference past commits and development patterns
+2. **Project Understanding**: Creates a structured knowledge graph of the project's evolution
+3. **Better Recommendations**: Enables AI to make more informed suggestions based on history
+4. **MCP Integration**: Works with Claude's Model Control Panel memory system
+
+### Configuration
+
+The memory system is enabled by default with the post-commit hook. The memory file is stored at `.ai/memory.jsonl` in your project root. No additional configuration is needed.

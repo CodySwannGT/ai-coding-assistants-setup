@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Prettier Setup Utility
  * 
  * Utility for setting up and configuring Prettier in projects.
  */
 
+import { execSync } from 'child_process';
 import fs from 'fs-extra';
 import path from 'path';
-import { execSync } from 'child_process';
 import { Feedback } from './feedback';
-import { ProjectDetector, PackageManager } from './project-detector';
+import { PackageManager, ProjectDetector } from './project-detector';
 
 /**
  * Prettier configuration options
@@ -87,7 +88,7 @@ export const PRETTIER_ESLINT_CONFIG = {
 export class PrettierSetup {
   private projectRoot: string;
   private projectDetector: ProjectDetector;
-  private feedback: Feedback;
+  // Feedback is used statically
 
   /**
    * Constructor for PrettierSetup
@@ -97,7 +98,7 @@ export class PrettierSetup {
   constructor(projectRoot: string = process.cwd()) {
     this.projectRoot = projectRoot;
     this.projectDetector = new ProjectDetector(projectRoot);
-    this.feedback = new Feedback();
+    // Note: Feedback is not needed as an instance since all methods are static
   }
 
   /**
@@ -122,14 +123,14 @@ export class PrettierSetup {
   async installPrettier(): Promise<boolean> {
     try {
       if (await this.isPrettierInstalled()) {
-        this.feedback.info('Prettier is already installed');
+        Feedback.info('Prettier is already installed');
         return true;
       }
       
       const packageManager = await this.projectDetector.getPackageManager();
       const hasEslint = await this.projectDetector.hasEslint();
       
-      let dependencies = { 'prettier': DEFAULT_PRETTIER_DEPENDENCIES.prettier };
+      let dependencies: any = { 'prettier': DEFAULT_PRETTIER_DEPENDENCIES.prettier };
       
       // Add ESLint integration dependencies if ESLint is present
       if (hasEslint) {
@@ -164,13 +165,13 @@ export class PrettierSetup {
           throw new Error(`Unsupported package manager: ${packageManager}`);
       }
       
-      this.feedback.info(`Installing Prettier and dependencies...`);
+      Feedback.info('Installing Prettier and dependencies...');
       execSync(installCommand, { cwd: this.projectRoot, stdio: 'inherit' });
       
-      this.feedback.success('Prettier installed successfully');
+      Feedback.success('Prettier installed successfully');
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to install Prettier: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to install Prettier: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -184,7 +185,7 @@ export class PrettierSetup {
       
       // Check if config already exists
       if (await fs.pathExists(configPath)) {
-        this.feedback.info('Prettier configuration file already exists');
+        Feedback.info('Prettier configuration file already exists');
         return true;
       }
       
@@ -194,10 +195,10 @@ export class PrettierSetup {
       // Write configuration file
       await fs.writeJson(configPath, config, { spaces: 2 });
       
-      this.feedback.success('Prettier configuration created successfully');
+      Feedback.success('Prettier configuration created successfully');
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to create Prettier config: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to create Prettier config: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -211,7 +212,7 @@ export class PrettierSetup {
       
       // Check if file already exists
       if (await fs.pathExists(ignorePath)) {
-        this.feedback.info('.prettierignore file already exists');
+        Feedback.info('.prettierignore file already exists');
         return true;
       }
       
@@ -232,10 +233,10 @@ export class PrettierSetup {
       // Write ignore file
       await fs.writeFile(ignorePath, ignorePatterns.join('\n') + '\n');
       
-      this.feedback.success('.prettierignore file created successfully');
+      Feedback.success('.prettierignore file created successfully');
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to create .prettierignore: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to create .prettierignore: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -257,20 +258,20 @@ export class PrettierSetup {
       
       // Add format scripts if they don't exist
       if (!packageJson.scripts.format) {
-        packageJson.scripts.format = 'prettier --write \"./**/*.{js,jsx,ts,tsx,json,md}\"';
+        packageJson.scripts.format = 'prettier --write "./**/*.{js,jsx,ts,tsx,json,md}"';
       }
       
       if (!packageJson.scripts['format:check']) {
-        packageJson.scripts['format:check'] = 'prettier --check \"./**/*.{js,jsx,ts,tsx,json,md}\"';
+        packageJson.scripts['format:check'] = 'prettier --check "./**/*.{js,jsx,ts,tsx,json,md}"';
       }
       
       // Write updated package.json
       await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
       
-      this.feedback.success('Prettier scripts added to package.json');
+      Feedback.success('Prettier scripts added to package.json');
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to add Prettier scripts: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to add Prettier scripts: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -284,7 +285,7 @@ export class PrettierSetup {
       const hasEslint = await this.projectDetector.hasEslint();
       
       if (!hasEslint) {
-        this.feedback.info('ESLint is not installed, skipping integration');
+        Feedback.info('ESLint is not installed, skipping integration');
         return true;
       }
       
@@ -292,7 +293,7 @@ export class PrettierSetup {
       
       // Check if ESLint config exists
       if (!await fs.pathExists(eslintConfigPath)) {
-        this.feedback.warning('ESLint configuration not found, skipping integration');
+        Feedback.warning('ESLint configuration not found, skipping integration');
         return false;
       }
       
@@ -329,10 +330,10 @@ export class PrettierSetup {
       // Write updated ESLint config
       await fs.writeJson(eslintConfigPath, eslintConfig, { spaces: 2 });
       
-      this.feedback.success('Prettier integrated with ESLint');
+      Feedback.success('Prettier integrated with ESLint');
       return true;
     } catch (error) {
-      this.feedback.error(`Failed to integrate Prettier with ESLint: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Failed to integrate Prettier with ESLint: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -361,13 +362,15 @@ export class PrettierSetup {
       // Integrate with ESLint if available
       await this.integratePrettierWithESLint();
       
-      this.feedback.success('Prettier setup completed successfully');
+      Feedback.success('Prettier setup completed successfully');
       return true;
     } catch (error) {
-      this.feedback.error(`Prettier setup failed: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(`Prettier setup failed: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
 }
 
 export default PrettierSetup;
+
+/* eslint-enable @typescript-eslint/no-explicit-any */

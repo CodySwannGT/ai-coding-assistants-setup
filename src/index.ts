@@ -159,46 +159,33 @@ program
 program
   .command('code-review')
   .description('Run Claude AI-powered code reviews on project files')
-  .option('-i, --include <patterns...>', 'File patterns to include (glob syntax)')
-  .option('-e, --exclude <patterns...>', 'File patterns to exclude (glob syntax)')
   .option('-f, --files <files...>', 'Specific files to review')
+  .option('-s, --staged', 'Review staged changes', false)
+  .option('-p, --pattern <pattern>', 'File pattern to match (e.g., "src/**/*.ts")')
   .option('--focus <areas...>', 'Focus areas for review (security, functionality, performance, style)')
-  .option('-m, --model <model>', 'Claude model to use', 'claude-3-haiku-20240307')
-  .option('-c, --config <path>', 'Path to config file')
-  .option('-o, --output <format>', 'Output format (markdown, json)', 'markdown')
-  .option('--no-save', 'Do not save review results to file')
+  .option('-m, --model <model>', 'Claude model to use', 'claude-3-opus-20240229')
+  .option('-o, --output <path>', 'Save review to file')
   .action(async (options) => {
     try {
       Feedback.section('Claude Code Review');
       
       // Import and run code review command
-      const { CodeReview } = await import('./integrations/code-review');
+      const codeReview = await import('./commands/code-review-cli.js');
       
       // Run the code review
-      const result = await CodeReview.runCodeReview({
-        includePatterns: options.include,
-        excludePatterns: options.exclude,
+      const review = await codeReview.runCodeReview({
         files: options.files,
+        staged: options.staged,
+        pattern: options.pattern,
         focusAreas: options.focus, 
         model: options.model,
-        configPath: options.config,
-        outputFormat: options.output,
-        saveResults: options.save
+        output: options.output
       });
       
-      // Output the results
-      if (options.output === 'json') {
-        // Output as JSON
-        console.log(JSON.stringify(result, null, 2));
-      } else {
-        // Output as formatted markdown
-        const markdown = CodeReview.formatReviewAsMarkdown(result);
-        console.log(markdown);
+      // Display the result
+      if (!options.output) {
+        console.log(review);
       }
-      
-      // Print summary
-      const issueCount = result.files.reduce((count, file) => count + file.issues.length, 0);
-      Feedback.info(`Review completed. Found ${issueCount} issues`);
       
     } catch (error) {
       Feedback.error(`Code review failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -359,7 +346,7 @@ async function setupAiCodingAssistants(
   }
 
   // Detect project features
-  const { ProjectDetector } = await import('./utils/project-detector');
+  const { ProjectDetector } = await import('./utils/project-detector.js');
   const projectFeatures = await ProjectDetector.detectFeatures(cwd);
   
   // Show detected features

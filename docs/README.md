@@ -7,6 +7,7 @@ Welcome to the documentation for AI Coding Assistants Setup. This directory cont
 - [AI Tools Comparison](./ai-tools-comparison.md) - Comparison of different AI coding assistants
 - [MCP Configuration Examples](./mcp-config-examples.md) - Examples of how to configure MCP servers
 - [Git Hooks](./hooks.md) - Information about the Git hooks provided by this tool
+- [GitHub Actions](./github-actions.md) - Reusable GitHub Actions workflow templates
 - [Example Prompts](./example-prompts.md) - Example prompts for AI assistants
 
 ## Getting Started

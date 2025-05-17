@@ -13,7 +13,11 @@ export * from './uninstaller';
 export * from './vscode-setup';
 
 import CommitLintSetup from './commit-lint-setup';
-import { ConfigFileType, ConfigMerger, ConflictStrategy } from './config-merger';
+import {
+  ConfigFileType,
+  ConfigMerger,
+  ConflictStrategy,
+} from './config-merger';
 import DocsSetup from './docs-setup';
 import Feedback from './feedback';
 import { FileMerger, MergeOption } from './file-merger';
@@ -42,5 +46,5 @@ export default {
   DocsSetup,
   GitHubActionsSetup,
   VSCodeSetup,
-  Uninstaller
+  Uninstaller,
 };

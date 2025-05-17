@@ -1,4 +1,3 @@
-
 import { Command } from 'commander';
 
 // Mock dependencies
@@ -13,7 +12,7 @@ const mockCommand = {
   description: jest.fn().mockReturnThis(),
   version: jest.fn().mockReturnThis(),
   option: jest.fn().mockReturnThis(),
-  action: jest.fn().mockImplementation(function(callback) {
+  action: jest.fn().mockImplementation(function (callback) {
     this.actionCallback = callback;
     return this;
   }),
@@ -40,6 +39,4 @@ describe('AI Coding Assistants Setup CLI', () => {
     expect(mockCommand.action).toHaveBeenCalled();
     expect(mockCommand.parse).toHaveBeenCalled();
   });
-
-  
 });

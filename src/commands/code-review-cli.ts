@@ -2,7 +2,7 @@
 
 /**
  * Claude Code Review Command - Simple CLI Implementation
- * 
+ *
  * A streamlined command that uses the Claude CLI directly to review code.
  */
 
@@ -40,7 +40,7 @@ export async function runCodeReview(
     pattern,
     model = 'claude-3-opus-20240229',
     output,
-    focusAreas = ['security', 'functionality', 'performance', 'style']
+    focusAreas = ['security', 'functionality', 'performance', 'style'],
   } = options;
 
   try {
@@ -56,7 +56,7 @@ export async function runCodeReview(
 
     // Step 1: Get file content to review
     let content: string;
-    
+
     if (staged) {
       // Get staged changes
       Feedback.info('Getting staged changes...');
@@ -84,22 +84,24 @@ export async function runCodeReview(
     // Step 2: Create prompt for code review
     const promptFile = getTempFile('code-review-prompt');
     const contentFile = getTempFile('code-review-content');
-    
+
     // Create a prompt that focuses on the specified areas
-    const focusAreaText = focusAreas.map(area => {
-      switch (area) {
-        case 'security':
-          return '- Identify security vulnerabilities, potential injection points, or unsafe practices';
-        case 'functionality':
-          return '- Check for logical errors, edge cases, and functionality issues';
-        case 'performance':
-          return '- Identify performance bottlenecks and inefficient code patterns';
-        case 'style':
-          return '- Check for code style issues, inconsistencies, and maintainability problems';
-        default:
-          return `- ${area}`;
-      }
-    }).join('\n');
+    const focusAreaText = focusAreas
+      .map(area => {
+        switch (area) {
+          case 'security':
+            return '- Identify security vulnerabilities, potential injection points, or unsafe practices';
+          case 'functionality':
+            return '- Check for logical errors, edge cases, and functionality issues';
+          case 'performance':
+            return '- Identify performance bottlenecks and inefficient code patterns';
+          case 'style':
+            return '- Check for code style issues, inconsistencies, and maintainability problems';
+          default:
+            return `- ${area}`;
+        }
+      })
+      .join('\n');
 
     const prompt = `You are an expert code reviewer for a software development team. 
 Please analyze the provided code for quality, security, and correctness issues:
@@ -127,13 +129,13 @@ You're helping a developer who wants clear, actionable feedback to improve this 
 
     // Step 3: Call Claude CLI
     Feedback.info('Calling Claude CLI for code review...');
-    
+
     const claudeCommand = `cat "${contentFile}" | claude -p "$(cat ${promptFile})" --model ${model}`;
-    
+
     const startTime = Date.now();
     const response = execSync(claudeCommand, { encoding: 'utf8' });
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    
+
     Feedback.success(`Claude completed code review in ${duration}s`);
 
     // Step 4: Save result if output path is provided
@@ -148,7 +150,9 @@ You're helping a developer who wants clear, actionable feedback to improve this 
 
     return response;
   } catch (error) {
-    Feedback.error(`Error running code review: ${error instanceof Error ? error.message : String(error)}`);
+    Feedback.error(
+      `Error running code review: ${error instanceof Error ? error.message : String(error)}`
+    );
     return `Error running code review: ${error instanceof Error ? error.message : String(error)}`;
   }
 }
@@ -165,7 +169,9 @@ async function readFiles(files: string[]): Promise<string> {
       const content = await fs.readFile(file, 'utf8');
       fileContents.push(`### File: ${file}\n\n\`\`\`\n${content}\n\`\`\`\n\n`);
     } catch (error) {
-      Feedback.warning(`Failed to read file ${file}: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.warning(
+        `Failed to read file ${file}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -179,10 +185,14 @@ async function findFiles(pattern: string): Promise<string[]> {
   try {
     // Use glob to find files
     const { glob } = await import('glob');
-    const files = await glob(pattern, { ignore: ['node_modules/**', 'dist/**', 'build/**'] });
+    const files = await glob(pattern, {
+      ignore: ['node_modules/**', 'dist/**', 'build/**'],
+    });
     return files;
   } catch (error) {
-    Feedback.error(`Error finding files: ${error instanceof Error ? error.message : String(error)}`);
+    Feedback.error(
+      `Error finding files: ${error instanceof Error ? error.message : String(error)}`
+    );
     return [];
   }
 }
@@ -193,14 +203,25 @@ program
   .description('Run AI-powered code reviews using Claude CLI')
   .option('-f, --files <files...>', 'Specific files to review')
   .option('-s, --staged', 'Review staged changes', false)
-  .option('-p, --pattern <pattern>', 'File pattern to match (e.g., "src/**/*.ts")')
-  .option('-m, --model <model>', 'Claude model to use', 'claude-3-opus-20240229')
+  .option(
+    '-p, --pattern <pattern>',
+    'File pattern to match (e.g., "src/**/*.ts")'
+  )
+  .option(
+    '-m, --model <model>',
+    'Claude model to use',
+    'claude-3-opus-20240229'
+  )
   .option('-o, --output <path>', 'Save review to file')
-  .option('--focus <areas...>', 'Focus areas (security, functionality, performance, style)', ['security', 'functionality', 'performance', 'style'])
-  .action(async (options) => {
+  .option(
+    '--focus <areas...>',
+    'Focus areas (security, functionality, performance, style)',
+    ['security', 'functionality', 'performance', 'style']
+  )
+  .action(async options => {
     try {
       Feedback.section('Claude Code Review');
-      
+
       // Run the code review
       const review = await runCodeReview({
         files: options.files,
@@ -208,15 +229,17 @@ program
         pattern: options.pattern,
         model: options.model,
         output: options.output,
-        focusAreas: options.focus
+        focusAreas: options.focus,
       });
-      
+
       // Display the result
       if (!options.output) {
         console.log(review);
       }
     } catch (error) {
-      Feedback.error(`Error running code review: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Error running code review: ${error instanceof Error ? error.message : String(error)}`
+      );
       process.exit(1);
     }
   });

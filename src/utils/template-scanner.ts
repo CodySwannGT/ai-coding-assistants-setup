@@ -21,7 +21,7 @@ export enum TemplateCategory {
   HOOK = 'hook',
   TEMPLATE = 'template',
   TOOL = 'tool',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 /**
@@ -35,12 +35,16 @@ export class TemplateScanner {
 
   /**
    * Constructor for TemplateScanner
-   * 
+   *
    * @param templateDir Directory containing template files
    * @param targetDir Directory where templates will be copied/merged
    * @param verbose Whether to enable verbose logging
    */
-  constructor(templateDir: string, targetDir: string, verbose: boolean = false) {
+  constructor(
+    templateDir: string,
+    targetDir: string,
+    verbose: boolean = false
+  ) {
     this.templateDir = templateDir;
     this.targetDir = targetDir;
     this.verbose = verbose;
@@ -48,7 +52,7 @@ export class TemplateScanner {
 
   /**
    * Scan the template directory for template files
-   * 
+   *
    * @returns Array of template files
    */
   async scan(): Promise<TemplateFile[]> {
@@ -66,18 +70,23 @@ export class TemplateScanner {
 
       return this.templates;
     } catch (error) {
-      Feedback.error(`Error scanning templates: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Error scanning templates: ${error instanceof Error ? error.message : String(error)}`
+      );
       return [];
     }
   }
 
   /**
    * Recursively scan a directory for template files
-   * 
+   *
    * @param dir Directory to scan
    * @param relativeDir Relative path from template root directory
    */
-  private async scanDirectory(dir: string, relativeDir: string = ''): Promise<void> {
+  private async scanDirectory(
+    dir: string,
+    relativeDir: string = ''
+  ): Promise<void> {
     try {
       const items = await fs.readdir(dir);
 
@@ -92,7 +101,7 @@ export class TemplateScanner {
           if (item === 'node_modules' || item === '.git') {
             continue;
           }
-          
+
           // Recurse into subdirectories
           await this.scanDirectory(itemPath, relItemPath);
         } else if (stats.isFile()) {
@@ -100,12 +109,12 @@ export class TemplateScanner {
           if (item.includes('.template.')) {
             continue;
           }
-          
+
           this.templates.push({
             sourcePath: itemPath,
             targetPath,
             relativePath: relItemPath,
-            category: this.categorizeTemplate(relItemPath)
+            category: this.categorizeTemplate(relItemPath),
           });
 
           if (this.verbose) {
@@ -114,7 +123,9 @@ export class TemplateScanner {
         }
       }
     } catch (error) {
-      Feedback.error(`Error scanning directory ${dir}: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Error scanning directory ${dir}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -125,28 +136,30 @@ export class TemplateScanner {
    */
   getTemplateMap(): Map<string, string> {
     const map = new Map<string, string>();
-    
+
     for (const template of this.templates) {
       // Special case for mcp.json - map it to both .mcp.json in the root and .roo/mcp.json
       if (template.relativePath === '.roo/mcp.json') {
         // Map to .mcp.json in the root
         const rootTargetPath = path.join(this.targetDir, '.mcp.json');
         map.set(template.sourcePath, rootTargetPath);
-        
+
         // Also map to .roo/mcp.json in the parent project root
         const rooTargetPath = path.join(this.targetDir, '.roo', 'mcp.json');
         // We need to use a different key since Map can't have duplicate keys
         // Using a modified path with a special prefix to ensure uniqueness
         map.set(template.sourcePath + '.__roo_copy__', rooTargetPath);
-        
+
         if (this.verbose) {
-          Feedback.info(`Special mapping: ${template.relativePath} -> .mcp.json and .roo/mcp.json`);
+          Feedback.info(
+            `Special mapping: ${template.relativePath} -> .mcp.json and .roo/mcp.json`
+          );
         }
       } else {
         map.set(template.sourcePath, template.targetPath);
       }
     }
-    
+
     return map;
   }
 
@@ -158,39 +171,43 @@ export class TemplateScanner {
   async ensureMcpJson(): Promise<boolean> {
     try {
       // Find the mcp.json template
-      const mcpTemplate = this.templates.find(t => t.relativePath === '.roo/mcp.json');
-      
+      const mcpTemplate = this.templates.find(
+        t => t.relativePath === '.roo/mcp.json'
+      );
+
       if (!mcpTemplate) {
         Feedback.warning('mcp.json template not found. Skipping.');
         return false;
       }
-      
+
       // Read the template content
       const content = await fs.readFile(mcpTemplate.sourcePath, 'utf8');
-      
+
       // Create .mcp.json in the root
       const rootMcpPath = path.join(this.targetDir, '.mcp.json');
       await fs.ensureFile(rootMcpPath);
       await fs.writeFile(rootMcpPath, content);
       Feedback.success(`Created .mcp.json at ${rootMcpPath}`);
-      
+
       // Create .roo/mcp.json in the project root
       const rooDir = path.join(this.targetDir, '.roo');
       const rooMcpPath = path.join(rooDir, 'mcp.json');
       await fs.ensureDir(rooDir);
       await fs.writeFile(rooMcpPath, content);
       Feedback.success(`Created .roo/mcp.json at ${rooMcpPath}`);
-      
+
       return true;
     } catch (error) {
-      Feedback.error(`Failed to create mcp.json: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to create mcp.json: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
 
   /**
    * Get templates filtered by category
-   * 
+   *
    * @param category Category to filter by
    * @returns Filtered templates
    */
@@ -200,13 +217,13 @@ export class TemplateScanner {
 
   /**
    * Categorize a template file based on its path
-   * 
+   *
    * @param relativePath Relative path of the template file
    * @returns Template category
    */
   private categorizeTemplate(relativePath: string): TemplateCategory {
     const lowerPath = relativePath.toLowerCase();
-    
+
     // Configuration files
     if (
       lowerPath.startsWith('.roo/') ||
@@ -222,7 +239,7 @@ export class TemplateScanner {
     ) {
       return TemplateCategory.CONFIG;
     }
-    
+
     // Documentation files
     if (
       lowerPath.endsWith('.md') ||
@@ -231,7 +248,7 @@ export class TemplateScanner {
     ) {
       return TemplateCategory.DOCUMENTATION;
     }
-    
+
     // Hook files
     if (
       lowerPath.includes('hook') ||
@@ -241,15 +258,12 @@ export class TemplateScanner {
     ) {
       return TemplateCategory.HOOK;
     }
-    
+
     // Template files
-    if (
-      lowerPath.includes('template') ||
-      lowerPath.includes('scaffold')
-    ) {
+    if (lowerPath.includes('template') || lowerPath.includes('scaffold')) {
       return TemplateCategory.TEMPLATE;
     }
-    
+
     // Tool files
     if (
       lowerPath.endsWith('.sh') ||
@@ -260,7 +274,7 @@ export class TemplateScanner {
     ) {
       return TemplateCategory.TOOL;
     }
-    
+
     // Default to OTHER
     return TemplateCategory.OTHER;
   }

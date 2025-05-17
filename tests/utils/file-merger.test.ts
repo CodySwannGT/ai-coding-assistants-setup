@@ -35,21 +35,21 @@ describe('FileMerger', () => {
       // Setup
       const sourcePath = '/source/file.txt';
       const targetPath = '/target/file.txt';
-      
+
       // Mock fs.existsSync to return true for source and false for target
       (fs.existsSync as jest.Mock)
-        .mockImplementationOnce(() => true)  // Source exists
+        .mockImplementationOnce(() => true) // Source exists
         .mockImplementationOnce(() => false); // Target doesn't exist
-      
+
       // Mock fs.copyFile to resolve
       (fs.copyFile as jest.Mock).mockResolvedValue(undefined);
-      
+
       // Mock fs.mkdirpSync to do nothing
       (fs.mkdirpSync as jest.Mock).mockImplementation(() => {});
-      
+
       // Execute
       const result = await FileMerger.mergeFile(sourcePath, targetPath);
-      
+
       // Verify
       expect(result).toBe(true);
       expect(fs.mkdirpSync).toHaveBeenCalledWith(path.dirname(targetPath));
@@ -60,13 +60,13 @@ describe('FileMerger', () => {
       // Setup
       const sourcePath = '/source/nonexistent.txt';
       const targetPath = '/target/file.txt';
-      
+
       // Mock fs.existsSync to return false (source doesn't exist)
       (fs.existsSync as jest.Mock).mockReturnValue(false);
-      
+
       // Execute
       const result = await FileMerger.mergeFile(sourcePath, targetPath);
-      
+
       // Verify
       expect(result).toBe(false);
       expect(fs.copyFile).not.toHaveBeenCalled();
@@ -76,18 +76,18 @@ describe('FileMerger', () => {
       // Setup
       const sourcePath = '/source/file.txt';
       const targetPath = '/target/file.txt';
-      
+
       // Mock fs.existsSync to return true for source and false for target
       (fs.existsSync as jest.Mock)
-        .mockImplementationOnce(() => true)  // Source exists
+        .mockImplementationOnce(() => true) // Source exists
         .mockImplementationOnce(() => false); // Target doesn't exist
-      
+
       // Mock fs.copyFile to reject with an error
       (fs.copyFile as jest.Mock).mockRejectedValue(new Error('Copy failed'));
-      
+
       // Execute
       const result = await FileMerger.mergeFile(sourcePath, targetPath);
-      
+
       // Verify
       expect(result).toBe(false);
     });
@@ -96,21 +96,21 @@ describe('FileMerger', () => {
       // Setup
       const sourcePath = '/source/file.txt';
       const targetPath = '/target/file.txt';
-      
+
       // Mock fs.existsSync to return true for both source and target
       (fs.existsSync as jest.Mock).mockReturnValue(true);
-      
+
       // Mock fs.copyFile to resolve
       (fs.copyFile as jest.Mock).mockResolvedValue(undefined);
-      
+
       // Execute
       const result = await FileMerger.mergeFile(
-        sourcePath, 
+        sourcePath,
         targetPath,
         MergeOption.OVERWRITE,
         false // non-interactive
       );
-      
+
       // Verify
       expect(result).toBe(true);
       expect(fs.copyFile).toHaveBeenCalledWith(sourcePath, targetPath);
@@ -121,21 +121,21 @@ describe('FileMerger', () => {
       const sourcePath = '/source/file.txt';
       const targetPath = '/target/file.txt';
       const backupPath = `${targetPath}.new`;
-      
+
       // Mock fs.existsSync to return true for both source and target
       (fs.existsSync as jest.Mock).mockReturnValue(true);
-      
+
       // Mock fs.copyFile to resolve
       (fs.copyFile as jest.Mock).mockResolvedValue(undefined);
-      
+
       // Execute
       const result = await FileMerger.mergeFile(
-        sourcePath, 
+        sourcePath,
         targetPath,
         MergeOption.KEEP_BOTH,
         false // non-interactive
       );
-      
+
       // Verify
       expect(result).toBe(true);
       expect(fs.copyFile).toHaveBeenCalledWith(sourcePath, backupPath);
@@ -145,18 +145,18 @@ describe('FileMerger', () => {
       // Setup
       const sourcePath = '/source/file.txt';
       const targetPath = '/target/file.txt';
-      
+
       // Mock fs.existsSync to return true for both source and target
       (fs.existsSync as jest.Mock).mockReturnValue(true);
-      
+
       // Execute
       const result = await FileMerger.mergeFile(
-        sourcePath, 
+        sourcePath,
         targetPath,
         MergeOption.SKIP,
         false // non-interactive
       );
-      
+
       // Verify
       expect(result).toBe(true);
       expect(fs.copyFile).not.toHaveBeenCalled();
@@ -170,13 +170,13 @@ describe('FileMerger', () => {
         ['/source/file1.txt', '/target/file1.txt'],
         ['/source/file2.txt', '/target/file2.txt'],
       ]);
-      
+
       // Mock mergeFile to succeed
       jest.spyOn(FileMerger, 'mergeFile').mockResolvedValue(true);
-      
+
       // Execute
       const result = await FileMerger.mergeFiles(files);
-      
+
       // Verify
       expect(result).toBe(2);
       expect(FileMerger.mergeFile).toHaveBeenCalledTimes(2);
@@ -189,16 +189,17 @@ describe('FileMerger', () => {
         ['/source/file2.txt', '/target/file2.txt'],
         ['/source/file3.txt', '/target/file3.txt'],
       ]);
-      
+
       // Mock mergeFile to succeed for two files and fail for one
-      jest.spyOn(FileMerger, 'mergeFile')
+      jest
+        .spyOn(FileMerger, 'mergeFile')
         .mockResolvedValueOnce(true)
         .mockResolvedValueOnce(false)
         .mockResolvedValueOnce(true);
-      
+
       // Execute
       const result = await FileMerger.mergeFiles(files);
-      
+
       // Verify
       expect(result).toBe(2);
       expect(FileMerger.mergeFile).toHaveBeenCalledTimes(3);

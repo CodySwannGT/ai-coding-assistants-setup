@@ -9,7 +9,7 @@ import configExports, {
   getEnvValue,
   // MCP Schema exports
   validateMcpConfig,
-  getDefaultStackOverflowMcpConfig
+  getDefaultStackOverflowMcpConfig,
 } from '../src/config';
 
 describe('Config Index', () => {
@@ -22,13 +22,13 @@ describe('Config Index', () => {
     expect(configExports).toHaveProperty('isMac');
     expect(configExports).toHaveProperty('isLinux');
   });
-  
+
   it('should export all environment utilities', () => {
     expect(configExports).toHaveProperty('loadEnvironmentVars');
     expect(configExports).toHaveProperty('saveEnvironmentVars');
     expect(configExports).toHaveProperty('getEnvValue');
   });
-  
+
   it('should export all MCP schema utilities', () => {
     expect(configExports).toHaveProperty('validateMcpConfig');
     expect(configExports).toHaveProperty('getDefaultStackOverflowMcpConfig');
@@ -36,7 +36,7 @@ describe('Config Index', () => {
     expect(configExports).toHaveProperty('getDefaultCommandShellMcpConfig');
     expect(configExports).toHaveProperty('getSchemaDefinition');
   });
-  
+
   it('should export named exports for individual imports', () => {
     expect(getClaudeConfigPath).toBeDefined();
     expect(getVSCodeUserConfigPath).toBeDefined();

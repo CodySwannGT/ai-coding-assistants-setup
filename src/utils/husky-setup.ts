@@ -35,7 +35,7 @@ export class HuskySetup {
     try {
       Feedback.info('Installing husky...');
       const packageManager = this.projectDetector.getPackageManagerSync();
-      
+
       let command = '';
       switch (packageManager) {
         case PackageManager.NPM:
@@ -53,16 +53,18 @@ export class HuskySetup {
         default:
           throw new Error(`Unsupported package manager: ${packageManager}`);
       }
-      
+
       execSync(command, { cwd: this.projectRoot, stdio: 'inherit' });
-      
+
       // Initialize husky
       execSync('npx husky init', { cwd: this.projectRoot, stdio: 'inherit' });
-      
+
       Feedback.success('Husky installed successfully');
       return true;
     } catch (error) {
-      Feedback.error(`Failed to install husky: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to install husky: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
@@ -73,24 +75,28 @@ export class HuskySetup {
   createHook(hookName: string, command: string): boolean {
     try {
       const hooksDir = path.join(this.projectRoot, '.husky');
-      
+
       if (!fs.existsSync(hooksDir)) {
-        Feedback.error('Husky hooks directory not found. Make sure husky is installed properly.');
+        Feedback.error(
+          'Husky hooks directory not found. Make sure husky is installed properly.'
+        );
         return false;
       }
-      
+
       const hookPath = path.join(hooksDir, hookName);
       const hookContent = `#!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
 ${command}
 `;
-      
+
       fs.writeFileSync(hookPath, hookContent, { mode: 0o755 });
       Feedback.success(`Created ${hookName} hook`);
       return true;
     } catch (error) {
-      Feedback.error(`Failed to create ${hookName} hook: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to create ${hookName} hook: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
@@ -104,66 +110,73 @@ ${command}
       const features = this.projectDetector.detectFeaturesSync();
       const hasTypeScript = features.hasTypeScript;
       const hasEslint = features.hasEslint;
-      
+
       const preCommitCommands = [];
-      
+
       if (hasEslint) {
         preCommitCommands.push('npx lint-staged');
       }
-      
+
       if (hasTypeScript) {
         preCommitCommands.push('npx tsc --noEmit');
       }
-      
+
       if (preCommitCommands.length > 0) {
         this.createHook('pre-commit', preCommitCommands.join(' && '));
       } else {
-        Feedback.warning('No linting or type checking tools detected for pre-commit hook');
+        Feedback.warning(
+          'No linting or type checking tools detected for pre-commit hook'
+        );
       }
-      
+
       // Create commit-msg hook for commit message validation
       this.createHook('commit-msg', 'npx --no -- commitlint --edit ${1}');
-      
+
       // Create prepare-commit-msg hook for AI assistance if available
       // Check for Claude synchronously by looking for the package in package.json
       const packageJsonPath = path.join(this.projectRoot, 'package.json');
       let hasClaude = false;
-      
+
       if (fs.existsSync(packageJsonPath)) {
         try {
-          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+          const packageJson = JSON.parse(
+            fs.readFileSync(packageJsonPath, 'utf8')
+          );
           const allDependencies = {
             ...(packageJson.dependencies || {}),
-            ...(packageJson.devDependencies || {})
+            ...(packageJson.devDependencies || {}),
           };
-          
-          hasClaude = '@anthropic-ai/claude-code' in allDependencies ||
-                     'claude-cli' in allDependencies;
+
+          hasClaude =
+            '@anthropic-ai/claude-code' in allDependencies ||
+            'claude-cli' in allDependencies;
         } catch (error) {
           // Ignore errors reading package.json
         }
       }
-      
+
       if (hasClaude) {
         this.createHook('prepare-commit-msg', 'npx claude review ${1}');
       }
-      
+
       // Create pre-push hook for security scanning if Claude is available
       if (hasClaude) {
         this.setupSecurityScanHook();
       }
-      
+
       // Setup post-commit memory hook for AI context
       this.setupMemoryHook();
-      
+
       Feedback.success('Code quality hooks set up successfully');
       return true;
     } catch (error) {
-      Feedback.error(`Failed to set up code quality hooks: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to set up code quality hooks: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
-  
+
   /**
    * Setup security scan pre-push hook using Claude
    */
@@ -246,11 +259,13 @@ exit 0
       // Create the pre-push hook
       return this.createHook('pre-push', prePushScript);
     } catch (error) {
-      Feedback.error(`Failed to set up security scan hook: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to set up security scan hook: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
-  
+
   /**
    * Setup post-commit memory hook for storing commit information
    */
@@ -320,16 +335,18 @@ echo "✅ Commit information stored in project memory"
 
       // Create hidden directory for hook helpers if it doesn't exist
       const hooksDir = path.join(this.projectRoot, '.husky', '_');
-      
+
       if (!fs.existsSync(hooksDir)) {
         fs.mkdirSync(hooksDir, { recursive: true });
       }
-      
+
       // Create the post-commit hook
       Feedback.info('Setting up post-commit memory hook');
       return this.createHook('post-commit', postCommitScript);
     } catch (error) {
-      Feedback.error(`Failed to set up memory hook: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to set up memory hook: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
@@ -340,7 +357,7 @@ echo "✅ Commit information stored in project memory"
   async setupAll(): Promise<boolean> {
     const isInstalled = await this.installHusky();
     if (!isInstalled) return false;
-    
+
     // setupCodeQualityHooks returns boolean, not Promise<boolean>
     return this.setupCodeQualityHooks();
   }

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * TypeScript Setup
- * 
+ *
  * Utility for setting up TypeScript in projects.
  * Handles installation, configuration, and integration with other tools.
  */
@@ -18,19 +18,19 @@ import { ProjectDetector } from './project-detector';
 export interface TypeScriptSetupOptions {
   // Whether to create a strict configuration
   strict?: boolean;
-  
+
   // Whether to set up React/JSX support
   react?: boolean;
-  
+
   // Whether to set up Node.js specifics
   node?: boolean;
-  
+
   // Whether to update package.json scripts
   updateScripts?: boolean;
-  
+
   // Whether to add ESLint integration if ESLint is installed
   eslintIntegration?: boolean;
-  
+
   // Path to the target directory
   cwd?: string;
 }
@@ -44,149 +44,160 @@ export class TypeScriptSetup {
   private isNpm: boolean;
   private isPnpm: boolean;
   private isBun: boolean;
-  
+
   // Project features from detection
   private hasReact: boolean;
   private hasNode: boolean;
   private hasESLint: boolean;
   private hasJest: boolean;
-  
+
   /**
    * Create a new TypeScriptSetup instance
-   * 
+   *
    * @param cwd Working directory for the setup (defaults to process.cwd())
    */
   constructor(cwd: string = process.cwd()) {
     this.cwd = cwd;
-    
+
     // Detect project features
     const features = ProjectDetector.detectFeaturesSync(cwd);
-    
+
     // Package manager
     this.isYarn = features.packageManager === 'yarn';
     this.isPnpm = features.packageManager === 'pnpm';
     this.isNpm = features.packageManager === 'npm';
     this.isBun = features.packageManager === 'bun';
-    
+
     // Other features - we'll implement these in the project detector later
     this.hasReact = this.detectReact();
     this.hasNode = this.detectNode();
     this.hasESLint = features.hasEslint;
     this.hasJest = this.detectJest();
   }
-  
+
   /**
    * Detect if the project uses React
    */
   private detectReact(): boolean {
     try {
       const packageJsonPath = path.join(this.cwd, 'package.json');
-      
+
       if (!fs.existsSync(packageJsonPath)) {
         return false;
       }
-      
+
       const packageJson = fs.readJsonSync(packageJsonPath);
       const allDependencies = {
         ...(packageJson.dependencies || {}),
-        ...(packageJson.devDependencies || {})
+        ...(packageJson.devDependencies || {}),
       };
-      
-      return 'react' in allDependencies || 
-             '@types/react' in allDependencies ||
-             fs.existsSync(path.join(this.cwd, 'src', 'App.jsx')) ||
-             fs.existsSync(path.join(this.cwd, 'src', 'App.tsx'));
+
+      return (
+        'react' in allDependencies ||
+        '@types/react' in allDependencies ||
+        fs.existsSync(path.join(this.cwd, 'src', 'App.jsx')) ||
+        fs.existsSync(path.join(this.cwd, 'src', 'App.tsx'))
+      );
     } catch (error) {
       return false;
     }
   }
-  
+
   /**
    * Detect if the project is Node.js based
    */
   private detectNode(): boolean {
     try {
       const packageJsonPath = path.join(this.cwd, 'package.json');
-      
+
       if (!fs.existsSync(packageJsonPath)) {
         return false;
       }
-      
+
       const packageJson = fs.readJsonSync(packageJsonPath);
       const allDependencies = {
         ...(packageJson.dependencies || {}),
-        ...(packageJson.devDependencies || {})
+        ...(packageJson.devDependencies || {}),
       };
-      
-      return '@types/node' in allDependencies || 
-             'express' in allDependencies ||
-             'fs-extra' in allDependencies ||
-             'nodemon' in allDependencies ||
-             fs.existsSync(path.join(this.cwd, 'node_modules', '@types', 'node'));
+
+      return (
+        '@types/node' in allDependencies ||
+        'express' in allDependencies ||
+        'fs-extra' in allDependencies ||
+        'nodemon' in allDependencies ||
+        fs.existsSync(path.join(this.cwd, 'node_modules', '@types', 'node'))
+      );
     } catch (error) {
       return false;
     }
   }
-  
+
   /**
    * Detect if the project uses Jest
    */
   private detectJest(): boolean {
     try {
       const packageJsonPath = path.join(this.cwd, 'package.json');
-      
+
       if (!fs.existsSync(packageJsonPath)) {
         return false;
       }
-      
+
       const packageJson = fs.readJsonSync(packageJsonPath);
       const allDependencies = {
         ...(packageJson.dependencies || {}),
-        ...(packageJson.devDependencies || {})
+        ...(packageJson.devDependencies || {}),
       };
-      
-      return 'jest' in allDependencies || 
-             '@types/jest' in allDependencies ||
-             fs.existsSync(path.join(this.cwd, 'jest.config.js')) ||
-             fs.existsSync(path.join(this.cwd, 'jest.config.ts'));
+
+      return (
+        'jest' in allDependencies ||
+        '@types/jest' in allDependencies ||
+        fs.existsSync(path.join(this.cwd, 'jest.config.js')) ||
+        fs.existsSync(path.join(this.cwd, 'jest.config.ts'))
+      );
     } catch (error) {
       return false;
     }
   }
-  
+
   /**
    * Install TypeScript packages
    */
-  async installPackages(options: TypeScriptSetupOptions = {}): Promise<boolean> {
+  async installPackages(
+    options: TypeScriptSetupOptions = {}
+  ): Promise<boolean> {
     try {
       Feedback.info('Installing TypeScript packages...');
-      
+
       // Base packages
       const packages = ['typescript', 'ts-node'];
-      
+
       // Add React types if needed
       if (options.react || this.hasReact) {
         packages.push('@types/react', '@types/react-dom');
       }
-      
+
       // Add Node types if needed
       if (options.node || this.hasNode) {
         packages.push('@types/node');
       }
-      
+
       // Add Jest types if using Jest
       if (this.hasJest) {
         packages.push('@types/jest', 'ts-jest');
       }
-      
+
       // Add ESLint TypeScript plugin if ESLint is installed
       if ((options.eslintIntegration || true) && this.hasESLint) {
-        packages.push('@typescript-eslint/eslint-plugin', '@typescript-eslint/parser');
+        packages.push(
+          '@typescript-eslint/eslint-plugin',
+          '@typescript-eslint/parser'
+        );
       }
-      
+
       // Install command based on package manager
       let installCommand: string;
-      
+
       if (this.isYarn) {
         installCommand = `yarn add --dev ${packages.join(' ')}`;
       } else if (this.isPnpm) {
@@ -197,33 +208,35 @@ export class TypeScriptSetup {
         // Default to npm
         installCommand = `npm install --save-dev ${packages.join(' ')}`;
       }
-      
+
       Feedback.info(`Running: ${installCommand}`);
       execSync(installCommand, { cwd: this.cwd, stdio: 'inherit' });
-      
+
       Feedback.success('TypeScript packages installed successfully');
       return true;
     } catch (error) {
-      Feedback.error(`Failed to install TypeScript packages: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to install TypeScript packages: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
-  
+
   /**
    * Create a tsconfig.json file
    */
   async createTsConfig(options: TypeScriptSetupOptions = {}): Promise<boolean> {
     try {
       Feedback.info('Creating tsconfig.json...');
-      
+
       const tsconfigPath = path.join(this.cwd, 'tsconfig.json');
-      
+
       // Check if tsconfig.json already exists
       if (fs.existsSync(tsconfigPath)) {
         Feedback.warning('tsconfig.json already exists. Skipping creation.');
         return true;
       }
-      
+
       // Default compiler options
       const compilerOptions: Record<string, any> = {
         target: 'es2016',
@@ -232,97 +245,101 @@ export class TypeScriptSetup {
         forceConsistentCasingInFileNames: true,
         skipLibCheck: true,
       };
-      
+
       // Add strict options if requested
       if (options.strict) {
         compilerOptions.strict = true;
         compilerOptions.noImplicitAny = true;
         compilerOptions.strictNullChecks = true;
       }
-      
+
       // Add Node.js specific options
       if (options.node || this.hasNode) {
         compilerOptions.module = 'NodeNext';
         compilerOptions.moduleResolution = 'NodeNext';
       }
-      
+
       // Add React/JSX specific options
       if (options.react || this.hasReact) {
         compilerOptions.jsx = 'react-jsx';
         compilerOptions.lib = ['DOM', 'DOM.Iterable', 'ESNext'];
       }
-      
+
       // Build the full config
       const tsconfig: Record<string, any> = {
         compilerOptions,
         include: ['src/**/*'],
-        exclude: ['node_modules', 'dist', 'build']
+        exclude: ['node_modules', 'dist', 'build'],
       };
-      
+
       // Add Jest specific configuration if using Jest
       if (this.hasJest) {
         tsconfig.exclude.push('coverage', '**/*.spec.ts', '**/*.test.ts');
       }
-      
+
       // Write the tsconfig.json file
       await fs.writeJson(tsconfigPath, tsconfig, { spaces: 2 });
-      
+
       Feedback.success('Created tsconfig.json');
       return true;
     } catch (error) {
-      Feedback.error(`Failed to create tsconfig.json: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to create tsconfig.json: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
-  
+
   /**
    * Update package.json scripts for TypeScript
    */
   async updatePackageJsonScripts(): Promise<boolean> {
     try {
       Feedback.info('Updating package.json scripts...');
-      
+
       const packageJsonPath = path.join(this.cwd, 'package.json');
-      
+
       // Check if package.json exists
       if (!fs.existsSync(packageJsonPath)) {
         Feedback.error('package.json not found. Cannot update scripts.');
         return false;
       }
-      
+
       // Read package.json
       const packageJson = await fs.readJson(packageJsonPath);
-      
+
       // Ensure scripts object exists
       packageJson.scripts = packageJson.scripts || {};
-      
+
       // Add TypeScript-related scripts
       const newScripts: Record<string, string> = {
         build: 'tsc',
         dev: 'ts-node src/index.ts',
         start: 'node dist/index.js',
-        typecheck: 'tsc --noEmit'
+        typecheck: 'tsc --noEmit',
       };
-      
+
       // Merge existing scripts with new scripts, but don't overwrite
       packageJson.scripts = {
         ...newScripts,
         ...packageJson.scripts,
         // Always ensure typecheck is present
-        typecheck: packageJson.scripts.typecheck || newScripts.typecheck
+        typecheck: packageJson.scripts.typecheck || newScripts.typecheck,
       };
-      
+
       // Write updated package.json
       await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
-      
+
       Feedback.success('Updated package.json scripts');
       return true;
     } catch (error) {
-      Feedback.error(`Failed to update package.json scripts: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to update package.json scripts: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
-  
+
   /**
    * Update ESLint configuration for TypeScript
    */
@@ -333,106 +350,125 @@ export class TypeScriptSetup {
         Feedback.info('ESLint not detected. Skipping ESLint configuration.');
         return true;
       }
-      
+
       Feedback.info('Updating ESLint configuration for TypeScript...');
-      
+
       // Check for different ESLint config file formats
       const eslintConfigFormats = [
         { path: path.join(this.cwd, '.eslintrc.js'), isJS: true },
         { path: path.join(this.cwd, '.eslintrc.json'), isJS: false },
         { path: path.join(this.cwd, '.eslintrc'), isJS: false },
         { path: path.join(this.cwd, '.eslintrc.yaml'), isJS: false },
-        { path: path.join(this.cwd, '.eslintrc.yml'), isJS: false }
+        { path: path.join(this.cwd, '.eslintrc.yml'), isJS: false },
       ];
-      
+
       // Find existing ESLint config
-      let configFile = eslintConfigFormats.find(format => fs.existsSync(format.path));
-      
+      let configFile = eslintConfigFormats.find(format =>
+        fs.existsSync(format.path)
+      );
+
       // If no config found, create .eslintrc.json
       if (!configFile) {
-        configFile = { path: path.join(this.cwd, '.eslintrc.json'), isJS: false };
-        
+        configFile = {
+          path: path.join(this.cwd, '.eslintrc.json'),
+          isJS: false,
+        };
+
         // Create a basic ESLint config
         const basicConfig = {
           root: true,
           env: {
             browser: true,
             es2021: true,
-            node: true
+            node: true,
           },
-          extends: [
-            'eslint:recommended'
-          ],
+          extends: ['eslint:recommended'],
           parserOptions: {
             ecmaVersion: 'latest',
-            sourceType: 'module'
+            sourceType: 'module',
           },
-          rules: {}
+          rules: {},
         };
-        
+
         await fs.writeJson(configFile.path, basicConfig, { spaces: 2 });
         Feedback.info('Created new .eslintrc.json file');
       }
-      
+
       // Read the existing config
       let config: any;
-      
+
       if (configFile.isJS) {
         // For JavaScript config files, we'll have to parse them manually
         const configContent = await fs.readFile(configFile.path, 'utf-8');
         // Basic extraction of the module.exports object
-        const match = configContent.match(/module\.exports\s*=\s*({[\s\S]*});?\s*$/);
-        
+        const match = configContent.match(
+          /module\.exports\s*=\s*({[\s\S]*});?\s*$/
+        );
+
         if (match && match[1]) {
           try {
             // This is not secure for general use, but fine for our controlled environment
             config = eval(`(${match[1]})`);
           } catch (e) {
-            Feedback.warning('Could not parse .eslintrc.js. Creating a new .eslintrc.json instead.');
-            configFile = { path: path.join(this.cwd, '.eslintrc.json'), isJS: false };
+            Feedback.warning(
+              'Could not parse .eslintrc.js. Creating a new .eslintrc.json instead.'
+            );
+            configFile = {
+              path: path.join(this.cwd, '.eslintrc.json'),
+              isJS: false,
+            };
             config = {};
           }
         } else {
-          Feedback.warning('Could not parse .eslintrc.js. Creating a new .eslintrc.json instead.');
-          configFile = { path: path.join(this.cwd, '.eslintrc.json'), isJS: false };
+          Feedback.warning(
+            'Could not parse .eslintrc.js. Creating a new .eslintrc.json instead.'
+          );
+          configFile = {
+            path: path.join(this.cwd, '.eslintrc.json'),
+            isJS: false,
+          };
           config = {};
         }
       } else {
         // JSON and other formats can be read directly
         config = await fs.readJson(configFile.path);
       }
-      
+
       // Update the configuration for TypeScript
       config.parser = config.parser || '@typescript-eslint/parser';
       config.plugins = config.plugins || [];
       config.extends = config.extends || [];
-      
+
       // Add TypeScript plugin if not already present
       if (!config.plugins.includes('@typescript-eslint')) {
         config.plugins.push('@typescript-eslint');
       }
-      
+
       // Add TypeScript ESLint configs if not already present
       const tsExtends = 'plugin:@typescript-eslint/recommended';
       if (!config.extends.includes(tsExtends)) {
         config.extends.push(tsExtends);
       }
-      
+
       // Update parser options
       config.parserOptions = config.parserOptions || {};
-      config.parserOptions.ecmaVersion = config.parserOptions.ecmaVersion || 'latest';
-      config.parserOptions.sourceType = config.parserOptions.sourceType || 'module';
-      config.parserOptions.project = config.parserOptions.project || './tsconfig.json';
-      
+      config.parserOptions.ecmaVersion =
+        config.parserOptions.ecmaVersion || 'latest';
+      config.parserOptions.sourceType =
+        config.parserOptions.sourceType || 'module';
+      config.parserOptions.project =
+        config.parserOptions.project || './tsconfig.json';
+
       // Add TypeScript file patterns to overrides
       config.overrides = config.overrides || [];
-      
+
       // Check if we already have TypeScript files in overrides
-      const hasTypeScriptOverride = config.overrides.some((override: any) => 
-        override.files && 
-        (override.files.includes('*.ts') || override.files.includes('*.tsx'))
+      const hasTypeScriptOverride = config.overrides.some(
+        (override: any) =>
+          override.files &&
+          (override.files.includes('*.ts') || override.files.includes('*.tsx'))
       );
-      
+
       if (!hasTypeScriptOverride) {
         config.overrides.push({
           files: ['*.ts', '*.tsx'],
@@ -440,11 +476,11 @@ export class TypeScriptSetup {
             // Add any TypeScript-specific rules
             '@typescript-eslint/explicit-function-return-type': 'off',
             '@typescript-eslint/explicit-module-boundary-types': 'off',
-            '@typescript-eslint/no-explicit-any': 'warn'
-          }
+            '@typescript-eslint/no-explicit-any': 'warn',
+          },
         });
       }
-      
+
       // Write the updated config
       if (configFile.isJS) {
         // For JS config, write as module.exports
@@ -454,32 +490,36 @@ export class TypeScriptSetup {
         // For JSON and others, write directly
         await fs.writeJson(configFile.path, config, { spaces: 2 });
       }
-      
+
       Feedback.success('Updated ESLint configuration for TypeScript');
       return true;
     } catch (error) {
-      Feedback.error(`Failed to update ESLint config: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to update ESLint config: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
-  
+
   /**
    * Create sample TypeScript files
    */
-  async createSampleFiles(options: TypeScriptSetupOptions = {}): Promise<boolean> {
+  async createSampleFiles(
+    options: TypeScriptSetupOptions = {}
+  ): Promise<boolean> {
     try {
       // Create src directory if it doesn't exist
       const srcDir = path.join(this.cwd, 'src');
       await fs.ensureDir(srcDir);
-      
+
       // Create index.ts if it doesn't exist
       const indexPath = path.join(srcDir, 'index.ts');
-      
+
       if (!fs.existsSync(indexPath)) {
         Feedback.info('Creating sample TypeScript files...');
-        
+
         let indexContent: string;
-        
+
         if (options.react || this.hasReact) {
           // Create React sample
           indexContent = `import React from 'react';
@@ -496,7 +536,7 @@ root.render(
   </React.StrictMode>
 );
 `;
-          
+
           // Create App.tsx
           const appPath = path.join(srcDir, 'App.tsx');
           const appContent = `import React, { useState } from 'react';
@@ -519,10 +559,9 @@ function App({ title = 'TypeScript React App' }: AppProps): JSX.Element {
 
 export default App;
 `;
-          
+
           await fs.writeFile(appPath, appContent);
           Feedback.success('Created src/App.tsx');
-          
         } else if (options.node || this.hasNode) {
           // Create Node.js sample
           indexContent = `/**
@@ -604,14 +643,14 @@ class DataStore<T> {
 export { User, greetUser, DataStore };
 `;
         }
-        
+
         await fs.writeFile(indexPath, indexContent);
         Feedback.success('Created src/index.ts');
-        
+
         // Create types directory and sample type definition file
         const typesDir = path.join(srcDir, 'types');
         await fs.ensureDir(typesDir);
-        
+
         const typesIndexPath = path.join(typesDir, 'index.ts');
         const typesContent = `/**
  * Common type definitions
@@ -651,34 +690,38 @@ export type Partial<T> = {
   [P in keyof T]?: T[P] | null;
 };
 `;
-        
+
         await fs.writeFile(typesIndexPath, typesContent);
         Feedback.success('Created src/types/index.ts');
       } else {
-        Feedback.info('src/index.ts already exists. Skipping sample file creation.');
+        Feedback.info(
+          'src/index.ts already exists. Skipping sample file creation.'
+        );
       }
-      
+
       return true;
     } catch (error) {
-      Feedback.error(`Failed to create sample files: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to create sample files: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
-  
+
   /**
    * Create .gitignore entries for TypeScript
    */
   async updateGitignore(): Promise<boolean> {
     try {
       const gitignorePath = path.join(this.cwd, '.gitignore');
-      
+
       // Read existing .gitignore or create a new one
       let gitignoreContent = '';
-      
+
       if (fs.existsSync(gitignorePath)) {
         gitignoreContent = await fs.readFile(gitignorePath, 'utf-8');
       }
-      
+
       // Add TypeScript-specific entries if not already present
       const tsEntries = [
         '# TypeScript',
@@ -688,119 +731,127 @@ export type Partial<T> = {
         '.tscache/',
         'node_modules/',
         'coverage/',
-        '.nyc_output/'
+        '.nyc_output/',
       ];
-      
+
       let updatedContent = gitignoreContent;
-      
+
       // Check if TypeScript section already exists
       if (!gitignoreContent.includes('# TypeScript')) {
         // Add a newline if the file doesn't end with one
         if (gitignoreContent.length > 0 && !gitignoreContent.endsWith('\n')) {
           updatedContent += '\n';
         }
-        
+
         // Add TypeScript entries
         updatedContent += '\n' + tsEntries.join('\n') + '\n';
       }
-      
+
       // Only write if changes were made
       if (updatedContent !== gitignoreContent) {
         await fs.writeFile(gitignorePath, updatedContent);
         Feedback.success('Updated .gitignore for TypeScript');
       } else {
-        Feedback.info('.gitignore already contains TypeScript entries. Skipping update.');
+        Feedback.info(
+          '.gitignore already contains TypeScript entries. Skipping update.'
+        );
       }
-      
+
       return true;
     } catch (error) {
-      Feedback.error(`Failed to update .gitignore: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Failed to update .gitignore: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
-  
+
   /**
    * Set up TypeScript in the project
    */
-  async setupTypeScript(options: TypeScriptSetupOptions = {}): Promise<boolean> {
+  async setupTypeScript(
+    options: TypeScriptSetupOptions = {}
+  ): Promise<boolean> {
     const {
       strict = true,
       react = this.hasReact,
       node = this.hasNode,
       updateScripts = true,
       eslintIntegration = true,
-      cwd
+      cwd,
     } = options;
-    
+
     // Update working directory if provided
     if (cwd) {
       this.cwd = cwd;
     }
-    
+
     Feedback.section('TypeScript Setup');
-    
+
     try {
       // Install packages
       const packagesInstalled = await this.installPackages({
         react,
         node,
-        eslintIntegration
+        eslintIntegration,
       });
-      
+
       if (!packagesInstalled) {
         return false;
       }
-      
+
       // Create tsconfig.json
       const tsconfigCreated = await this.createTsConfig({
         strict,
         react,
-        node
+        node,
       });
-      
+
       if (!tsconfigCreated) {
         return false;
       }
-      
+
       // Update package.json scripts
       if (updateScripts) {
         const scriptsUpdated = await this.updatePackageJsonScripts();
-        
+
         if (!scriptsUpdated) {
           return false;
         }
       }
-      
+
       // Update ESLint configuration if requested
       if (eslintIntegration && this.hasESLint) {
         const eslintUpdated = await this.updateESLintConfig();
-        
+
         if (!eslintUpdated) {
           return false;
         }
       }
-      
+
       // Create sample files
       const samplesCreated = await this.createSampleFiles({
         react,
-        node
+        node,
       });
-      
+
       if (!samplesCreated) {
         return false;
       }
-      
+
       // Update .gitignore
       const gitignoreUpdated = await this.updateGitignore();
-      
+
       if (!gitignoreUpdated) {
         return false;
       }
-      
+
       Feedback.success('TypeScript setup completed successfully!');
       return true;
     } catch (error) {
-      Feedback.error(`TypeScript setup failed: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `TypeScript setup failed: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }

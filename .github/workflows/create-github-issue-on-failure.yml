@@ -1,6 +1,8 @@
 # -----------------------------------------------------------------------------
 # GitHub Issue Creation Workflow
 # -----------------------------------------------------------------------------
+# ⚠️ WARNING: THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY! ⚠️
+# Any changes may be overwritten by the generation process.
 # This workflow creates a GitHub issue when another workflow fails.
 # It captures details about the failure and creates a standardized issue
 # to help track and resolve CI/CD problems.

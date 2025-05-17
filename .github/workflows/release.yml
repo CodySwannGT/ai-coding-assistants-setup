@@ -1,6 +1,8 @@
 # -----------------------------------------------------------------------------
 # Release Workflow Template
 # -----------------------------------------------------------------------------
+# ⚠️ WARNING: THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY! ⚠️
+# Any changes may be overwritten by the generation process.
 # IMPORTANT: This is a template file intended to be copied into your repository.
 # The "Unable to find reusable workflow" errors are expected in template mode.
 # When using this template in your actual repository, ensure all referenced

@@ -1,12 +1,19 @@
 # GitHub Actions Workflows
 
+> ⚠️ **WARNING**: The workflow files in this project are auto-generated. Do not edit them manually as any changes may be overwritten during the generation process.
+
 This document provides information on the GitHub Actions workflow templates included in this project. These reusable workflows can be copied into target repositories to enhance CI/CD capabilities with minimal configuration.
 
 ## Overview
 
 The AI Coding Assistants Setup includes several GitHub Actions workflow templates that follow the `workflow_call` pattern. This allows them to be referenced from other workflows, making them modular and reusable across projects.
 
-All workflow templates are located in `src/templates/.github/workflows/` and should be copied to the target repository's `.github/workflows/` directory.
+All workflow templates are located in `src/templates/.github/workflows/` and should be copied to the target repository's `.github/workflows/` directory. These files include:
+
+- `quality.yml` - Comprehensive quality checks workflow
+- `release.yml` - Release workflow for versioning and tagging
+- `create-github-issue-on-failure.yml` - Creates GitHub issues for failed workflows
+- `create-jira-issue-on-failure.yml` - Creates Jira issues for failed workflows
 
 ## Required Secrets and Variables
 

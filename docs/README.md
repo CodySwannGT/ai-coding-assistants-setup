@@ -8,7 +8,7 @@ Welcome to the documentation for AI Coding Assistants Setup. This directory cont
 - [MCP Configuration Examples](./mcp-config-examples.md) - Examples of how to configure MCP servers
 - [Git Hooks](./hooks.md) - Information about the Git hooks provided by this tool
 - [GitHub Actions](./github-actions.md) - Reusable GitHub Actions workflow templates
-- [Example Prompts](./example-prompts.md) - Example prompts for AI assistants
+- [TypeScript Setup](./typescript-setup.md) - Information about TypeScript configuration
 
 ## Getting Started
 

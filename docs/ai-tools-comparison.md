@@ -4,22 +4,22 @@ This document provides a comparison of different AI coding assistants, focusing 
 
 ## Overview
 
-| Feature | Claude Code | Roo Code | GitHub Copilot | Cody |
-|---------|------------|----------|----------------|------|
-| **Provider** | Anthropic | Roo AI | GitHub (OpenAI) | Sourcegraph |
-| **Model** | Claude Opus/Sonnet | Claude, GPT-4, Local | GPT-4 | Claude, GPT-4 |
-| **CLI Support** | ✅ Excellent | ❌ None | ⚠️ Limited | ✅ Good |
-| **VS Code Support** | ⚠️ Limited | ✅ Excellent | ✅ Excellent | ✅ Excellent |
-| **Knowledge Cutoff** | Recent | Recent | Recent | Recent |
-| **Memory Features** | ✅ Memory MCP | ⚠️ Limited | ❌ None | ✅ Built-in |
-| **File Operations** | ✅ Extensive | ✅ Extensive | ⚠️ Limited | ✅ Extensive |
-| **Code Generation** | ✅ Strong | ✅ Strong | ✅ Strong | ✅ Strong |
-| **Code Explanation** | ✅ Excellent | ✅ Very Good | ⚠️ Limited | ✅ Very Good |
-| **MCP Support** | ✅ Extensive | ✅ Extensive | ❌ None | ⚠️ Limited |
-| **Open Source** | ❌ No | ❌ No | ❌ No | ✅ Partially |
-| **Free Tier** | ⚠️ Limited | ⚠️ Limited | ❌ No | ✅ Yes |
-| **Custom Modes** | ❌ No | ✅ Yes | ❌ No | ⚠️ Limited |
-| **Doc Integration** | ✅ With MCP | ✅ Built-in | ❌ No | ✅ Built-in |
+| Feature | Claude Code | Roo Code | GitHub Copilot |
+|---------|------------|----------|----------------|
+| **Provider** | Anthropic | Roo AI | GitHub (OpenAI) |
+| **Model** | Claude Opus/Sonnet | Claude, GPT-4, Local | GPT-4 |
+| **CLI Support** | ✅ Excellent | ❌ None | ⚠️ Limited |
+| **VS Code Support** | ⚠️ Limited | ✅ Excellent | ✅ Excellent |
+| **Knowledge Cutoff** | Recent | Recent | Recent |
+| **Memory Features** | ✅ Memory MCP | ⚠️ Limited | ❌ None |
+| **File Operations** | ✅ Extensive | ✅ Extensive | ⚠️ Limited |
+| **Code Generation** | ✅ Strong | ✅ Strong | ✅ Strong |
+| **Code Explanation** | ✅ Excellent | ✅ Very Good | ⚠️ Limited |
+| **MCP Support** | ✅ Extensive | ✅ Extensive | ❌ None |
+| **Open Source** | ❌ No | ❌ No | ❌ No |
+| **Free Tier** | ⚠️ Limited | ⚠️ Limited | ❌ No |
+| **Custom Modes** | ❌ No | ✅ Yes | ❌ No |
+| **Doc Integration** | ✅ With MCP | ✅ Built-in | ❌ No |
 
 ## Detailed Comparison
 
@@ -69,19 +69,6 @@ This document provides a comparison of different AI coding assistants, focusing 
 - Limited tool use
 - Requires subscription
 
-### Cody
-
-**Strengths:**
-- Open source client
-- VS Code integration
-- Built-in codebase-aware memory
-- Free tier with generous limits
-- Good context management
-
-**Limitations:**
-- Limited MCP support
-- Newer product with smaller ecosystem
-- Less customizable than Roo
 
 ## Use Case Recommendations
 

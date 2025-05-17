@@ -9,7 +9,7 @@
 
 **Seamlessly integrate AI coding assistants into your development workflow**
 
-[Features](#features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [Documentation](./docs/) • [Contributing](./CONTRIBUTING.md) • [License](#license)
+[Features](#features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [Documentation](./docs/README.md) • [Contributing](./CONTRIBUTING.md) • [License](#license)
 
 </div>
 

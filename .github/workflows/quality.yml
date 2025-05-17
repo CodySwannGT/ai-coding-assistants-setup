@@ -1,6 +1,8 @@
 # -----------------------------------------------------------------------------
 # Quality Checks Workflow
 # -----------------------------------------------------------------------------
+# ⚠️ WARNING: THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY! ⚠️
+# Any changes may be overwritten by the generation process.
 # This workflow runs various quality checks on the codebase including:
 # - Linting
 # - Type checking

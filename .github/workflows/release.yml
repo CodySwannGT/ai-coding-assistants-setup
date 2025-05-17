@@ -167,7 +167,16 @@ jobs:
         run: |
           # Bump version, create changelog, and commit, but DO NOT tag yet.
           # Use --releaseCommitMessageFormat instead of deprecated --message.
-          yarn standard-version --skip.tag --releaseCommitMessageFormat "chore(release): {{currentTag}} [skip ci]"
+          if [ "${{ inputs.package_manager }}" = "npm" ]; then
+            npx standard-version --skip.tag --releaseCommitMessageFormat "chore(release): {{currentTag}} [skip ci]"
+          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+            yarn standard-version --skip.tag --releaseCommitMessageFormat "chore(release): {{currentTag}} [skip ci]"
+          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
+            bun standard-version --skip.tag --releaseCommitMessageFormat "chore(release): {{currentTag}} [skip ci]"
+          else
+            echo "Unsupported package manager: ${{ inputs.package_manager }}"
+            exit 1
+          fi
 
           # Get the new version from package.json
           NEW_VERSION=$(node -p "require('./package.json').version")

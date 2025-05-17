@@ -53,61 +53,11 @@ on:
         required: false
         default: ''
         type: string
-      skip_quality:
-        description: 'Skip the quality workflow'
+      skip_jobs:
+        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,security,code_quality_check,claude_security_scan,quality,github_issue,github_release,jira_release,jira_issue,version)'
         required: false
-        default: false
-        type: boolean
-      skip_lint:
-        description: 'Skip the lint job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_typecheck:
-        description: 'Skip the typecheck job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_test:
-        description: 'Skip the test job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_format:
-        description: 'Skip the format check job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_build:
-        description: 'Skip the build job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_security:
-        description: 'Skip the security scan job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_jira:
-        description: 'Skip creating Jira release'
-        required: false
-        default: false
-        type: boolean
-      skip_github_release:
-        description: 'Skip creating GitHub release'
-        required: false
-        default: false
-        type: boolean
-      skip_github_issue:
-        description: 'Skip creating GitHub issue on failure'
-        required: false
-        default: false
-        type: boolean
-      skip_jira_issue:
-        description: 'Skip creating Jira issue on failure'
-        required: false
-        default: false
-        type: boolean
+        default: ''
+        type: string
       jira_project_key:
         description: 'Jira project key (e.g., PROJ)'
         required: false
@@ -172,19 +122,14 @@ jobs:
   # In actual usage, you would need to ensure all referenced workflow files exist in your repository.
   quality:
     name: 🔍 Quality Checks
-    if: ${{ !inputs.skip_quality }}
+    if: ${{ !contains(inputs.skip_jobs, 'quality') }}
     # Reference to the quality checks workflow
     uses: ./.github/workflows/quality.yml
     with:
       node_version: ${{ inputs.node_version }}
       package_manager: ${{ inputs.package_manager }}
       working_directory: ${{ inputs.working_directory }}
-      skip_lint: ${{ inputs.skip_lint }}
-      skip_typecheck: ${{ inputs.skip_typecheck }}
-      skip_test: ${{ inputs.skip_test }}
-      skip_format: ${{ inputs.skip_format }}
-      skip_build: ${{ inputs.skip_build }}
-      skip_security: ${{ inputs.skip_security }}
+      skip_jobs: ${{ inputs.skip_jobs }}
     secrets:
       PAT: ${{ secrets.PAT }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -195,7 +140,7 @@ jobs:
     needs: [determine_environment, quality]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') && (!inputs.skip_quality || needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') && !contains(inputs.skip_jobs, 'version') && (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
     outputs:
       version: ${{ steps.version.outputs.new_version }}
       tag: ${{ steps.version.outputs.tag }}
@@ -254,7 +199,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [determine_environment, quality, version]
-    if: ${{ success() && !contains(github.event.head_commit.message, '[skip ci]') && (github.event.inputs.skip_jira != 'true' && inputs.skip_jira != true) && (!inputs.skip_quality || needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
+    if: ${{ success() && !contains(github.event.head_commit.message, '[skip ci]') && !contains(inputs.skip_jobs, 'jira_release') && (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -298,7 +243,7 @@ jobs:
     needs: [determine_environment, quality, version]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: ${{ github.event.inputs.skip_github_release != 'true' && inputs.skip_github_release != true && (!inputs.skip_quality || needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
+    if: ${{ !contains(inputs.skip_jobs, 'github_release') && (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
     steps:
       - name: 📢 Create GitHub Release
         uses: softprops/action-gh-release@v1

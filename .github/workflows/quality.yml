@@ -68,16 +68,11 @@ on:
         required: false
         default: false
         type: boolean
-      skip_code_quality_check:
-        description: 'Skip the Claude quality check job'
+      skip_jobs:
+        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,security,code_quality_check,claude_security_scan,quality,github_issue)'
         required: false
-        default: false
-        type: boolean
-      skip_claude_security_scan:
-        description: 'Skip the Claude security scan job'
-        required: false
-        default: false
-        type: boolean
+        default: ''
+        type: string
       working_directory:
         description: 'Directory to run commands in (if not root)'
         required: false
@@ -101,7 +96,7 @@ jobs:
     name: 🧹 Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ !inputs.skip_lint }}
+    if: ${{ !inputs.skip_lint && !contains(inputs.skip_jobs, 'lint') }}
 
     steps:
       - name: 📥 Checkout repository
@@ -135,7 +130,7 @@ jobs:
     name: 🔍 Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ !inputs.skip_typecheck }}
+    if: ${{ !inputs.skip_typecheck && !contains(inputs.skip_jobs, 'typecheck') }}
 
     steps:
       - name: 📥 Checkout repository
@@ -169,7 +164,7 @@ jobs:
     name: 🧪 Run Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !inputs.skip_test }}
+    if: ${{ !inputs.skip_test && !contains(inputs.skip_jobs, 'test') }}
 
     steps:
       - name: 📥 Checkout repository
@@ -210,7 +205,7 @@ jobs:
     name: 📐 Check Formatting
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: ${{ !inputs.skip_format }}
+    if: ${{ !inputs.skip_format && !contains(inputs.skip_jobs, 'format') }}
 
     steps:
       - name: 📥 Checkout repository
@@ -244,7 +239,7 @@ jobs:
     name: 🏗️ Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !inputs.skip_build }}
+    if: ${{ !inputs.skip_build && !contains(inputs.skip_jobs, 'build') }}
 
     steps:
       - name: 📥 Checkout repository
@@ -278,7 +273,7 @@ jobs:
     name: 🔒 Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ !inputs.skip_security }}
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'security') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -321,7 +316,7 @@ jobs:
     name: 🤖 Claude Code Quality Check
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !inputs.skip_code_quality_check }}
+    if: ${{ !contains(inputs.skip_jobs, 'code_quality_check') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -383,7 +378,7 @@ jobs:
     name: 🛡️ Claude Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !inputs.skip_claude_security_scan }}
+    if: ${{ !contains(inputs.skip_jobs, 'claude_security_scan') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4

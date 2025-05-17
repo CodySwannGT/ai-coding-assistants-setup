@@ -132,14 +132,37 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      node_version:
+        description: 'Node.js version to use'
+        required: false
+        default: '20.x'
+        type: string
+      package_manager:
+        description: 'Package manager to use (npm, yarn, or bun)'
+        required: false
+        default: 'npm'
+        type: string
+      working_directory:
+        description: 'Directory to run commands in (if not root)'
+        required: false
+        default: ''
+        type: string
+      skip_jobs:
+        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,security,code_quality_check,claude_security_scan,quality,github_issue)'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   quality:
     uses: ./.github/workflows/quality.yml
     with:
-      node_version: '20.x'
-      package_manager: 'npm'
-      skip_security: true
+      node_version: ${{ inputs.node_version || '20.x' }}
+      package_manager: ${{ inputs.package_manager || 'npm' }}
+      working_directory: ${{ inputs.working_directory || '' }}
+      skip_jobs: ${{ inputs.skip_jobs || 'security' }}  # Skip security checks by default
     secrets:
       PAT: ${{ secrets.GITHUB_TOKEN }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -151,15 +174,23 @@ jobs:
 |--------|-------------|---------|
 | `node_version` | Node.js version to use | `20.x` |
 | `package_manager` | Package manager to use (npm, yarn, or bun) | `npm` |
-| `skip_lint` | Skip the lint job | `false` |
-| `skip_typecheck` | Skip the typecheck job | `false` |
-| `skip_test` | Skip the test job | `false` |
-| `skip_format` | Skip the format check job | `false` |
-| `skip_build` | Skip the build job | `false` |
-| `skip_security` | Skip the security scan job | `false` |
-| `skip_code_quality_check` | Skip the Claude quality check job | `false` |
-| `skip_claude_security_scan` | Skip the Claude security scan job | `false` |
 | `working_directory` | Directory to run commands in (if not root) | `''` |
+| `skip_jobs` | Jobs to skip (comma-separated list) | `''` |
+
+The `skip_jobs` parameter accepts a comma-separated list of job names to skip. This replaces the individual `skip_*` parameters to stay within GitHub's limit of 10 inputs for `workflow_dispatch` events. Available job names to skip:
+
+- `lint` - Skip linting
+- `typecheck` - Skip type checking
+- `test` - Skip unit tests
+- `format` - Skip format checking
+- `build` - Skip build verification
+- `security` - Skip security scanning
+- `code_quality_check` - Skip Claude code quality analysis
+- `claude_security_scan` - Skip Claude security scan
+- `quality` - Skip the entire quality workflow
+- `github_issue` - Skip GitHub issue creation on failure
+
+The individual `skip_*` boolean parameters have been removed in favor of the more flexible and concise `skip_jobs` parameter. This change was made to stay within GitHub's limit of 10 inputs for workflow_dispatch events.
 
 ### Release Workflow (`release.yml`)
 
@@ -180,12 +211,41 @@ name: Release
 on:
   push:
     branches: [main, dev, staging]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - main
+          - dev
+          - staging
+      node_version:
+        description: 'Node.js version to use'
+        required: false
+        default: '20.x'
+        type: string
+      package_manager:
+        description: 'Package manager to use (npm, yarn, or bun)'
+        required: false
+        default: 'npm'
+        type: string
+      skip_jobs:
+        description: 'Jobs to skip (comma-separated list)'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   release:
     uses: ./.github/workflows/release.yml
     with:
-      environment: ${{ github.ref_name }}
+      environment: ${{ inputs.environment || github.ref_name }}
+      node_version: ${{ inputs.node_version || '20.x' }}
+      package_manager: ${{ inputs.package_manager || 'npm' }}
+      skip_jobs: ${{ inputs.skip_jobs }}
     secrets:
       PAT: ${{ secrets.GITHUB_TOKEN }}
       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
@@ -198,12 +258,18 @@ jobs:
 | `environment` | Environment to deploy to | `dev` |
 | `node_version` | Node.js version to use | `20.x` |
 | `package_manager` | Package manager to use | `npm` |
-| `skip_quality` | Skip the quality workflow | `false` |
-| `skip_github_release` | Skip creating GitHub release | `false` |
-| `skip_jira` | Skip creating Jira release | `false` |
-| `skip_github_issue` | Skip creating GitHub issue on failure | `false` |
-| `skip_jira_issue` | Skip creating Jira issue on failure | `false` |
-| Various `skip_*` | Skip individual quality checks | `false` |
+| `working_directory` | Directory to run commands in (if not root) | `''` |
+| `skip_jobs` | Jobs to skip (comma-separated list) | `''` |
+| `jira_project_key` | Jira project key (e.g., PROJ) | `''` |
+
+The `skip_jobs` parameter works the same way as in the quality workflow. For release workflows, you can include additional job names:
+
+- `quality` - Skip the entire quality workflow
+- `version` - Skip the version bumping job
+- `github_issue` - Skip GitHub issue creation on failure
+- `jira_issue` - Skip Jira issue creation on failure
+- `github_release` - Skip creating GitHub release
+- `jira_release` - Skip creating Jira release
 
 ### GitHub Issue Creation (`github-issue-on-failure.yml`)
 
@@ -272,11 +338,62 @@ To use these workflows in your project:
 4. Set up all required secrets and variables in your repository settings (see [Setting up Secrets and Variables](#setting-up-secrets-and-variables-with-github-cli))
 5. Commit and push the changes to your repository
 
+## Usage Examples
+
+### Using the Skip Jobs Parameter
+
+The `skip_jobs` parameter allows you to skip multiple jobs using a single comma-separated string. This parameter was introduced to stay within GitHub's limit of 10 inputs for `workflow_dispatch` events.
+
+#### Example: Skipping Multiple Quality Checks
+
+```yaml
+# In CI workflow
+jobs:
+  quality:
+    uses: ./.github/workflows/quality.yml
+    with:
+      node_version: '20.x'
+      package_manager: 'npm'
+      skip_jobs: 'security,code_quality_check,claude_security_scan'
+    secrets:
+      PAT: ${{ secrets.GITHUB_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+#### Example: Workflow Dispatch with Skip Jobs Option
+
+```yaml
+on:
+  workflow_dispatch:
+    inputs:
+      node_version:
+        description: 'Node.js version to use'
+        required: false
+        default: '20.x'
+        type: string
+      skip_jobs:
+        description: 'Jobs to skip (comma-separated)'
+        required: false
+        default: ''
+        type: string
+```
+
+#### Example: Manual Workflow Run with Skip Jobs
+
+When manually running a workflow from the GitHub UI, you can enter job names in the "Skip jobs" input field:
+
+```
+lint,typecheck,test
+```
+
+This will skip the linting, type checking, and testing jobs while running all other jobs.
+
 ## Best Practices
 
 - Start with the quality workflow to ensure basic CI checks
 - Use the release workflow when you have a versioned package that needs automated releases
 - Configure the issue creation workflows to improve your team's awareness of CI failures
+- Use the `skip_jobs` parameter instead of individual `skip_*` parameters when possible
 - Ensure all required secrets are set up in your repository settings
 - Use organization secrets for values that are common across multiple repositories
 - Consider adding documentation about these workflows in your project's README or CONTRIBUTING guide

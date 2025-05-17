@@ -22,70 +22,35 @@ on:
         required: false
         default: ''
         type: string
-      skip_lint:
-        description: 'Skip the lint job'
+      skip_jobs:
+        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,security,quality,github_issue)'
         required: false
-        default: false
-        type: boolean
-      skip_typecheck:
-        description: 'Skip the typecheck job'
-        required: false
-        default: false
-        type: boolean
-      skip_test:
-        description: 'Skip the test job'
-        required: false
-        default: false
-        type: boolean
-      skip_format:
-        description: 'Skip the format check job'
-        required: false
-        default: false
-        type: boolean
-      skip_build:
-        description: 'Skip the build job'
-        required: false
-        default: false
-        type: boolean
-      skip_security:
-        description: 'Skip the security scan job'
-        required: false
-        default: false
-        type: boolean
-      skip_quality:
-        description: 'Skip the quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_github_issue:
-        description: 'Skip creating GitHub issue on failure'
-        required: false
-        default: false
-        type: boolean
+        default: ''
+        type: string
 
 jobs:
   quality:
     name: 🔍 Quality Checks
-    if: ${{ !inputs.skip_quality }}
+    if: ${{ !contains(inputs.skip_jobs, 'quality') }}
     # Reference to the quality checks workflow
     uses: ./.github/workflows/quality.yml
     with:
       node_version: ${{ inputs.node_version }}
       package_manager: ${{ inputs.package_manager }}
       working_directory: ${{ inputs.working_directory }}
-      skip_lint: ${{ inputs.skip_lint }}
-      skip_typecheck: ${{ inputs.skip_typecheck }}
-      skip_test: ${{ inputs.skip_test }}
-      skip_format: ${{ inputs.skip_format }}
-      skip_build: ${{ inputs.skip_build }}
-      skip_security: ${{ inputs.skip_security }}
+      skip_lint: ${{ contains(inputs.skip_jobs, 'lint') }}
+      skip_typecheck: ${{ contains(inputs.skip_jobs, 'typecheck') }}
+      skip_test: ${{ contains(inputs.skip_jobs, 'test') }}
+      skip_format: ${{ contains(inputs.skip_jobs, 'format') }}
+      skip_build: ${{ contains(inputs.skip_jobs, 'build') }}
+      skip_security: ${{ contains(inputs.skip_jobs, 'security') }}
     secrets:
       PAT: ${{ secrets.PAT }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   create_github_issue_on_failure:
     name: 🚨 Create Github Issue on Failure
     needs: [quality]
-    if: ${{ failure() && !contains(github.event.head_commit.message, '[skip ci]') && (github.event.inputs.skip_github_issue != 'true' && inputs.skip_github_issue != true) }}
+    if: ${{ failure() && !contains(github.event.head_commit.message, '[skip ci]') && !contains(inputs.skip_jobs, 'github_issue') }}
     # Reference to the GitHub issue creation workflow
     # Note: In actual usage, ensure this file exists in your repository
     uses: ./.github/workflows/create-github-issue-on-failure.yml

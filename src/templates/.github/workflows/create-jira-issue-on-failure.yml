@@ -1,6 +1,8 @@
 # -----------------------------------------------------------------------------
 # Jira Issue Creation Workflow
 # -----------------------------------------------------------------------------
+# ⚠️ WARNING: THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY! ⚠️
+# Any changes may be overwritten by the generation process.
 # This workflow creates a Jira issue when another workflow fails.
 # It captures details about the failure and creates a standardized issue
 # to help track and resolve CI/CD problems in Jira.
@@ -70,10 +72,8 @@ on:
         required: true
         description: 'Jira API token for authentication'
 
-# Prevent concurrent runs of the same workflow on the same ref
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# Concurrency is managed by the parent workflow that calls this one
+# This avoids deadlocks between parent and child workflows
 
 jobs:
   create_jira_issue:

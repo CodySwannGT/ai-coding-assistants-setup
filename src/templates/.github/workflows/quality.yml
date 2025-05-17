@@ -1,6 +1,8 @@
 # -----------------------------------------------------------------------------
 # Quality Checks Workflow
 # -----------------------------------------------------------------------------
+# ⚠️ WARNING: THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY! ⚠️
+# Any changes may be overwritten by the generation process.
 # This workflow runs various quality checks on the codebase including:
 # - Linting
 # - Type checking
@@ -68,16 +70,11 @@ on:
         required: false
         default: false
         type: boolean
-      skip_code_quality_check:
-        description: 'Skip the Claude quality check job'
+      skip_jobs:
+        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,security,code_quality_check,claude_security_scan,quality,github_issue)'
         required: false
-        default: false
-        type: boolean
-      skip_claude_security_scan:
-        description: 'Skip the Claude security scan job'
-        required: false
-        default: false
-        type: boolean
+        default: ''
+        type: string
       working_directory:
         description: 'Directory to run commands in (if not root)'
         required: false
@@ -91,17 +88,15 @@ on:
         description: 'Anthropic API key for Claude code quality integrations'
         required: false
 
-# Prevent concurrent runs of the same workflow on the same ref
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# Concurrency is managed by the parent workflow that calls this one
+# This avoids deadlocks between parent and child workflows
 
 jobs:
   lint:
     name: 🧹 Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ !inputs.skip_lint }}
+    if: ${{ !inputs.skip_lint && !contains(inputs.skip_jobs, 'lint') }}
 
     steps:
       - name: 📥 Checkout repository
@@ -135,7 +130,7 @@ jobs:
     name: 🔍 Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ !inputs.skip_typecheck }}
+    if: ${{ !inputs.skip_typecheck && !contains(inputs.skip_jobs, 'typecheck') }}
 
     steps:
       - name: 📥 Checkout repository
@@ -169,7 +164,7 @@ jobs:
     name: 🧪 Run Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !inputs.skip_test }}
+    if: ${{ !inputs.skip_test && !contains(inputs.skip_jobs, 'test') }}
 
     steps:
       - name: 📥 Checkout repository
@@ -210,7 +205,7 @@ jobs:
     name: 📐 Check Formatting
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: ${{ !inputs.skip_format }}
+    if: ${{ !inputs.skip_format && !contains(inputs.skip_jobs, 'format') }}
 
     steps:
       - name: 📥 Checkout repository
@@ -244,7 +239,7 @@ jobs:
     name: 🏗️ Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !inputs.skip_build }}
+    if: ${{ !inputs.skip_build && !contains(inputs.skip_jobs, 'build') }}
 
     steps:
       - name: 📥 Checkout repository
@@ -278,7 +273,7 @@ jobs:
     name: 🔒 Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ !inputs.skip_security }}
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'security') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -321,7 +316,7 @@ jobs:
     name: 🤖 Claude Code Quality Check
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !inputs.skip_code_quality_check }}
+    if: ${{ !contains(inputs.skip_jobs, 'code_quality_check') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -350,40 +345,201 @@ jobs:
 
       - name: 🤖 Install Claude CLI
         run: |
-          if [ "${{ inputs.package_manager }}" = "npm" ]; then
+          # Use npm as the default package manager if not specified
+          PACKAGE_MANAGER="${{ inputs.package_manager }}"
+          if [ -z "$PACKAGE_MANAGER" ]; then
+            PACKAGE_MANAGER="npm"
+            echo "Package manager not specified, using npm as default"
+          fi
+
+          if [ "$PACKAGE_MANAGER" = "npm" ]; then
             npm install -g @anthropic-ai/claude-code
-          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+          elif [ "$PACKAGE_MANAGER" = "yarn" ]; then
             yarn global add @anthropic-ai/claude-code
-          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
+          elif [ "$PACKAGE_MANAGER" = "bun" ]; then
             bun add -g @anthropic-ai/claude-code
           else
-            echo "Unsupported package manager: ${{ inputs.package_manager }}"
+            echo "Unsupported package manager: $PACKAGE_MANAGER"
             exit 1
           fi
 
       - name: 🔍 Run Claude code quality check
+        id: code_review
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
+          # Create basic prompt
+          cat > code_review_prompt.txt << 'EOF'
+          Perform a code review on the provided code changes. Focus on code quality, best practices, and potential bugs.
+          EOF
+
+          # Check if guidelines file exists in the repository and append it
+          if [ -f "docs/code_review_guidelines.md" ]; then
+            cat docs/code_review_guidelines.md >> code_review_prompt.txt
+            echo "Using custom guidelines from docs/code_review_guidelines.md"
+          else
+            # Fallback to default guidelines if the file doesn't exist
+            echo "" >> code_review_prompt.txt
+            echo "IMPORTANT GUIDELINES:" >> code_review_prompt.txt
+            echo "- IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)" >> code_review_prompt.txt
+            echo "- DO NOT review generated files, compiled code, or third-party dependencies" >> code_review_prompt.txt
+            echo "- Focus on substantive code issues rather than trivial style issues" >> code_review_prompt.txt
+            echo "- Be concise and specific in your feedback" >> code_review_prompt.txt
+            echo "- When suggesting improvements, explain why they matter" >> code_review_prompt.txt
+            echo "- End your review with \"VERDICT: PASS\" if the code is acceptable for deployment" >> code_review_prompt.txt
+            echo "- End your review with \"VERDICT: FAIL\" if there are critical issues that must be fixed before deployment" >> code_review_prompt.txt
+            echo "Using default guidelines (docs/code_review_guidelines.md not found)"
+          fi
+
+          # Initialize failure flag
+          REVIEW_FAILED=0
+
+          # Create markdown file for results
+          RESULTS_FILE="code_review_results.md"
+          echo "# Claude AI Code Review Results" > $RESULTS_FILE
+          echo "" >> $RESULTS_FILE
+          echo "Generated on: $(date)" >> $RESULTS_FILE
+          echo "" >> $RESULTS_FILE
+
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # For pull requests, check all changes
-            git diff -U0 --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-            grep -E '\.(js|jsx|ts|tsx|css|scss|html|md)$' | \
-            xargs -I {} sh -c 'git diff -U0 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- {} | claude code review'
+            # For pull requests, add PR info
+            echo "## Pull Request #${{ github.event.pull_request.number }}" >> $RESULTS_FILE
+            echo "" >> $RESULTS_FILE
+            echo "- Title: ${{ github.event.pull_request.title }}" >> $RESULTS_FILE
+            echo "- Author: ${{ github.event.pull_request.user.login }}" >> $RESULTS_FILE
+            echo "- Branch: ${{ github.head_ref }}" >> $RESULTS_FILE
+            echo "" >> $RESULTS_FILE
+            
+            echo "🔍 Reviewing files changed in PR #${{ github.event.pull_request.number }}"
+            
+            # Get all files to review
+            files_to_review=$(git diff -U0 --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
+                              grep -v -E 'node_modules/|dist/|build/|coverage/')
+            
+            # Add TOC to markdown file
+            echo "## Files Reviewed" >> $RESULTS_FILE
+            echo "" >> $RESULTS_FILE
+            for file in $files_to_review; do
+              echo "- [${file}](#$(echo ${file} | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]'))" >> $RESULTS_FILE
+            done
+            echo "" >> $RESULTS_FILE
+            
+            # Process each file
+            for file in $files_to_review; do
+              echo "📝 Reviewing $file"
+              review_output=$(git diff -U0 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- "$file" | \
+                            claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              
+              # Extract the review text
+              review_text=$(echo "$review_output" | jq -r ".result")
+              
+              # Print formatted review
+              echo "===================== REVIEW FOR $file ====================="
+              echo "$review_text"
+              echo "==========================================================="
+              echo ""
+              
+              # Add to markdown file
+              echo "## $file" >> $RESULTS_FILE
+              echo "" >> $RESULTS_FILE
+              echo "$(echo "$review_text" | sed 's/VERDICT: PASS/✅ VERDICT: PASS/g' | sed 's/VERDICT: FAIL/❌ VERDICT: FAIL/g')" >> $RESULTS_FILE
+              echo "" >> $RESULTS_FILE
+              
+              # Check for verdict
+              if echo "$review_text" | grep -q "VERDICT: FAIL"; then
+                echo "❌ CRITICAL ISSUES FOUND IN $file"
+                REVIEW_FAILED=1
+              else
+                echo "✅ $file passed review"
+              fi
+            done
           else
             # For pushes, check the latest commit
-            git diff -U0 --name-only HEAD~1 HEAD | \
-            grep -E '\.(js|jsx|ts|tsx|css|scss|html|md)$' | \
-            xargs -I {} sh -c 'git diff -U0 HEAD~1 HEAD -- {} | claude code review'
+            echo "## Latest Commit: $(git rev-parse --short HEAD)" >> $RESULTS_FILE
+            echo "" >> $RESULTS_FILE
+            echo "- Author: $(git log -1 --pretty=format:'%an <%ae>')" >> $RESULTS_FILE
+            echo "- Date: $(git log -1 --pretty=format:'%ad' --date=format:'%Y-%m-%d %H:%M:%S')" >> $RESULTS_FILE
+            echo "- Message: $(git log -1 --pretty=format:'%s')" >> $RESULTS_FILE
+            echo "" >> $RESULTS_FILE
+            
+            echo "🔍 Reviewing files in latest commit"
+            
+            # Get all files to review
+            files_to_review=$(git diff -U0 --name-only HEAD~1 HEAD | \
+                              grep -v -E 'node_modules/|dist/|build/|coverage/')
+            
+            # Add TOC to markdown file
+            echo "## Files Reviewed" >> $RESULTS_FILE
+            echo "" >> $RESULTS_FILE
+            for file in $files_to_review; do
+              echo "- [${file}](#$(echo ${file} | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]'))" >> $RESULTS_FILE
+            done
+            echo "" >> $RESULTS_FILE
+            
+            # Process each file
+            for file in $files_to_review; do
+              echo "📝 Reviewing $file"
+              review_output=$(git diff -U0 HEAD~1 HEAD -- "$file" | \
+                            claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              
+              # Extract the review text
+              review_text=$(echo "$review_output" | jq -r ".result")
+              
+              # Print formatted review
+              echo "===================== REVIEW FOR $file ====================="
+              echo "$review_text"
+              echo "==========================================================="
+              echo ""
+              
+              # Add to markdown file
+              echo "## $file" >> $RESULTS_FILE
+              echo "" >> $RESULTS_FILE
+              echo "$(echo "$review_text" | sed 's/VERDICT: PASS/✅ VERDICT: PASS/g' | sed 's/VERDICT: FAIL/❌ VERDICT: FAIL/g')" >> $RESULTS_FILE
+              echo "" >> $RESULTS_FILE
+              
+              # Check for verdict
+              if echo "$review_text" | grep -q "VERDICT: FAIL"; then
+                echo "❌ CRITICAL ISSUES FOUND IN $file"
+                REVIEW_FAILED=1
+              else
+                echo "✅ $file passed review"
+              fi
+            done
+          fi
+
+          # Add summary to the markdown file
+          echo "## Summary" >> $RESULTS_FILE
+          echo "" >> $RESULTS_FILE
+          if [ $REVIEW_FAILED -eq 1 ]; then
+            echo "❌ **REVIEW FAILED: Critical issues were found that must be fixed before deployment.**" >> $RESULTS_FILE
+            # Set output for use in subsequent steps
+            echo "review_passed=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ **REVIEW PASSED: All files passed code review!**" >> $RESULTS_FILE
+            # Set output for use in subsequent steps
+            echo "review_passed=true" >> $GITHUB_OUTPUT
           fi
         working-directory: ${{ inputs.working_directory || '.' }}
-        continue-on-error: true
+        # No continue-on-error here to ensure next steps run
 
+      - name: 📤 Upload code review results
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-review-results
+          path: ${{ inputs.working_directory || '.' }}/code_review_results.md
+        if: always() # This ensures results are always uploaded
+
+      - name: 🛑 Fail if code review didn't pass
+        if: steps.code_review.outputs.review_passed == 'false'
+        run: |
+          echo "❌ Code review found critical issues that must be fixed before deployment."
+          exit 1
+        shell: bash
   claude_security_scan:
     name: 🛡️ Claude Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !inputs.skip_claude_security_scan }}
+    if: ${{ !contains(inputs.skip_jobs, 'claude_security_scan') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -398,66 +554,119 @@ jobs:
 
       - name: 🤖 Install Claude CLI
         run: |
-          if [ "${{ inputs.package_manager }}" = "npm" ]; then
+          # Use npm as the default package manager if not specified
+          PACKAGE_MANAGER="${{ inputs.package_manager }}"
+          if [ -z "$PACKAGE_MANAGER" ]; then
+            PACKAGE_MANAGER="npm"
+            echo "Package manager not specified, using npm as default"
+          fi
+
+          if [ "$PACKAGE_MANAGER" = "npm" ]; then
             npm install -g @anthropic-ai/claude-code
-          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+          elif [ "$PACKAGE_MANAGER" = "yarn" ]; then
             yarn global add @anthropic-ai/claude-code
-          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
+          elif [ "$PACKAGE_MANAGER" = "bun" ]; then
             bun add -g @anthropic-ai/claude-code
           else
-            echo "Unsupported package manager: ${{ inputs.package_manager }}"
+            echo "Unsupported package manager: $PACKAGE_MANAGER"
             exit 1
           fi
 
       - name: 📝 Create security scan prompt
         run: |
-          cat > security_prompt.txt << 'EOF'
-          You are a cybersecurity expert specializing in code security. Analyze this code for security vulnerabilities including:
-
-          1. Injection vulnerabilities (SQL, command, etc.)
-          2. Insecure authentication or authorization
-          3. Sensitive data exposure or improper handling
-          4. Incorrect use of cryptography
-          5. Insecure configuration
-          6. Hard-coded credentials or secrets
-          7. Path traversal vulnerabilities
-          8. Insecure deserialization
-          9. Insufficient logging and monitoring
-          10. Cross-site scripting (XSS) or CSRF
-          11. Dependency vulnerabilities
-          12. Use of unsafe or deprecated functions
-
-          Focus only on legitimate security issues. For each issue found, provide:
-          - The specific location of the vulnerability
-          - The severity level (Critical, High, Medium, Low)
-          - A clear explanation of the vulnerability
-          - A recommended fix or mitigation strategy
-
-          If no security issues are found, confirm that the code appears secure and follows best practices.
-          EOF
+          # Check if guidelines file exists in the repository and use it
+          if [ -f "docs/security_scan_guidelines.md" ]; then
+            cat docs/security_scan_guidelines.md > security_prompt.txt
+            echo "Using custom guidelines from docs/security_scan_guidelines.md"
+          else
+            # Fallback to default guidelines
+            echo "You are a cybersecurity expert specializing in code security. Analyze this code for security vulnerabilities including:" > security_prompt.txt
+            echo "" >> security_prompt.txt
+            echo "1. Injection vulnerabilities (SQL, command, etc.)" >> security_prompt.txt
+            echo "2. Insecure authentication or authorization" >> security_prompt.txt
+            echo "3. Sensitive data exposure or improper handling" >> security_prompt.txt
+            echo "4. Incorrect use of cryptography" >> security_prompt.txt
+            echo "5. Insecure configuration" >> security_prompt.txt
+            echo "6. Hard-coded credentials or secrets" >> security_prompt.txt
+            echo "7. Path traversal vulnerabilities" >> security_prompt.txt
+            echo "8. Insecure deserialization" >> security_prompt.txt
+            echo "9. Insufficient logging and monitoring" >> security_prompt.txt
+            echo "10. Cross-site scripting (XSS) or CSRF" >> security_prompt.txt
+            echo "11. Dependency vulnerabilities" >> security_prompt.txt
+            echo "12. Use of unsafe or deprecated functions" >> security_prompt.txt
+            echo "" >> security_prompt.txt
+            echo "IMPORTANT GUIDELINES:" >> security_prompt.txt
+            echo "- IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)" >> security_prompt.txt
+            echo "- DO NOT review generated files, compiled code, or third-party dependencies" >> security_prompt.txt
+            echo "- Focus only on legitimate security issues in actual application code" >> security_prompt.txt
+            echo "" >> security_prompt.txt
+            echo "For each issue found, provide:" >> security_prompt.txt
+            echo "- The specific location of the vulnerability" >> security_prompt.txt
+            echo "- The severity level (Critical, High, Medium, Low)" >> security_prompt.txt
+            echo "- A clear explanation of the vulnerability" >> security_prompt.txt
+            echo "- A recommended fix or mitigation strategy" >> security_prompt.txt
+            echo "" >> security_prompt.txt
+            echo "End your review with \"VERDICT: PASS\" if the code is secure and follows best practices." >> security_prompt.txt
+            echo "End your review with \"VERDICT: FAIL\" if there are security issues that must be fixed." >> security_prompt.txt
+            echo "Using default security guidelines"
+          fi
 
       - name: 🔍 Run Claude security scan
+        id: security_scan
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           echo "🔒 Running Claude security scan on changed files"
 
           mkdir -p security_scan_results
+          SECURITY_ISSUES_FOUND=0
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # For pull requests, check all relevant changes
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -E '\.(js|jsx|ts|tsx|py|rb|php|go|java|rs|c|cpp|h|hpp)$' || echo "")
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
+                          grep -v -E 'node_modules/|dist/|build/|coverage/' || echo "")
           else
             # For pushes, check the latest commit
-            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(js|jsx|ts|tsx|py|rb|php|go|java|rs|c|cpp|h|hpp)$' || echo "")
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | \
+                          grep -v -E 'node_modules/|dist/|build/|coverage/' || echo "")
           fi
 
           if [ -z "$CHANGED_FILES" ]; then
             echo "No relevant files changed to scan"
+            echo "security_passed=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           echo "Found changed files to scan: $CHANGED_FILES"
+
+          # Create summary report
+          echo "# Claude Security Scan Results" > security_scan_summary.md
+          echo "Scan completed at: $(date)" >> security_scan_summary.md
+          echo "" >> security_scan_summary.md
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "## Pull Request #${{ github.event.pull_request.number }}" >> security_scan_summary.md
+            echo "" >> security_scan_summary.md
+            echo "- Title: ${{ github.event.pull_request.title }}" >> security_scan_summary.md
+            echo "- Author: ${{ github.event.pull_request.user.login }}" >> security_scan_summary.md
+            echo "- Branch: ${{ github.head_ref }}" >> security_scan_summary.md
+          else
+            echo "## Latest Commit: $(git rev-parse --short HEAD)" >> security_scan_summary.md
+            echo "" >> security_scan_summary.md
+            echo "- Author: $(git log -1 --pretty=format:'%an <%ae>')" >> security_scan_summary.md
+            echo "- Date: $(git log -1 --pretty=format:'%ad' --date=format:'%Y-%m-%d %H:%M:%S')" >> security_scan_summary.md
+            echo "- Message: $(git log -1 --pretty=format:'%s')" >> security_scan_summary.md
+          fi
+          echo "" >> security_scan_summary.md
+          echo "## Files Scanned" >> security_scan_summary.md
+          echo "" >> security_scan_summary.md
+
+          # Add TOC to markdown file
+          for FILE in $CHANGED_FILES; do
+            SAFENAME=$(echo "$FILE" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+            echo "- [${FILE}](#${SAFENAME})" >> security_scan_summary.md
+          done
+          echo "" >> security_scan_summary.md
 
           for FILE in $CHANGED_FILES; do
             SAFENAME=$(echo "$FILE" | sed 's/\//_/g')
@@ -466,35 +675,66 @@ jobs:
             # Check if file exists and has content
             if [ -f "$FILE" ] && [ -s "$FILE" ]; then
               # Run security scan on the file
-              cat "$FILE" | claude explain "$(cat security_prompt.txt)" > "security_scan_results/${SAFENAME}_scan.md" || echo "Failed to scan $FILE"
+              review_output=$(cat "$FILE" | claude -p "$(cat security_prompt.txt)" --output-format json)
+              
+              # Extract the review text
+              review_text=$(echo "$review_output" | jq -r ".result")
+              
+              # Save to file
+              echo "$review_text" > "security_scan_results/${SAFENAME}_scan.md"
+              
+              # Print formatted review
+              echo "===================== SECURITY SCAN FOR $FILE ====================="
+              echo "$review_text"
+              echo "=================================================================="
+              echo ""
+              
+              # Add to markdown file
+              ANCHOR_NAME=$(echo "$FILE" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+              echo "<a id=\"${ANCHOR_NAME}\"></a>" >> security_scan_summary.md
+              echo "## $FILE" >> security_scan_summary.md
+              echo "" >> security_scan_summary.md
+              echo "$(echo "$review_text" | sed 's/VERDICT: PASS/✅ VERDICT: PASS/g' | sed 's/VERDICT: FAIL/❌ VERDICT: FAIL/g')" >> security_scan_summary.md
+              echo "" >> security_scan_summary.md
+              
+              # Check for verdict
+              if echo "$review_text" | grep -q "VERDICT: FAIL"; then
+                echo "❌ SECURITY ISSUES FOUND IN $FILE"
+                SECURITY_ISSUES_FOUND=1
+              else
+                echo "✅ $FILE passed security scan"
+              fi
             else
               echo "File $FILE does not exist or is empty, skipping."
             fi
           done
 
-          # Create summary report
-          echo "## Claude Security Scan Results" > security_scan_summary.md
-          echo "Scan completed at: $(date)" >> security_scan_summary.md
+          # Add summary to the markdown file
+          echo "## Summary" >> security_scan_summary.md
           echo "" >> security_scan_summary.md
-
-          for RESULT in security_scan_results/*_scan.md; do
-            if [ -f "$RESULT" ]; then
-              FILENAME=$(basename "$RESULT" | sed 's/_scan\.md$//' | sed 's/_/\//g')
-              echo "### File: $FILENAME" >> security_scan_summary.md
-              cat "$RESULT" >> security_scan_summary.md
-              echo "" >> security_scan_summary.md
-              echo "---" >> security_scan_summary.md
-              echo "" >> security_scan_summary.md
-            fi
-          done
+          if [ $SECURITY_ISSUES_FOUND -eq 1 ]; then
+            echo "❌ **SECURITY SCAN FAILED: Security issues were found that must be fixed before deployment.**" >> security_scan_summary.md
+            # Set output for use in subsequent steps
+            echo "security_passed=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ **SECURITY SCAN PASSED: No security issues found!**" >> security_scan_summary.md
+            # Set output for use in subsequent steps
+            echo "security_passed=true" >> $GITHUB_OUTPUT
+          fi
 
           echo "Security scan complete. Results saved to security_scan_summary.md"
-          cat security_scan_summary.md
         working-directory: ${{ inputs.working_directory || '.' }}
-        continue-on-error: true
 
       - name: 📤 Upload security scan results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-scan-results
           path: ${{ inputs.working_directory || '.' }}/security_scan_summary.md
+        if: always() # This ensures results are always uploaded
+
+      - name: 🛑 Fail if security issues were found
+        if: steps.security_scan.outputs.security_passed == 'false'
+        run: |
+          echo "❌ Security scan found issues that must be fixed before deployment."
+          exit 1
+        shell: bash

@@ -1,6 +1,8 @@
 # -----------------------------------------------------------------------------
 # Release Workflow Template
 # -----------------------------------------------------------------------------
+# ⚠️ WARNING: THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY! ⚠️
+# Any changes may be overwritten by the generation process.
 # IMPORTANT: This is a template file intended to be copied into your repository.
 # The "Unable to find reusable workflow" errors are expected in template mode.
 # When using this template in your actual repository, ensure all referenced
@@ -22,6 +24,7 @@
 #     uses: ./.github/workflows/release.yml
 #     with:
 #       environment: ${{ github.ref_name }}
+#       jira_project_key: PROJ
 #     secrets:
 #       PAT: ${{ secrets.GITHUB_TOKEN }}
 #       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
@@ -52,66 +55,23 @@ on:
         required: false
         default: ''
         type: string
-      skip_quality:
-        description: 'Skip the quality workflow'
+      skip_jobs:
+        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,security,code_quality_check,claude_security_scan,quality,github_issue,github_release,jira_release,jira_issue,version)'
         required: false
-        default: false
-        type: boolean
-      skip_lint:
-        description: 'Skip the lint job in quality workflow'
+        default: ''
+        type: string
+      jira_project_key:
+        description: 'Jira project key (e.g., PROJ)'
         required: false
-        default: false
-        type: boolean
-      skip_typecheck:
-        description: 'Skip the typecheck job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_test:
-        description: 'Skip the test job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_format:
-        description: 'Skip the format check job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_build:
-        description: 'Skip the build job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_security:
-        description: 'Skip the security scan job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_commitlint:
-        description: 'Skip the commitlint job in quality workflow'
-        required: false
-        default: false
-        type: boolean
-      skip_jira:
-        description: 'Skip creating Jira release'
-        required: false
-        default: false
-        type: boolean
-      skip_github_release:
-        description: 'Skip creating GitHub release'
-        required: false
-        default: false
-        type: boolean
-      skip_github_issue:
-        description: 'Skip creating GitHub issue on failure'
-        required: false
-        default: false
-        type: boolean
-      skip_jira_issue:
-        description: 'Skip creating Jira issue on failure'
-        required: false
-        default: false
-        type: boolean
+        type: string
+        default: ''
+    outputs:
+      version:
+        description: 'The version that was created'
+        value: ${{ jobs.version.outputs.version }}
+      tag:
+        description: 'The tag that was created'
+        value: ${{ jobs.version.outputs.tag }}
     secrets:
       PAT:
         description: 'Personal Access Token for GitHub operations'
@@ -135,30 +95,25 @@ on:
         description: 'Anthropic API key for Claude code quality integrations'
         required: false
 
-# Prevent concurrent runs of the same workflow on the same ref
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+# Concurrency is managed by the parent workflow that calls this one
+# This avoids deadlocks between parent and child workflows
 
 jobs:
+  # Environment validation is now done via the inputs
+
   # Quality checks
   # Note: This is a template workflow file.
   # In actual usage, you would need to ensure all referenced workflow files exist in your repository.
   quality:
     name: 🔍 Quality Checks
-    if: ${{ !inputs.skip_quality }}
+    if: ${{ !contains(inputs.skip_jobs, 'quality') }}
     # Reference to the quality checks workflow
     uses: ./.github/workflows/quality.yml
     with:
       node_version: ${{ inputs.node_version }}
       package_manager: ${{ inputs.package_manager }}
       working_directory: ${{ inputs.working_directory }}
-      skip_lint: ${{ inputs.skip_lint }}
-      skip_typecheck: ${{ inputs.skip_typecheck }}
-      skip_test: ${{ inputs.skip_test }}
-      skip_format: ${{ inputs.skip_format }}
-      skip_build: ${{ inputs.skip_build }}
-      skip_security: ${{ inputs.skip_security }}
+      skip_jobs: ${{ inputs.skip_jobs }}
     secrets:
       PAT: ${{ secrets.PAT }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -166,10 +121,10 @@ jobs:
   # Version bumping and release creation
   version:
     name: 📦 Version
-    needs: [determine_environment, quality]
+    needs: [quality]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') && (!inputs.skip_quality || needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') && !contains(inputs.skip_jobs, 'version') && (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
     outputs:
       version: ${{ steps.version.outputs.new_version }}
       tag: ${{ steps.version.outputs.tag }}
@@ -198,7 +153,16 @@ jobs:
         run: |
           # Bump version, create changelog, and commit, but DO NOT tag yet.
           # Use --releaseCommitMessageFormat instead of deprecated --message.
-          yarn standard-version --skip.tag --releaseCommitMessageFormat "chore(release): {{currentTag}} [skip ci]"
+          if [ "${{ inputs.package_manager }}" = "npm" ]; then
+            npx standard-version --skip.tag --releaseCommitMessageFormat "chore(release): {{currentTag}} [skip ci]"
+          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+            yarn standard-version --skip.tag --releaseCommitMessageFormat "chore(release): {{currentTag}} [skip ci]"
+          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
+            bun standard-version --skip.tag --releaseCommitMessageFormat "chore(release): {{currentTag}} [skip ci]"
+          else
+            echo "Unsupported package manager: ${{ inputs.package_manager }}"
+            exit 1
+          fi
 
           # Get the new version from package.json
           NEW_VERSION=$(node -p "require('./package.json').version")
@@ -206,10 +170,10 @@ jobs:
 
           # Determine the actual tag name based on the environment
           ACTUAL_TAG_NAME=""
-          if [ "${{ needs.determine_environment.outputs.environment }}" == "main" ]; then
+          if [ "${{ inputs.environment }}" == "main" ]; then
             ACTUAL_TAG_NAME="v$NEW_VERSION"
           else
-            ACTUAL_TAG_NAME="v$NEW_VERSION-${{ needs.determine_environment.outputs.environment }}"
+            ACTUAL_TAG_NAME="v$NEW_VERSION-${{ inputs.environment }}"
           fi
 
           # Output the determined tag name for subsequent steps
@@ -221,14 +185,14 @@ jobs:
       - name: 🚀 Push changes
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}
-          git push --follow-tags origin ${{ needs.determine_environment.outputs.environment }}
+          git push --follow-tags origin ${{ inputs.environment }}
 
   jira_release:
     name: 🔖 Create Jira Release
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [determine_environment, version]
-    if: ${{ success() && !contains(github.event.head_commit.message, '[skip ci]') && (github.event.inputs.skip_jira != 'true' && inputs.skip_jira != true) && (!inputs.skip_quality || needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
+    needs: [quality, version]
+    if: ${{ success() && !contains(github.event.head_commit.message, '[skip ci]') && !contains(inputs.skip_jobs, 'jira_release') && (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -237,11 +201,11 @@ jobs:
         id: check_jira
         run: |
           # Set environment-specific webhook variable
-          if [[ "${{ needs.determine_environment.outputs.environment }}" == "dev" ]]; then
+          if [[ "${{ inputs.environment }}" == "dev" ]]; then
             WEBHOOK="${JIRA_AUTOMATION_WEBHOOK_DEV}"
-          elif [[ "${{ needs.determine_environment.outputs.environment }}" == "staging" ]]; then
+          elif [[ "${{ inputs.environment }}" == "staging" ]]; then
             WEBHOOK="${JIRA_AUTOMATION_WEBHOOK_STAGING}"
-          elif [[ "${{ needs.determine_environment.outputs.environment }}" == "main" ]]; then
+          elif [[ "${{ inputs.environment }}" == "main" ]]; then
             WEBHOOK="${JIRA_AUTOMATION_WEBHOOK_PRODUCTION}"
           fi
 
@@ -263,16 +227,16 @@ jobs:
         uses: GeoWerkstatt/create-jira-release@v1
         continue-on-error: true
         with:
-          jira-project-key: ${{ vars.JIRA_PROJECT_KEY }}
+          jira-project-key: ${{ inputs.jira_project_key }}
           jira-automation-webhook: ${{ secrets.JIRA_AUTOMATION_WEBHOOK }}
-          build-version: '${{ github.event.repository.name }} (${{ needs.determine_environment.outputs.environment }}) v${{ needs.version.outputs.version }}'
+          build-version: '${{ github.event.repository.name }} (${{ inputs.environment }}) v${{ needs.version.outputs.version }}'
 
   github_release:
     name: 📢 Create GitHub Release
-    needs: [version]
+    needs: [quality, version]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: ${{ github.event.inputs.skip_github_release != 'true' && inputs.skip_github_release != true && (!inputs.skip_quality || needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
+    if: ${{ !contains(inputs.skip_jobs, 'github_release') && (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
     steps:
       - name: 📢 Create GitHub Release
         uses: softprops/action-gh-release@v1

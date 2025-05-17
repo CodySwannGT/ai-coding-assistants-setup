@@ -42,7 +42,7 @@ describe('FileMerger', () => {
         .mockImplementationOnce(() => false); // Target doesn't exist
 
       // Mock fs.copyFile to resolve
-      (fs.copyFile as jest.Mock).mockResolvedValue(undefined);
+      jest.spyOn(fs, 'copyFile').mockResolvedValue(undefined);
 
       // Mock fs.mkdirpSync to do nothing
       (fs.mkdirpSync as jest.Mock).mockImplementation(() => {});
@@ -83,7 +83,7 @@ describe('FileMerger', () => {
         .mockImplementationOnce(() => false); // Target doesn't exist
 
       // Mock fs.copyFile to reject with an error
-      (fs.copyFile as jest.Mock).mockRejectedValue(new Error('Copy failed'));
+      jest.spyOn(fs, 'copyFile').mockRejectedValue(new Error('Copy failed'));
 
       // Execute
       const result = await FileMerger.mergeFile(sourcePath, targetPath);
@@ -101,7 +101,7 @@ describe('FileMerger', () => {
       (fs.existsSync as jest.Mock).mockReturnValue(true);
 
       // Mock fs.copyFile to resolve
-      (fs.copyFile as jest.Mock).mockResolvedValue(undefined);
+      jest.spyOn(fs, 'copyFile').mockResolvedValue(undefined);
 
       // Execute
       const result = await FileMerger.mergeFile(
@@ -126,7 +126,7 @@ describe('FileMerger', () => {
       (fs.existsSync as jest.Mock).mockReturnValue(true);
 
       // Mock fs.copyFile to resolve
-      (fs.copyFile as jest.Mock).mockResolvedValue(undefined);
+      jest.spyOn(fs, 'copyFile').mockResolvedValue(undefined);
 
       // Execute
       const result = await FileMerger.mergeFile(

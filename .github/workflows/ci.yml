@@ -6,51 +6,22 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      node_version:
-        description: 'Node.js version to use'
-        required: false
-        default: '20.x'
-        type: string
-      package_manager:
-        description: 'Package manager to use (npm, yarn, or bun)'
-        required: false
-        default: 'npm'
-        type: string
-      working_directory:
-        description: 'Directory to run commands in (if not root)'
-        required: false
-        default: ''
-        type: string
-      skip_jobs:
-        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,security,quality,github_issue)'
-        required: false
-        default: ''
-        type: string
 
 jobs:
   quality:
     name: 🔍 Quality Checks
-    if: ${{ !contains(inputs.skip_jobs, 'quality') }}
     # Reference to the quality checks workflow
     uses: ./.github/workflows/quality.yml
     with:
-      node_version: ${{ inputs.node_version }}
-      package_manager: ${{ inputs.package_manager }}
-      working_directory: ${{ inputs.working_directory }}
-      skip_lint: ${{ contains(inputs.skip_jobs, 'lint') }}
-      skip_typecheck: ${{ contains(inputs.skip_jobs, 'typecheck') }}
-      skip_test: ${{ contains(inputs.skip_jobs, 'test') }}
-      skip_format: ${{ contains(inputs.skip_jobs, 'format') }}
-      skip_build: ${{ contains(inputs.skip_jobs, 'build') }}
-      skip_security: ${{ contains(inputs.skip_jobs, 'security') }}
+      node_version: '20.x'
+      package_manager: 'npm'
     secrets:
       PAT: ${{ secrets.PAT }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   create_github_issue_on_failure:
     name: 🚨 Create Github Issue on Failure
     needs: [quality]
-    if: ${{ failure() && !contains(github.event.head_commit.message, '[skip ci]') && !contains(inputs.skip_jobs, 'github_issue') }}
+    if: ${{ failure() && !contains(github.event.head_commit.message, '[skip ci]') }}
     # Reference to the GitHub issue creation workflow
     # Note: In actual usage, ensure this file exists in your repository
     uses: ./.github/workflows/create-github-issue-on-failure.yml

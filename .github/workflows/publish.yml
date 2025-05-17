@@ -13,31 +13,6 @@ on:
         type: choice
         options:
           - main
-      run_quality_checks:
-        description: 'Run quality checks'
-        required: false
-        default: true
-        type: boolean
-      node_version:
-        description: 'Node.js version to use'
-        required: false
-        default: '20.x'
-        type: string
-      package_manager:
-        description: 'Package manager to use (npm, yarn, or bun)'
-        required: false
-        default: 'npm'
-        type: string
-      working_directory:
-        description: 'Directory to run commands in (if not root)'
-        required: false
-        default: ''
-        type: string
-      skip_jobs:
-        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,security,code_quality_check,claude_security_scan,quality,github_issue)'
-        required: false
-        default: ''
-        type: string
 
 # Prevent concurrent runs of the same workflow on the same ref
 concurrency:
@@ -67,10 +42,8 @@ jobs:
     # Reference to the quality checks workflow
     uses: ./.github/workflows/release.yml
     with:
-      node_version: ${{ inputs.node_version }}
-      package_manager: ${{ inputs.package_manager }}
-      working_directory: ${{ inputs.working_directory }}
-      skip_jobs: ${{ inputs.skip_jobs }}
+      node_version: '20.x'
+      package_manager: 'npm'
     secrets:
       PAT: ${{ secrets.PAT }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -122,7 +95,7 @@ jobs:
   create_github_issue_on_failure:
     name: 🚨 Create Github Issue on Failure
     needs: [release]
-    if: ${{ failure() && !contains(github.event.head_commit.message, '[skip ci]') && !contains(inputs.skip_jobs, 'github_issue') }}
+    if: ${{ failure() && !contains(github.event.head_commit.message, '[skip ci]') }}
     # Reference to the GitHub issue creation workflow
     # Note: In actual usage, ensure this file exists in your repository
     uses: ./.github/workflows/create-github-issue-on-failure.yml

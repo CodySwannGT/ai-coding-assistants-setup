@@ -343,14 +343,21 @@ jobs:
 
       - name: 🤖 Install Claude CLI
         run: |
-          if [ "${{ inputs.package_manager }}" = "npm" ]; then
+          # Use npm as the default package manager if not specified
+          PACKAGE_MANAGER="${{ inputs.package_manager }}"
+          if [ -z "$PACKAGE_MANAGER" ]; then
+            PACKAGE_MANAGER="npm"
+            echo "Package manager not specified, using npm as default"
+          fi
+          
+          if [ "$PACKAGE_MANAGER" = "npm" ]; then
             npm install -g @anthropic-ai/claude-code
-          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+          elif [ "$PACKAGE_MANAGER" = "yarn" ]; then
             yarn global add @anthropic-ai/claude-code
-          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
+          elif [ "$PACKAGE_MANAGER" = "bun" ]; then
             bun add -g @anthropic-ai/claude-code
           else
-            echo "Unsupported package manager: ${{ inputs.package_manager }}"
+            echo "Unsupported package manager: $PACKAGE_MANAGER"
             exit 1
           fi
 
@@ -391,14 +398,21 @@ jobs:
 
       - name: 🤖 Install Claude CLI
         run: |
-          if [ "${{ inputs.package_manager }}" = "npm" ]; then
+          # Use npm as the default package manager if not specified
+          PACKAGE_MANAGER="${{ inputs.package_manager }}"
+          if [ -z "$PACKAGE_MANAGER" ]; then
+            PACKAGE_MANAGER="npm"
+            echo "Package manager not specified, using npm as default"
+          fi
+          
+          if [ "$PACKAGE_MANAGER" = "npm" ]; then
             npm install -g @anthropic-ai/claude-code
-          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+          elif [ "$PACKAGE_MANAGER" = "yarn" ]; then
             yarn global add @anthropic-ai/claude-code
-          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
+          elif [ "$PACKAGE_MANAGER" = "bun" ]; then
             bun add -g @anthropic-ai/claude-code
           else
-            echo "Unsupported package manager: ${{ inputs.package_manager }}"
+            echo "Unsupported package manager: $PACKAGE_MANAGER"
             exit 1
           fi
 

@@ -22,6 +22,7 @@
 #     uses: ./.github/workflows/release.yml
 #     with:
 #       environment: ${{ github.ref_name }}
+#       jira_project_key: PROJ
 #     secrets:
 #       PAT: ${{ secrets.GITHUB_TOKEN }}
 #       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
@@ -87,11 +88,6 @@ on:
         required: false
         default: false
         type: boolean
-      skip_commitlint:
-        description: 'Skip the commitlint job in quality workflow'
-        required: false
-        default: false
-        type: boolean
       skip_jira:
         description: 'Skip creating Jira release'
         required: false
@@ -112,6 +108,18 @@ on:
         required: false
         default: false
         type: boolean
+      jira_project_key:
+        description: 'Jira project key (e.g., PROJ)'
+        required: false
+        type: string
+        default: ''
+    outputs:
+      version:
+        description: 'The version that was created'
+        value: ${{ jobs.version.outputs.version }}
+      tag:
+        description: 'The tag that was created'
+        value: ${{ jobs.version.outputs.tag }}
     secrets:
       PAT:
         description: 'Personal Access Token for GitHub operations'
@@ -141,6 +149,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Environment validation
+  determine_environment:
+    name: 🌍 Validate Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.validate_env.outputs.environment }}
+    steps:
+      - name: Validate environment input
+        id: validate_env
+        run: |
+          ENV="${{ inputs.environment }}"
+          if [[ "$ENV" != "dev" && "$ENV" != "staging" && "$ENV" != "production" ]]; then
+            echo "::error::Invalid environment value: $ENV. Must be one of: dev, staging, production"
+            exit 1
+          fi
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+          echo "✅ Environment validated: $ENV"
+
   # Quality checks
   # Note: This is a template workflow file.
   # In actual usage, you would need to ensure all referenced workflow files exist in your repository.
@@ -227,7 +253,7 @@ jobs:
     name: 🔖 Create Jira Release
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [determine_environment, version]
+    needs: [determine_environment, quality, version]
     if: ${{ success() && !contains(github.event.head_commit.message, '[skip ci]') && (github.event.inputs.skip_jira != 'true' && inputs.skip_jira != true) && (!inputs.skip_quality || needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
     steps:
       - name: 📥 Checkout repository
@@ -263,13 +289,13 @@ jobs:
         uses: GeoWerkstatt/create-jira-release@v1
         continue-on-error: true
         with:
-          jira-project-key: ${{ vars.JIRA_PROJECT_KEY }}
+          jira-project-key: ${{ inputs.jira_project_key }}
           jira-automation-webhook: ${{ secrets.JIRA_AUTOMATION_WEBHOOK }}
           build-version: '${{ github.event.repository.name }} (${{ needs.determine_environment.outputs.environment }}) v${{ needs.version.outputs.version }}'
 
   github_release:
     name: 📢 Create GitHub Release
-    needs: [version]
+    needs: [determine_environment, quality, version]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: ${{ github.event.inputs.skip_github_release != 'true' && inputs.skip_github_release != true && (!inputs.skip_quality || needs.quality.result == 'success' || needs.quality.result == 'skipped') }}

@@ -487,7 +487,7 @@ jobs:
         continue-on-error: true
 
       - name: 📤 Upload security scan results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-scan-results
           path: ${{ inputs.working_directory || '.' }}/security_scan_summary.md

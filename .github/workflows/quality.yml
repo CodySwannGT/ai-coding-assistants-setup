@@ -377,17 +377,15 @@ jobs:
             echo "Using custom guidelines from docs/code_review_guidelines.md"
           else
             # Fallback to default guidelines if the file doesn't exist
-            cat >> code_review_prompt.txt << 'EOF'
-
-          IMPORTANT GUIDELINES:
-          - IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)
-          - DO NOT review generated files, compiled code, or third-party dependencies
-          - Focus on substantive code issues rather than trivial style issues
-          - Be concise and specific in your feedback
-          - When suggesting improvements, explain why they matter
-          - End your review with "VERDICT: PASS" if the code is acceptable for deployment
-          - End your review with "VERDICT: FAIL" if there are critical issues that must be fixed before deployment
-          EOF
+            echo "" >> code_review_prompt.txt
+            echo "IMPORTANT GUIDELINES:" >> code_review_prompt.txt
+            echo "- IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)" >> code_review_prompt.txt
+            echo "- DO NOT review generated files, compiled code, or third-party dependencies" >> code_review_prompt.txt
+            echo "- Focus on substantive code issues rather than trivial style issues" >> code_review_prompt.txt
+            echo "- Be concise and specific in your feedback" >> code_review_prompt.txt
+            echo "- When suggesting improvements, explain why they matter" >> code_review_prompt.txt
+            echo "- End your review with \"VERDICT: PASS\" if the code is acceptable for deployment" >> code_review_prompt.txt
+            echo "- End your review with \"VERDICT: FAIL\" if there are critical issues that must be fixed before deployment" >> code_review_prompt.txt
             echo "Using default guidelines (docs/code_review_guidelines.md not found)"
           fi
 

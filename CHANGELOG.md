@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.1](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.4.4...v2.0.1) (2025-05-17)
+
+
+### Bug Fixes
+
+* fix ci/cd ([4da2e84](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/4da2e84360779f5eadd9f8a1546f909084f6cca5))
+* fix ci/cd ([fc886de](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/fc886de4d375d9ba9edc7bc056000f2de6fffb40))
+* fix ci/cd ([2c2b5c4](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/2c2b5c4ff2b916f1abe6ecbf5edb90c4871ef94d))
+* fix ci/cd ([c3610cd](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/c3610cd0735d5707feb3f11a52429087e0790c6a))
+* fix ci/cd ([73b3cf7](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/73b3cf7427b971d8df957fa9166ac3fae7a4b1a4))
+* fix ci/cd ([b877850](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/b8778507ded30e76e3aa9c442c27296ccf7f0406))
+* fix ci/cd ([8a0a82d](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/8a0a82d2c95eabed1cf78043af0129934c17d792))
+* fix ci/cd ([6a1390a](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/6a1390a5cf6ecf19c7cccdf748480294042ed8af))
+* fix ci/cd ([e1c2154](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/e1c21547e343c6f98d9b8ebaee97e5c704391560))
+* fix ci/cd ([e40e5b7](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/e40e5b7f945d85fcee51fc1eb6790b4980ad3c6f))
+
 ### [1.4.4](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v1.4.3...v1.4.4) (2025-05-15)
 
 

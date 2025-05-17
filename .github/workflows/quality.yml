@@ -369,12 +369,12 @@ jobs:
             # For pull requests, check all changes
             git diff -U0 --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
             grep -E '\.(js|jsx|ts|tsx|css|scss|html|md)$' | \
-            xargs -I {} sh -c 'git diff -U0 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- {} | claude code review'
+            xargs -I {} sh -c 'git diff -U0 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- {} | claude -p "code review" --output-format stream-json'
           else
             # For pushes, check the latest commit
             git diff -U0 --name-only HEAD~1 HEAD | \
             grep -E '\.(js|jsx|ts|tsx|css|scss|html|md)$' | \
-            xargs -I {} sh -c 'git diff -U0 HEAD~1 HEAD -- {} | claude code review'
+            xargs -I {} sh -c 'git diff -U0 HEAD~1 HEAD -- {} | claude -p "code review" --output-format stream-json'
           fi
         working-directory: ${{ inputs.working_directory || '.' }}
         continue-on-error: true
@@ -473,7 +473,7 @@ jobs:
             # Check if file exists and has content
             if [ -f "$FILE" ] && [ -s "$FILE" ]; then
               # Run security scan on the file
-              cat "$FILE" | claude explain "$(cat security_prompt.txt)" > "security_scan_results/${SAFENAME}_scan.md" || echo "Failed to scan $FILE"
+              cat "$FILE" | claude -p "$(cat security_prompt.txt)" --output-format stream-json > "security_scan_results/${SAFENAME}_scan.md" || echo "Failed to scan $FILE"
             else
               echo "File $FILE does not exist or is empty, skipping."
             fi

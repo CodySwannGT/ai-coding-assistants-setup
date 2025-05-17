@@ -272,65 +272,72 @@ exit 0
   setupMemoryHook(): boolean {
     try {
       const postCommitScript = `#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-# Get more detailed commit info
-COMMIT_MSG=$(git log -1 --pretty=%B)
-COMMIT_AUTHOR=$(git log -1 --pretty=%an)
-COMMIT_DATE=$(git log -1 --pretty=%ad --date=format:'%Y-%m-%d %H:%M:%S')
-COMMIT_HASH=$(git log -1 --pretty=%H)
-
-# Try to determine the root directory and project name
-# First attempt to use git if available
-if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  ROOT_DIR="$(git rev-parse --show-toplevel)"
-  PROJECT_NAME=$(basename "$ROOT_DIR")
-else
-  # Fallback method if not in a git repository
-  # Get the absolute path of the current directory
-  CURRENT_DIR="$(pwd)"
-  
-  # Determine the parent directory (one level up)
-  # This assumes the ai-coding-assistants-setup is installed as a dependency
-  # in the parent project's node_modules
-  ROOT_DIR="$(dirname "$CURRENT_DIR")"
-  PROJECT_NAME=$(basename "$ROOT_DIR")
-  
-  echo "⚠️ Not in a git repository. Using parent directory as root: $ROOT_DIR"
-fi
-
-MEMORY_PATH="$ROOT_DIR/.ai/memory.jsonl"
-
-# Simple commit type extraction using standard shell commands
-COMMIT_TYPE="other"
-for type in feat fix docs style refactor perf test build ci chore revert; do
-  if [[ "$COMMIT_MSG" == "$type:"* || "$COMMIT_MSG" == "$type("* ]]; then
-    COMMIT_TYPE="$type"
-    break
-  fi
-done
-
-echo "📥 Writing to memory: $COMMIT_MSG"
-echo "📁 Memory file: $MEMORY_PATH"
-echo "🏷️ Commit type detected: $COMMIT_TYPE"
-
-# Make sure the .ai directory exists in the root of the parent project
-mkdir -p "$ROOT_DIR/.ai"
-
-# Make sure the directory exists (redundant but keeping for safety)
-mkdir -p "$(dirname "$MEMORY_PATH")"
-
-# Create JSON in the same format as MCP-created entities
-OBSERVATION="{\\\"type\\\":\\\"entity\\\",\\\"name\\\":\\\"Commit:$COMMIT_HASH\\\",\\\"entityType\\\":\\\"Commit\\\",\\\"observations\\\":[\\\"[$COMMIT_TYPE] $COMMIT_MSG\\\",\\\"Author: $COMMIT_AUTHOR\\\",\\\"Date: $COMMIT_DATE\\\"]}"
-
-# Also create a relation from the project to this commit
-RELATION="{\\\"type\\\":\\\"relation\\\",\\\"from\\\":\\\"Project:$PROJECT_NAME\\\",\\\"to\\\":\\\"Commit:$COMMIT_HASH\\\",\\\"relationType\\\":\\\"HAS_COMMIT\\\"}"
-
-# Use printf for better control over newlines
-printf "%s\\n" "$OBSERVATION" >> "$MEMORY_PATH"
-printf "%s\\n" "$RELATION" >> "$MEMORY_PATH"
-
-echo "✅ Commit information stored in project memory"
+      . "$(dirname -- "$0")/_/husky.sh"
+      
+      # Get more detailed commit info
+      COMMIT_MSG=$(git log -1 --pretty=%B)
+      COMMIT_AUTHOR=$(git log -1 --pretty=%an)
+      COMMIT_DATE=$(git log -1 --pretty=%ad --date=format:'%Y-%m-%d %H:%M:%S')
+      COMMIT_HASH=$(git log -1 --pretty=%H)
+      
+      # Try to determine the root directory and project name
+      # First attempt to use git if available
+      if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        ROOT_DIR="$(git rev-parse --show-toplevel)"
+        PROJECT_NAME=$(basename "$ROOT_DIR")
+      else
+        # Fallback method if not in a git repository
+        # Get the absolute path of the current directory
+        CURRENT_DIR="$(pwd)"
+        
+        # Determine the parent directory (one level up)
+        # This assumes the ai-coding-assistants-setup is installed as a dependency
+        # in the parent project's node_modules
+        ROOT_DIR="$(dirname "$CURRENT_DIR")"
+        PROJECT_NAME=$(basename "$ROOT_DIR")
+        
+        echo "⚠️ Not in a git repository. Using parent directory as root: $ROOT_DIR"
+      fi
+      
+      MEMORY_PATH="$ROOT_DIR/.ai/memory.jsonl"
+      
+      # Check if only the memory file has changed to prevent infinite commit loops
+      CHANGED_FILES=$(git diff --name-only HEAD)
+      if [ "$CHANGED_FILES" = ".ai/memory.jsonl" ] || [ "$CHANGED_FILES" = "$MEMORY_PATH" ]; then
+        echo "🔄 Only memory file has changed. Skipping to prevent commit loop."
+        exit 0
+      fi
+      
+      # Simple commit type extraction using standard shell commands
+      COMMIT_TYPE="other"
+      for type in feat fix docs style refactor perf test build ci chore revert; do
+        if [[ "$COMMIT_MSG" == "$type:"* || "$COMMIT_MSG" == "$type("* ]]; then
+          COMMIT_TYPE="$type"
+          break
+        fi
+      done
+      
+      echo "📥 Writing to memory: $COMMIT_MSG"
+      echo "📁 Memory file: $MEMORY_PATH"
+      echo "🏷️ Commit type detected: $COMMIT_TYPE"
+      
+      # Make sure the .ai directory exists in the root of the parent project
+      mkdir -p "$ROOT_DIR/.ai"
+      
+      # Make sure the directory exists (redundant but keeping for safety)
+      mkdir -p "$(dirname "$MEMORY_PATH")"
+      
+      # Create JSON in the same format as MCP-created entities
+      OBSERVATION="{\\\"type\\\":\\\"entity\\\",\\\"name\\\":\\\"Commit:$COMMIT_HASH\\\",\\\"entityType\\\":\\\"Commit\\\",\\\"observations\\\":[\\\"[$COMMIT_TYPE] $COMMIT_MSG\\\",\\\"Author: $COMMIT_AUTHOR\\\",\\\"Date: $COMMIT_DATE\\\"]}"
+      
+      # Also create a relation from the project to this commit
+      RELATION="{\\\"type\\\":\\\"relation\\\",\\\"from\\\":\\\"Project:$PROJECT_NAME\\\",\\\"to\\\":\\\"Commit:$COMMIT_HASH\\\",\\\"relationType\\\":\\\"HAS_COMMIT\\\"}"
+      
+      # Use printf for better control over newlines
+      printf "%s\\n" "$OBSERVATION" >> "$MEMORY_PATH"
+      printf "%s\\n" "$RELATION" >> "$MEMORY_PATH"
+      
+      echo "✅ Commit information stored in project memory"
 `;
 
       // Create hidden directory for hook helpers if it doesn't exist

@@ -86,10 +86,8 @@ on:
         description: 'Anthropic API key for Claude code quality integrations'
         required: false
 
-# Prevent concurrent runs of the same workflow on the same ref
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# Concurrency is managed by the parent workflow that calls this one
+# This avoids deadlocks between parent and child workflows
 
 jobs:
   lint:

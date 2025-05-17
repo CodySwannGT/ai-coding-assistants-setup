@@ -70,10 +70,8 @@ on:
         required: true
         description: 'Jira API token for authentication'
 
-# Prevent concurrent runs of the same workflow on the same ref
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# Concurrency is managed by the parent workflow that calls this one
+# This avoids deadlocks between parent and child workflows
 
 jobs:
   create_jira_issue:

@@ -398,3 +398,40 @@ This will skip the linting, type checking, and testing jobs while running all ot
 - Use organization secrets for values that are common across multiple repositories
 - Consider adding documentation about these workflows in your project's README or CONTRIBUTING guide
 - Regularly rotate sensitive tokens and update the corresponding repository secrets
+
+### Workflow Concurrency Management
+
+To avoid deadlocks between parent workflows and called workflows:
+
+- Concurrency settings should only be defined in the top-level parent workflow
+- Reusable workflows that are called via the `uses` directive should not define their own concurrency settings
+- This prevents deadlocks which can occur when both parent and child workflows try to manage concurrency with the same group name
+
+```yaml
+# GOOD: Parent workflow with concurrency
+name: Parent Workflow
+on: [push]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  call_child:
+    uses: ./.github/workflows/child.yml
+```
+
+```yaml
+# GOOD: Child workflow without concurrency settings
+name: Child Workflow
+on: 
+  workflow_call:
+    # inputs and secrets defined here
+
+# No concurrency settings here!
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running job"
+```

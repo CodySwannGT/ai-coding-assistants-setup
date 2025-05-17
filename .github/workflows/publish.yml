@@ -18,6 +18,56 @@ on:
         required: false
         default: true
         type: boolean
+      node_version:
+        description: 'Node.js version to use'
+        required: false
+        default: '20.x'
+        type: string
+      package_manager:
+        description: 'Package manager to use (npm, yarn, or bun)'
+        required: false
+        default: 'npm'
+        type: string
+      working_directory:
+        description: 'Directory to run commands in (if not root)'
+        required: false
+        default: ''
+        type: string
+      skip_lint:
+        description: 'Skip the lint job in quality workflow'
+        required: false
+        default: false
+        type: boolean
+      skip_typecheck:
+        description: 'Skip the typecheck job in quality workflow'
+        required: false
+        default: false
+        type: boolean
+      skip_test:
+        description: 'Skip the test job in quality workflow'
+        required: false
+        default: false
+        type: boolean
+      skip_format:
+        description: 'Skip the format check job in quality workflow'
+        required: false
+        default: false
+        type: boolean
+      skip_build:
+        description: 'Skip the build job in quality workflow'
+        required: false
+        default: false
+        type: boolean
+      skip_security:
+        description: 'Skip the security scan job in quality workflow'
+        required: false
+        default: false
+        type: boolean
+      skip_github_issue:
+        description: 'Skip creating GitHub issue on failure'
+        required: false
+        default: false
+        type: boolean
 
 # Prevent concurrent runs of the same workflow on the same ref
 concurrency:
@@ -70,7 +120,7 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.version_and_release.outputs.tag }}
+          ref: ${{ needs.release.outputs.tag }}
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
@@ -102,7 +152,7 @@ jobs:
 
       - name: 📢 Notify on success
         if: steps.check-npm-token.outputs.has_npm_token == 'true'
-        run: echo "Successfully published version ${{ needs.version_and_release.outputs.version }} to npm"
+        run: echo "Successfully published version ${{ needs.release.outputs.version }} to npm"
 
   create_github_issue_on_failure:
     name: 🚨 Create Github Issue on Failure
@@ -110,7 +160,7 @@ jobs:
     if: ${{ failure() && !contains(github.event.head_commit.message, '[skip ci]') && (github.event.inputs.skip_github_issue != 'true' && inputs.skip_github_issue != true) }}
     # Reference to the GitHub issue creation workflow
     # Note: In actual usage, ensure this file exists in your repository
-    uses: ./.github/workflows/github-issue-on-failure.yml
+    uses: ./.github/workflows/create-github-issue-on-failure.yml
     with:
       workflow_name: 'Version and Release'
     secrets:

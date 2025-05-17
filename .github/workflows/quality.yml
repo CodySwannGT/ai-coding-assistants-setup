@@ -580,36 +580,34 @@ jobs:
             echo "Using custom guidelines from docs/security_scan_guidelines.md"
           else
             # Fallback to default guidelines
-            cat > security_prompt.txt << 'EOF'
-            You are a cybersecurity expert specializing in code security. Analyze this code for security vulnerabilities including:
-
-            1. Injection vulnerabilities (SQL, command, etc.)
-            2. Insecure authentication or authorization
-            3. Sensitive data exposure or improper handling
-            4. Incorrect use of cryptography
-            5. Insecure configuration
-            6. Hard-coded credentials or secrets
-            7. Path traversal vulnerabilities
-            8. Insecure deserialization
-            9. Insufficient logging and monitoring
-            10. Cross-site scripting (XSS) or CSRF
-            11. Dependency vulnerabilities
-            12. Use of unsafe or deprecated functions
-
-            IMPORTANT GUIDELINES:
-            - IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)
-            - DO NOT review generated files, compiled code, or third-party dependencies
-            - Focus only on legitimate security issues in actual application code
-
-            For each issue found, provide:
-            - The specific location of the vulnerability
-            - The severity level (Critical, High, Medium, Low)
-            - A clear explanation of the vulnerability
-            - A recommended fix or mitigation strategy
-
-            End your review with "VERDICT: PASS" if the code is secure and follows best practices.
-            End your review with "VERDICT: FAIL" if there are security issues that must be fixed.
-            EOF
+            echo "You are a cybersecurity expert specializing in code security. Analyze this code for security vulnerabilities including:" > security_prompt.txt
+            echo "" >> security_prompt.txt
+            echo "1. Injection vulnerabilities (SQL, command, etc.)" >> security_prompt.txt
+            echo "2. Insecure authentication or authorization" >> security_prompt.txt
+            echo "3. Sensitive data exposure or improper handling" >> security_prompt.txt
+            echo "4. Incorrect use of cryptography" >> security_prompt.txt
+            echo "5. Insecure configuration" >> security_prompt.txt
+            echo "6. Hard-coded credentials or secrets" >> security_prompt.txt
+            echo "7. Path traversal vulnerabilities" >> security_prompt.txt
+            echo "8. Insecure deserialization" >> security_prompt.txt
+            echo "9. Insufficient logging and monitoring" >> security_prompt.txt
+            echo "10. Cross-site scripting (XSS) or CSRF" >> security_prompt.txt
+            echo "11. Dependency vulnerabilities" >> security_prompt.txt
+            echo "12. Use of unsafe or deprecated functions" >> security_prompt.txt
+            echo "" >> security_prompt.txt
+            echo "IMPORTANT GUIDELINES:" >> security_prompt.txt
+            echo "- IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)" >> security_prompt.txt
+            echo "- DO NOT review generated files, compiled code, or third-party dependencies" >> security_prompt.txt
+            echo "- Focus only on legitimate security issues in actual application code" >> security_prompt.txt
+            echo "" >> security_prompt.txt
+            echo "For each issue found, provide:" >> security_prompt.txt
+            echo "- The specific location of the vulnerability" >> security_prompt.txt
+            echo "- The severity level (Critical, High, Medium, Low)" >> security_prompt.txt
+            echo "- A clear explanation of the vulnerability" >> security_prompt.txt
+            echo "- A recommended fix or mitigation strategy" >> security_prompt.txt
+            echo "" >> security_prompt.txt
+            echo "End your review with \"VERDICT: PASS\" if the code is secure and follows best practices." >> security_prompt.txt
+            echo "End your review with \"VERDICT: FAIL\" if there are security issues that must be fixed." >> security_prompt.txt
             echo "Using default security guidelines"
           fi
 

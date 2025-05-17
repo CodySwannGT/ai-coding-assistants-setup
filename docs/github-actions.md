@@ -8,6 +8,104 @@ The AI Coding Assistants Setup includes several GitHub Actions workflow template
 
 All workflow templates are located in `src/templates/.github/workflows/` and should be copied to the target repository's `.github/workflows/` directory.
 
+## Required Secrets and Variables
+
+The workflows require certain GitHub repository secrets and variables to function properly. During the setup process, you'll be prompted for these values, which will be saved to your `.env` file. You'll also need to add them to your GitHub repository.
+
+### Required Secrets
+
+| Secret Name | Description | Required For |
+|-------------|-------------|--------------|
+| `PAT` | GitHub Personal Access Token | All workflows |
+| `ANTHROPIC_API_KEY` | Anthropic API key for Claude | Quality and security workflows |
+| `JIRA_API_TOKEN` | Jira API authentication token | Jira integration |
+| `JIRA_AUTOMATION_WEBHOOK` | General Jira automation webhook | Jira integration |
+| `JIRA_AUTOMATION_WEBHOOK_DEV` | Dev-specific Jira webhook | Environment-specific Jira integration |
+| `JIRA_AUTOMATION_WEBHOOK_STAGING` | Staging-specific Jira webhook | Environment-specific Jira integration |
+| `JIRA_AUTOMATION_WEBHOOK_PRODUCTION` | Production-specific Jira webhook | Environment-specific Jira integration |
+
+### Required Variables
+
+| Variable Name | Description | Required For |
+|---------------|-------------|--------------|
+| `JIRA_BASE_URL` | Jira instance URL (e.g., `https://your-org.atlassian.net`) | Jira integration |
+| `JIRA_USER_EMAIL` | Email address for Jira authentication | Jira integration |
+| `JIRA_PROJECT_KEY` | The key of the Jira project (e.g., `PROJ`) | Jira integration |
+
+### Setting up Secrets and Variables with GitHub CLI
+
+You can use the GitHub CLI to set up repository secrets and variables from your terminal. This is especially helpful for automating the process or for setting up multiple repositories.
+
+First, ensure you have the [GitHub CLI](https://cli.github.com/) installed and authenticated:
+
+```bash
+# Install GitHub CLI (macOS example)
+brew install gh
+
+# Authenticate (follow the prompts)
+gh auth login
+```
+
+#### Setting Repository Secrets
+
+```bash
+# Set a secret for the current repository
+gh secret set PAT --body "ghp_yourgithubpersonalaccesstoken"
+
+# Set secrets from your .env file (bash)
+while IFS='=' read -r key value || [ -n "$key" ]; do
+  if [[ ! $key =~ ^# && -n $key && -n $value ]]; then
+    # Only set specific secrets that we use in GitHub Actions
+    if [[ $key == "ANTHROPIC_API_KEY" || 
+          $key == "JIRA_API_TOKEN" || 
+          $key == "JIRA_AUTOMATION_WEBHOOK" || 
+          $key == "JIRA_AUTOMATION_WEBHOOK_DEV" || 
+          $key == "JIRA_AUTOMATION_WEBHOOK_STAGING" || 
+          $key == "JIRA_AUTOMATION_WEBHOOK_PRODUCTION" ]]; then
+      # For PAT, use the GitHub name convention
+      if [[ $key == "GITHUB_PERSONAL_ACCESS_TOKEN" ]]; then
+        gh secret set PAT --body "$value"
+      else
+        gh secret set "$key" --body "$value"
+      fi
+      echo "Set secret: $key"
+    fi
+  fi
+done < .env
+```
+
+#### Setting Repository Variables
+
+```bash
+# Set a variable for the current repository
+gh variable set JIRA_BASE_URL --body "https://your-org.atlassian.net"
+
+# Set variables from your .env file (bash)
+while IFS='=' read -r key value || [ -n "$key" ]; do
+  if [[ ! $key =~ ^# && -n $key && -n $value ]]; then
+    # Only set specific variables that we use in GitHub Actions
+    if [[ $key == "JIRA_BASE_URL" || 
+          $key == "JIRA_USER_EMAIL" || 
+          $key == "JIRA_PROJECT_KEY" ]]; then
+      gh variable set "$key" --body "$value"
+      echo "Set variable: $key"
+    fi
+  fi
+done < .env
+```
+
+#### Setting Organization Secrets and Variables
+
+For organization-wide secrets and variables (useful for multiple repositories):
+
+```bash
+# Set organization secret (requires admin access)
+gh secret set PAT --org your-org --body "ghp_yourgithubpersonalaccesstoken"
+
+# Set organization variable
+gh variable set JIRA_PROJECT_KEY --org your-org --body "PROJ"
+```
+
 ## Available Workflows
 
 ### Quality Checks Workflow (`quality.yml`)
@@ -171,7 +269,8 @@ To use these workflows in your project:
 1. Copy the desired workflow files from `src/templates/.github/workflows/` to your project's `.github/workflows/` directory
 2. Create a parent workflow that references these workflows using the `uses` keyword
 3. Configure the workflows with your specific inputs and secrets
-4. Commit and push the changes to your repository
+4. Set up all required secrets and variables in your repository settings (see [Setting up Secrets and Variables](#setting-up-secrets-and-variables-with-github-cli))
+5. Commit and push the changes to your repository
 
 ## Best Practices
 
@@ -179,4 +278,6 @@ To use these workflows in your project:
 - Use the release workflow when you have a versioned package that needs automated releases
 - Configure the issue creation workflows to improve your team's awareness of CI failures
 - Ensure all required secrets are set up in your repository settings
+- Use organization secrets for values that are common across multiple repositories
 - Consider adding documentation about these workflows in your project's README or CONTRIBUTING guide
+- Regularly rotate sensitive tokens and update the corresponding repository secrets

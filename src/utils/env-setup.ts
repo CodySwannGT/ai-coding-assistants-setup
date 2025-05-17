@@ -7,11 +7,24 @@ import { Feedback } from './feedback';
  * Environment variable keys that should be prompted for during setup
  */
 export const ENV_KEYS = [
-  'GITHUB_PERSONAL_ACCESS_TOKEN',
+  // Core API tokens
+  'GITHUB_PERSONAL_ACCESS_TOKEN', // Also used as PAT in GitHub Actions
   'CONTEXT7_API_KEY',
   'BRAVE_API_KEY',
-  'ANTHROPIC_API_KEY',
+  'ANTHROPIC_API_KEY', // Also used in GitHub Actions
   'OPENAI_API_KEY', // Optional
+  
+  // GitHub Actions secrets
+  'JIRA_API_TOKEN', // For Jira integration
+  'JIRA_AUTOMATION_WEBHOOK', // General Jira webhook
+  'JIRA_AUTOMATION_WEBHOOK_DEV', // Environment-specific Jira webhooks
+  'JIRA_AUTOMATION_WEBHOOK_STAGING',
+  'JIRA_AUTOMATION_WEBHOOK_PRODUCTION',
+  
+  // GitHub Actions variables
+  'JIRA_BASE_URL', // Jira instance URL
+  'JIRA_USER_EMAIL', // Jira user email
+  'JIRA_PROJECT_KEY', // Jira project key
 ];
 
 /**
@@ -71,14 +84,50 @@ class EnvSetup {
       output: process.stdout
     });
 
-    Feedback.info('Please enter your API keys (leave blank to skip):');
+    Feedback.info('Please enter your API keys and configuration values (leave blank to skip):');
     
-    for (const key of ENV_KEYS) {
-      const isOptional = key === 'OPENAI_API_KEY';
+    // Define which keys are optional
+    const optionalKeys = [
+      'OPENAI_API_KEY', 
+      'JIRA_API_TOKEN', 
+      'JIRA_AUTOMATION_WEBHOOK',
+      'JIRA_AUTOMATION_WEBHOOK_DEV',
+      'JIRA_AUTOMATION_WEBHOOK_STAGING',
+      'JIRA_AUTOMATION_WEBHOOK_PRODUCTION',
+      'JIRA_BASE_URL',
+      'JIRA_USER_EMAIL',
+      'JIRA_PROJECT_KEY'
+    ];
+    
+    // Group keys by category for better UX
+    const coreKeys = ['GITHUB_PERSONAL_ACCESS_TOKEN', 'CONTEXT7_API_KEY', 'BRAVE_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY'];
+    const githubActionKeys = ENV_KEYS.filter(key => !coreKeys.includes(key));
+    
+    // First prompt for core keys
+    Feedback.section('Core API Keys');
+    for (const key of coreKeys) {
+      const isOptional = optionalKeys.includes(key);
       const value = await this.promptForValue(rl, key, isOptional);
       
       if (value) {
         this.envValues[key] = value;
+      }
+    }
+    
+    // Ask if user wants to configure GitHub Actions
+    const configureGitHubActions = await this.promptForValue(rl, 'Configure GitHub Actions variables? (y/n)', false);
+    
+    if (configureGitHubActions.toLowerCase() === 'y') {
+      Feedback.section('GitHub Actions Configuration');
+      Feedback.info('These values are needed for GitHub Actions workflows. They will be added to your .env file and should also be added to your GitHub repository secrets/variables.');
+      
+      for (const key of githubActionKeys) {
+        const isOptional = optionalKeys.includes(key);
+        const value = await this.promptForValue(rl, key, isOptional);
+        
+        if (value) {
+          this.envValues[key] = value;
+        }
       }
     }
     

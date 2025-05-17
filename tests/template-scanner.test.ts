@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { TemplateScanner, TemplateCategory } from '../src/utils/template-scanner';
+import { TemplateCategory, TemplateScanner } from '../src/utils/template-scanner';
 
 // Mock dependencies
 jest.mock('fs-extra');
@@ -38,6 +38,7 @@ describe('TemplateScanner', () => {
     scanner = new TemplateScanner(templateDir, targetDir);
     
     // Setup mock file system
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mockFileSystem: Record<string, any> = {
       [templateDir]: {
         '.roo': {

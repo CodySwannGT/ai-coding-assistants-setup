@@ -36,7 +36,7 @@ describe('VSCodeSetup', () => {
     mockedFs.readJson.mockResolvedValue({});
     mockedFs.writeJson.mockResolvedValue(undefined);
     mockedFs.readdir.mockResolvedValue([]);
-    mockedFs.stat.mockResolvedValue({ isDirectory: () => true } as any);
+    mockedFs.stat.mockResolvedValue({ isDirectory: () => true });
   });
   
   describe('detectGitHubCopilot', () => {

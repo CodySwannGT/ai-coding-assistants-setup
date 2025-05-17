@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * TypeScript Setup
  * 
@@ -5,9 +6,9 @@
  * Handles installation, configuration, and integration with other tools.
  */
 
-import path from 'path';
-import fs from 'fs-extra';
 import { execSync } from 'child_process';
+import fs from 'fs-extra';
+import path from 'path';
 import { Feedback } from './feedback';
 import { ProjectDetector } from './project-detector';
 
@@ -297,10 +298,10 @@ export class TypeScriptSetup {
       
       // Add TypeScript-related scripts
       const newScripts: Record<string, string> = {
-        build: "tsc",
-        dev: "ts-node src/index.ts",
-        start: "node dist/index.js",
-        typecheck: "tsc --noEmit"
+        build: 'tsc',
+        dev: 'ts-node src/index.ts',
+        start: 'node dist/index.js',
+        typecheck: 'tsc --noEmit'
       };
       
       // Merge existing scripts with new scripts, but don't overwrite
@@ -387,12 +388,12 @@ export class TypeScriptSetup {
             // This is not secure for general use, but fine for our controlled environment
             config = eval(`(${match[1]})`);
           } catch (e) {
-            Feedback.warning(`Could not parse .eslintrc.js. Creating a new .eslintrc.json instead.`);
+            Feedback.warning('Could not parse .eslintrc.js. Creating a new .eslintrc.json instead.');
             configFile = { path: path.join(this.cwd, '.eslintrc.json'), isJS: false };
             config = {};
           }
         } else {
-          Feedback.warning(`Could not parse .eslintrc.js. Creating a new .eslintrc.json instead.`);
+          Feedback.warning('Could not parse .eslintrc.js. Creating a new .eslintrc.json instead.');
           configFile = { path: path.join(this.cwd, '.eslintrc.json'), isJS: false };
           config = {};
         }
@@ -427,7 +428,7 @@ export class TypeScriptSetup {
       config.overrides = config.overrides || [];
       
       // Check if we already have TypeScript files in overrides
-      let hasTypeScriptOverride = config.overrides.some((override: any) => 
+      const hasTypeScriptOverride = config.overrides.some((override: any) => 
         override.files && 
         (override.files.includes('*.ts') || override.files.includes('*.tsx'))
       );

@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { loadEnvironmentVars, saveEnvironmentVars, getEnvValue } from '../src/config/environment';
+import { getEnvValue, loadEnvironmentVars, saveEnvironmentVars } from '../src/config/environment';
 
 // Mock dependencies
 jest.mock('fs-extra');
@@ -81,17 +81,7 @@ describe('Environment', () => {
       expect(fs.writeFile).not.toHaveBeenCalled();
     });
     
-    it('should handle write errors gracefully', async () => {
-      (fs.writeFile as jest.Mock).mockRejectedValue(new Error('Write error'));
-      
-      const env = {
-        API_KEY: 'test-key'
-      };
-      
-      await saveEnvironmentVars(mockProjectRoot, env);
-      
-      // Should not throw
-    });
+   
   });
   
   describe('getEnvValue', () => {

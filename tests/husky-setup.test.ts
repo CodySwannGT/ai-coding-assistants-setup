@@ -1,11 +1,9 @@
-// @ts-nocheck - Disable TypeScript checking for this test file
 
-import { PackageManager } from '../src/utils/project-detector';
 
 // Mock the entire module and implementation
 jest.mock('../src/utils/husky-setup', () => {
   class MockHuskySetup {
-    constructor(projectRoot = process.cwd()) {}
+    constructor() {}
     isHuskyInstalled = jest.fn().mockReturnValue(true);
     installHusky = jest.fn().mockResolvedValue(true);
     createHook = jest.fn().mockReturnValue(true);
@@ -17,6 +15,7 @@ jest.mock('../src/utils/husky-setup', () => {
 });
 
 // Import the mocked class after mocking
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { HuskySetup } = require('../src/utils/husky-setup');
 
 // Mock dependencies
@@ -61,7 +60,7 @@ describe('HuskySetup', () => {
   describe('setupCodeQualityHooks', () => {
     it('should set up hooks and call setupSecurityScanHook when Claude is available', () => {
       // Set up a spy on the setupSecurityScanHook method
-      const setupSecurityScanHookSpy = jest.spyOn(huskySetup, 'setupSecurityScanHook');
+      jest.spyOn(huskySetup, 'setupSecurityScanHook');
       
       // Call the method that should trigger the setupSecurityScanHook
       huskySetup.setupCodeQualityHooks();

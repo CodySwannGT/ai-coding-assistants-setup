@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { Uninstaller } from '../src/utils/uninstaller';
 import { HuskySetup } from '../src/utils/husky-setup';
+import { Uninstaller } from '../src/utils/uninstaller';
 
 // Mock fs-extra
 jest.mock('fs-extra');
@@ -44,7 +44,7 @@ describe('Uninstaller', () => {
     mockedFs.writeFile.mockResolvedValue(undefined);
     mockedFs.readdir.mockResolvedValue([]);
     mockedFs.remove.mockResolvedValue(undefined);
-    mockedFs.stat.mockResolvedValue({ isDirectory: () => true } as any);
+    mockedFs.stat.mockResolvedValue({ isDirectory: () => true });
     
     // Mock HuskySetup
     MockedHuskySetup.mockImplementation(() => {

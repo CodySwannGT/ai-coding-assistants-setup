@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs-extra';
 import path from 'path';
 import { Feedback } from './feedback';
@@ -209,7 +210,7 @@ export class VSCodeSetup {
     prioritizeClaudeRoo?: boolean;
     forceOverwrite?: boolean;
   } = {}, dryRun: boolean = false): Promise<boolean> {
-    const { disableCopilot = false, prioritizeClaudeRoo = true, forceOverwrite = false } = options;
+    const { disableCopilot = false, prioritizeClaudeRoo = true } = options;
     
     try {
       // Create VS Code directories if they don't exist

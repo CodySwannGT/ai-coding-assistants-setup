@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * ConfigMerger - Advanced configuration file merging utility
  * 
@@ -6,11 +7,11 @@
  */
 
 import fs from 'fs-extra';
+import yaml from 'js-yaml';
 import path from 'path';
+import { createInterface } from 'readline';
 import { Feedback } from './feedback';
 import { FileMerger, MergeOption } from './file-merger';
-import yaml from 'js-yaml';
-import { createInterface } from 'readline';
 
 /**
  * Configuration file types supported for intelligent merging
@@ -76,6 +77,7 @@ export class ConfigMerger {
         return ConfigFileType.ENV;
       default:
         // Check for config files without standard extensions
+        // eslint-disable-next-line no-case-declarations
         const basename = path.basename(filePath).toLowerCase();
         if (basename.includes('json')) return ConfigFileType.JSON;
         if (basename.includes('yaml') || basename.includes('yml')) return ConfigFileType.YAML;

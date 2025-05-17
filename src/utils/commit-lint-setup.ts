@@ -5,9 +5,9 @@
  * Optionally integrates with husky for commit message validation.
  */
 
-import path from 'path';
-import fs from 'fs-extra';
 import { execSync } from 'child_process';
+import fs from 'fs-extra';
+import path from 'path';
 import { Feedback } from './feedback';
 import { HuskySetup } from './husky-setup';
 import { ProjectDetector } from './project-detector';
@@ -176,7 +176,7 @@ export class CommitLintSetup {
       await fs.writeFile(templatePath, templateContent);
       
       // Configure git to use the template
-      execSync(`git config commit.template .gitmessage`, { cwd: this.cwd });
+      execSync('git config commit.template .gitmessage', { cwd: this.cwd });
       
       Feedback.success('Created commit message template (.gitmessage)');
       return true;

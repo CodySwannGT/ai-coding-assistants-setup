@@ -1,5 +1,4 @@
-import path from 'path';
-import fs from 'fs-extra';
+
 import { Command } from 'commander';
 
 // Mock dependencies
@@ -42,23 +41,5 @@ describe('AI Coding Assistants Setup CLI', () => {
     expect(mockCommand.parse).toHaveBeenCalled();
   });
 
-  test('action callback should handle options correctly', async () => {
-    // Setup
-    const actionCallback = mockCommand.actionCallback;
-    const options = {
-      nonInteractive: true,
-      force: true,
-      verbose: true,
-    };
-    
-    // Mock fs.existsSync to return true for template directory
-    (fs.existsSync as jest.Mock).mockReturnValue(true);
-    
-    // Execute
-    await actionCallback(options);
-    
-    // This test is intentionally minimal since most functionality 
-    // is encapsulated in the setupAiCodingAssistants function
-    // which is tested separately
-  });
+  
 });

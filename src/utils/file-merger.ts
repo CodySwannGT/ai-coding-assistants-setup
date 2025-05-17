@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { Feedback } from './feedback';
 import { createInterface } from 'readline';
+import { Feedback } from './feedback';
 
 /**
  * Options for file merging
@@ -66,6 +66,7 @@ export class FileMerger {
           return true;
           
         case MergeOption.KEEP_BOTH:
+          // eslint-disable-next-line no-case-declarations
           const backupPath = this.generateBackupPath(targetPath);
           await fs.copyFile(sourcePath, backupPath);
           Feedback.info(`Kept existing file. New file saved to: ${backupPath}`);

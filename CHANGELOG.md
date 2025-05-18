@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.4](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v2.0.3...v2.0.4) (2025-05-18)
+
+
+### Bug Fixes
+
+* fixes security ([d4c00c1](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/d4c00c1b274324b73512614fae327df4cb5564a1))
+* fixes security ([7d72ef1](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/7d72ef1b114aee52e46ea224e0996d3836afda2b))
+* **git-hooks:** prevent infinite commit loop in post-commit hook ([139e178](https://github.com/CodySwannGT/ai-coding-assistants-setup/commit/139e178de29002af8d52b967e963ad20b00d724e))
+
 ### [2.0.3](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v2.0.2...v2.0.3) (2025-05-17)
 
 ### [2.0.2](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v2.0.1...v2.0.2) (2025-05-17)

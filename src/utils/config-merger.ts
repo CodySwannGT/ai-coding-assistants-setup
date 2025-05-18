@@ -6,6 +6,7 @@
  * for configuration files (JSON, YAML, etc.) with intelligent conflict resolution.
  */
 
+import Ajv from 'ajv';
 import fs from 'fs-extra';
 import yaml from 'js-yaml';
 import path from 'path';
@@ -29,9 +30,7 @@ export enum ConfigFileType {
  */
 export enum ConflictStrategy {
   USE_SOURCE = 'use-source',
-  USE_TARGET = 'use-target',
-  MERGE = 'merge',
-  MANUAL = 'manual',
+  USE_TARGET = 'use-target'
 }
 
 /**
@@ -49,6 +48,117 @@ export interface ConfigMergeOptions {
 
   // Whether to enable verbose logging
   verbose?: boolean;
+}
+
+// Schema definitions for different config file types
+const configSchemas = {
+  [ConfigFileType.JSON]: {
+    type: 'object',
+    additionalProperties: true
+  },
+  [ConfigFileType.YAML]: {
+    type: 'object',
+    additionalProperties: true
+  },
+  [ConfigFileType.INI]: {
+    type: 'object',
+    additionalProperties: true
+  },
+  [ConfigFileType.ENV]: {
+    type: 'object',
+    additionalProperties: {
+      type: 'string'
+    }
+  }
+};
+
+// Initialize Ajv instance with security-focused options
+const ajv = new Ajv({
+  allErrors: true,
+  strict: true,
+  strictSchema: true,
+  strictNumbers: true,
+  strictRequired: true
+});
+
+// Compile schemas for each config type
+const validators = {
+  [ConfigFileType.JSON]: ajv.compile(configSchemas[ConfigFileType.JSON]),
+  [ConfigFileType.YAML]: ajv.compile(configSchemas[ConfigFileType.YAML]),
+  [ConfigFileType.INI]: ajv.compile(configSchemas[ConfigFileType.INI]),
+  [ConfigFileType.ENV]: ajv.compile(configSchemas[ConfigFileType.ENV])
+};
+
+/**
+ * Validate and sanitize configuration data
+ *
+ * @param data Configuration data to validate
+ * @param fileType Type of configuration file
+ * @returns Sanitized data or null if validation fails
+ */
+function validateAndSanitizeConfig(data: any, fileType: ConfigFileType): any {
+  // Skip validation for unknown file types
+  if (fileType === ConfigFileType.UNKNOWN || !validators[fileType]) {
+    return data;
+  }
+
+  // Validate against schema
+  const validate = validators[fileType];
+  const valid = validate(data);
+
+  if (!valid) {
+    Feedback.warning(`Config validation failed: ${JSON.stringify(validate.errors)}`);
+    // Continue with sanitization despite validation errors
+  }
+
+  // Sanitize based on file type
+  switch (fileType) {
+    case ConfigFileType.JSON:
+    case ConfigFileType.YAML:
+      // For object-based configs, ensure we have a valid object
+      return typeof data === 'object' && data !== null ? data : {};
+
+    case ConfigFileType.ENV: {
+      // For ENV files, ensure all values are strings
+      if (typeof data !== 'object' || data === null) return {};
+      
+      const sanitized: Record<string, string> = {};
+      for (const [key, value] of Object.entries(data)) {
+        // Convert all values to strings and sanitize
+        sanitized[key] = String(value)
+          .replace(/[^\w\s.,\-:;@#$%^&*()[\]{}+=|\\/<>?!]/g, '') // Remove potentially dangerous characters
+          .trim();
+      }
+      return sanitized;
+    }
+
+    case ConfigFileType.INI: {
+      // For INI files, ensure sections are objects and values are sanitized
+      if (typeof data !== 'object' || data === null) return {};
+      
+      const sanitizedIni: Record<string, any> = {};
+      for (const [section, sectionData] of Object.entries(data)) {
+        if (typeof sectionData === 'object' && sectionData !== null) {
+          sanitizedIni[section] = {};
+          for (const [key, value] of Object.entries(sectionData)) {
+            // Sanitize section values
+            sanitizedIni[section][key] = String(value)
+              .replace(/[^\w\s.,\-:;@#$%^&*()[\]{}+=|\\/<>?!]/g, '')
+              .trim();
+          }
+        } else if (typeof sectionData !== 'object') {
+          // Handle top-level key-value pairs
+          sanitizedIni[section] = String(sectionData)
+            .replace(/[^\w\s.,\-:;@#$%^&*()[\]{}+=|\\/<>?!]/g, '')
+            .trim();
+        }
+      }
+      return sanitizedIni;
+    }
+
+    default:
+      return data;
+  }
 }
 
 /**
@@ -107,19 +217,31 @@ export class ConfigMerger {
   static parseConfigFile(filePath: string, fileType: ConfigFileType): any {
     try {
       const content = fs.readFileSync(filePath, 'utf8');
+      let parsedConfig: any;
 
       switch (fileType) {
         case ConfigFileType.JSON:
-          return JSON.parse(content);
+          // Parse JSON with try-catch for better error handling
+          try {
+            parsedConfig = JSON.parse(content);
+            // Validate and sanitize the parsed JSON
+            return validateAndSanitizeConfig(parsedConfig, fileType);
+          } catch (jsonError) {
+            Feedback.error(`Invalid JSON in ${filePath}: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
+            return null;
+          }
 
         case ConfigFileType.YAML:
-          return yaml.load(content);
+          parsedConfig = yaml.load(content);
+          return validateAndSanitizeConfig(parsedConfig, fileType);
 
         case ConfigFileType.INI:
-          return this.parseIniFile(content);
+          parsedConfig = this.parseIniFile(content);
+          return validateAndSanitizeConfig(parsedConfig, fileType);
 
         case ConfigFileType.ENV:
-          return this.parseEnvFile(content);
+          parsedConfig = this.parseEnvFile(content);
+          return validateAndSanitizeConfig(parsedConfig, fileType);
 
         default:
           return null;
@@ -366,9 +488,7 @@ export class ConfigMerger {
         '❓ How would you like to resolve this conflict?\n' +
           '  [s] Use source file values (overwrite target)\n' +
           '  [t] Keep target file values (skip source)\n' +
-          '  [m] Merge both files (deep merge)\n' +
-          '  [e] Open in editor for manual resolution\n' +
-          'Choose an option [s/t/m/e]: ',
+          'Choose an option [s/t]: ',
         answer => {
           rl.close();
 
@@ -379,12 +499,9 @@ export class ConfigMerger {
             case 't':
               resolve(ConflictStrategy.USE_TARGET);
               break;
-            case 'e':
-              resolve(ConflictStrategy.MANUAL);
-              break;
             case 'm':
             default:
-              resolve(ConflictStrategy.MERGE);
+              resolve(ConflictStrategy.USE_TARGET);
               break;
           }
         }
@@ -407,7 +524,7 @@ export class ConfigMerger {
   ): Promise<boolean> {
     const {
       interactive = true,
-      defaultStrategy = ConflictStrategy.MERGE,
+      defaultStrategy = ConflictStrategy.USE_TARGET,
       defaultMergeOption = MergeOption.SKIP,
       verbose = false,
     } = options;
@@ -498,20 +615,6 @@ export class ConfigMerger {
           );
           break;
 
-        case ConflictStrategy.MERGE:
-          resultConfig = this.deepMerge(targetConfig, sourceConfig);
-          Feedback.info(
-            `Merged configurations for: ${path.basename(targetPath)}`
-          );
-          break;
-
-        case ConflictStrategy.MANUAL:
-          // TODO: Implement editor opening for manual resolution
-          Feedback.warning(
-            `Manual resolution not yet implemented. Using merge strategy for: ${path.basename(targetPath)}`
-          );
-          resultConfig = this.deepMerge(targetConfig, sourceConfig);
-          break;
       }
 
       // Write the result
@@ -543,7 +646,7 @@ export class ConfigMerger {
   ): Promise<number> {
     const {
       interactive = true,
-      defaultStrategy = ConflictStrategy.MERGE,
+      defaultStrategy = ConflictStrategy.USE_TARGET,
       defaultMergeOption = MergeOption.SKIP,
       verbose = false,
     } = options;

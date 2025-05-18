@@ -7,7 +7,6 @@ import CommitLintSetup from './utils/commit-lint-setup';
 import { ConfigMerger, ConflictStrategy } from './utils/config-merger';
 import DocsSetup from './utils/docs-setup';
 import { Feedback } from './utils/feedback';
-import { MergeOption } from './utils/file-merger';
 import PrettierSetup from './utils/formatting-setup';
 import { HuskySetup } from './utils/husky-setup';
 import ESLintSetup from './utils/linting-setup';
@@ -259,87 +258,6 @@ program
     }
   });
 
-// Add merge-configs command
-program
-  .command('merge-configs')
-  .description('Merge configuration files from templates to target project')
-  .option(
-    '-s, --source-dir <path>',
-    'Source directory for template files',
-    './src/templates'
-  )
-  .option(
-    '-t, --target-dir <path>',
-    'Target directory for merging files',
-    process.cwd()
-  )
-  .option('-n, --non-interactive', 'Run in non-interactive mode', false)
-  .option('-f, --force', 'Force overwrite of existing files', false)
-  .option('-v, --verbose', 'Enable verbose output', false)
-  .action(async options => {
-    try {
-      Feedback.section('Configuration Merging');
-
-      // Set up options
-      const sourceDir = path.resolve(options.sourceDir);
-      const targetDir = path.resolve(options.targetDir);
-      const interactive = !options.nonInteractive;
-      const defaultMergeOption = options.force
-        ? MergeOption.OVERWRITE
-        : MergeOption.SKIP;
-      const verbose = options.verbose;
-
-      // Verify directories
-      if (!fs.existsSync(sourceDir)) {
-        Feedback.error(`Source directory does not exist: ${sourceDir}`);
-        process.exit(1);
-      }
-
-      if (!fs.existsSync(targetDir)) {
-        Feedback.error(`Target directory does not exist: ${targetDir}`);
-        process.exit(1);
-      }
-
-      // Get files to merge
-      Feedback.info(`Scanning templates from ${sourceDir} to ${targetDir}...`);
-      const filesToMerge = await getFilesToMerge(sourceDir, targetDir, verbose);
-
-      if (filesToMerge.size === 0) {
-        Feedback.warning('No files to merge.');
-        return;
-      }
-
-      // Merge files
-      const configOptions = {
-        interactive,
-        defaultStrategy: interactive
-          ? ConflictStrategy.MERGE
-          : ConflictStrategy.MERGE,
-        defaultMergeOption,
-        verbose,
-      };
-
-      Feedback.info(`Merging ${filesToMerge.size} files...`);
-      const mergedCount = await ConfigMerger.mergeConfigFiles(
-        filesToMerge,
-        configOptions
-      );
-
-      // Show summary
-      if (mergedCount === filesToMerge.size) {
-        Feedback.success(`Merged all ${mergedCount} files successfully!`);
-      } else {
-        Feedback.warning(
-          `Merged ${mergedCount} of ${filesToMerge.size} files. Some files were skipped.`
-        );
-      }
-    } catch (error) {
-      Feedback.error(
-        `Error merging configurations: ${error instanceof Error ? error.message : String(error)}`
-      );
-      process.exit(1);
-    }
-  });
 
 // Default command handler
 program
@@ -348,13 +266,10 @@ program
   .option('-v, --verbose', 'Enable verbose output')
   .action(async options => {
     const interactive = !options.nonInteractive;
-    const defaultOption = options.force
-      ? MergeOption.OVERWRITE
-      : MergeOption.SKIP;
     const verbose = options.verbose;
 
     try {
-      await setupAiCodingAssistants(interactive, defaultOption, verbose);
+      await setupAiCodingAssistants(interactive, verbose);
     } catch (error) {
       Feedback.error(
         `Setup failed: ${error instanceof Error ? error.message : String(error)}`
@@ -372,7 +287,6 @@ program
  */
 async function setupAiCodingAssistants(
   interactive: boolean = true,
-  defaultOption: MergeOption = MergeOption.SKIP,
   verbose: boolean = false
 ): Promise<void> {
   // Welcome message
@@ -490,9 +404,8 @@ async function setupAiCodingAssistants(
   const configOptions = {
     interactive,
     defaultStrategy: interactive
-      ? ConflictStrategy.MERGE
-      : ConflictStrategy.MERGE,
-    defaultMergeOption: defaultOption,
+      ? ConflictStrategy.USE_TARGET
+      : ConflictStrategy.USE_TARGET,
     verbose,
   };
 

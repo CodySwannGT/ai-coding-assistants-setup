@@ -7,9 +7,9 @@
  */
 
 import { execSync } from 'child_process';
-import path from 'path';
-import fs from 'fs-extra';
 import { program } from 'commander';
+import fs from 'fs-extra';
+import path from 'path';
 import { Feedback } from '../utils/feedback';
 
 /**
@@ -24,6 +24,40 @@ function getTempFile(name: string): string {
 /**
  * Run code review command
  */
+/**
+ * List of allowed Claude model names to prevent command injection
+ */
+const ALLOWED_CLAUDE_MODELS = [
+  'claude-3-opus-20240229',
+  'claude-3-sonnet-20240229',
+  'claude-3-haiku-20240307',
+  'claude-2.1',
+  'claude-2.0',
+  'claude-instant-1.2',
+];
+
+/**
+ * Validates a model name against the allowed list to prevent command injection
+ * @param modelName The model name to validate
+ * @returns The validated model name or the default model if invalid
+ */
+function validateModelName(modelName: string): string {
+  const defaultModel = 'claude-3-opus-20240229';
+  
+  if (!modelName || typeof modelName !== 'string') {
+    Feedback.warning(`Invalid model name provided. Using default model: ${defaultModel}`);
+    return defaultModel;
+  }
+  
+  // Check if the model name is in the allowed list
+  if (!ALLOWED_CLAUDE_MODELS.includes(modelName)) {
+    Feedback.warning(`Model "${modelName}" not in allowed list. Using default model: ${defaultModel}`);
+    return defaultModel;
+  }
+  
+  return modelName;
+}
+
 export async function runCodeReview(
   options: {
     files?: string[];
@@ -38,10 +72,13 @@ export async function runCodeReview(
     files = [],
     staged = false,
     pattern,
-    model = 'claude-3-opus-20240229',
+    model: requestedModel = 'claude-3-opus-20240229',
     output,
     focusAreas = ['security', 'functionality', 'performance', 'style'],
   } = options;
+  
+  // Validate the model name to prevent command injection
+  const model = validateModelName(requestedModel);
 
   try {
     // Create temp directory if it doesn't exist
@@ -123,14 +160,49 @@ Please organize your response with:
 
 You're helping a developer who wants clear, actionable feedback to improve this code.`;
 
+    // Validate and normalize file paths to prevent path traversal attacks
+    const validateAndNormalizePath = (filePath: string, expectedDir: string): string => {
+      // Normalize the path to resolve '..' and '.' segments
+      const normalizedPath = path.normalize(filePath);
+      
+      // Convert to absolute path if not already
+      const absolutePath = path.isAbsolute(normalizedPath)
+        ? normalizedPath
+        : path.resolve(process.cwd(), normalizedPath);
+      
+      // Ensure the path is within the expected directory
+      if (!absolutePath.startsWith(expectedDir)) {
+        throw new Error(`Security error: Path "${filePath}" resolves outside of the expected directory`);
+      }
+      
+      // Check for suspicious path components that might indicate an attack attempt
+      const pathParts = absolutePath.split(path.sep);
+      const suspiciousPatterns = ['..', '.', '~', '%', '$'];
+      
+      for (const part of pathParts) {
+        // Check for suspicious patterns in path components
+        if (suspiciousPatterns.some(pattern => part.includes(pattern))) {
+          throw new Error(`Security error: Path "${filePath}" contains suspicious components`);
+        }
+      }
+      
+      return absolutePath;
+    };
+    
+    // Apply validation to both files
+    const expectedTempDir = path.join(process.cwd(), '.claude', 'temp');
+    const normalizedPromptFile = validateAndNormalizePath(promptFile, expectedTempDir);
+    const normalizedContentFile = validateAndNormalizePath(contentFile, expectedTempDir);
+
     // Write prompt and content to temp files
-    await fs.writeFile(promptFile, prompt);
-    await fs.writeFile(contentFile, content);
+    await fs.writeFile(normalizedPromptFile, prompt);
+    await fs.writeFile(normalizedContentFile, content);
 
     // Step 3: Call Claude CLI
     Feedback.info('Calling Claude CLI for code review...');
 
-    const claudeCommand = `cat "${contentFile}" | claude -p "$(cat ${promptFile})" --model ${model}`;
+    // Use normalized paths in the command to prevent command injection
+    const claudeCommand = `cat "${normalizedContentFile}" | claude -p "$(cat ${normalizedPromptFile})" --model ${model}`;
 
     const startTime = Date.now();
     const response = execSync(claudeCommand, { encoding: 'utf8' });

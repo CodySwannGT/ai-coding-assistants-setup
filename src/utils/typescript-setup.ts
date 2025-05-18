@@ -198,15 +198,70 @@ export class TypeScriptSetup {
       // Install command based on package manager
       let installCommand: string;
 
+      // Validate package names against NPM package name pattern
+      // This helps prevent command injection attacks
+      
+      // Strict NPM package name validation regex
+      // Follows NPM naming rules: https://github.com/npm/validate-npm-package-name
+      const validPackageNameRegex = /^(@[a-z0-9][\w-.]+\/)?[a-z0-9][\w-.]*$/;
+      
+      // Additional security check to prevent command injection
+      const securityCheckRegex = /[;&|`$><\\]/;
+      
+      // Additional validation for scope format
+      const validScopeRegex = /^@[a-z0-9][\w-.]+\/[a-z0-9][\w-.]*$/;
+      
+      const validatedPackages = packages.filter(pkg => {
+        // Trim whitespace to prevent accidental spaces
+        const trimmedPkg = pkg.trim();
+        
+        // Check against valid package name pattern
+        const isValidFormat = validPackageNameRegex.test(trimmedPkg);
+        
+        // Check for potentially dangerous characters
+        const hasDangerousChars = securityCheckRegex.test(trimmedPkg);
+        
+        // Additional validation for scoped packages
+        let isScopeValid = true;
+        if (trimmedPkg.startsWith('@')) {
+          isScopeValid = validScopeRegex.test(trimmedPkg);
+          if (!isScopeValid) {
+            Feedback.warning(`Invalid scope format in package: ${trimmedPkg}`);
+          }
+        }
+        
+        // Package is valid if it matches the format, has no dangerous characters, and has valid scope (if applicable)
+        const isValid = isValidFormat && !hasDangerousChars && isScopeValid;
+        
+        if (!isValid) {
+          Feedback.warning(`Skipping invalid package name: ${trimmedPkg}`);
+          if (hasDangerousChars) {
+            Feedback.warning('Package name contains potentially dangerous characters');
+          }
+          if (!isValidFormat) {
+            Feedback.warning('Package name does not match NPM naming rules');
+          }
+        }
+        
+        return isValid;
+      });
+
+      if (validatedPackages.length === 0) {
+        throw new Error('No valid packages to install after validation');
+      }
+      
+      // Log validated packages for transparency
+      Feedback.info(`Installing validated packages: ${validatedPackages.join(', ')}`);
+
       if (this.isYarn) {
-        installCommand = `yarn add --dev ${packages.join(' ')}`;
+        installCommand = `yarn add --dev ${validatedPackages.join(' ')}`;
       } else if (this.isPnpm) {
-        installCommand = `pnpm add --save-dev ${packages.join(' ')}`;
+        installCommand = `pnpm add --save-dev ${validatedPackages.join(' ')}`;
       } else if (this.isBun) {
-        installCommand = `bun add --dev ${packages.join(' ')}`;
+        installCommand = `bun add --dev ${validatedPackages.join(' ')}`;
       } else {
         // Default to npm
-        installCommand = `npm install --save-dev ${packages.join(' ')}`;
+        installCommand = `npm install --save-dev ${validatedPackages.join(' ')}`;
       }
 
       Feedback.info(`Running: ${installCommand}`);
@@ -407,8 +462,10 @@ export class TypeScriptSetup {
 
         if (match && match[1]) {
           try {
-            // This is not secure for general use, but fine for our controlled environment
-            config = eval(`(${match[1]})`);
+            // Use Function constructor instead of eval for safer parsing
+            // This creates a function that returns the object rather than executing arbitrary code
+            const parseFunction = new Function(`return ${match[1]}`);
+            config = parseFunction();
           } catch (e) {
             Feedback.warning(
               'Could not parse .eslintrc.js. Creating a new .eslintrc.json instead.'

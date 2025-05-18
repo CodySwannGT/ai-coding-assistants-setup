@@ -11,9 +11,44 @@ export class HuskySetup {
   // Feedback is used statically
 
   constructor(projectRoot: string = process.cwd()) {
-    this.projectRoot = projectRoot;
+    // Validate and sanitize the project root path to prevent command injection
+    this.projectRoot = this.validatePath(projectRoot);
     this.projectDetector = new ProjectDetector(this.projectRoot);
     // Note: Feedback is not needed as an instance since all methods are static
+  }
+
+  /**
+   * Validates and sanitizes a path to prevent command injection
+   * @param inputPath The path to validate
+   * @returns A normalized, safe path
+   * @throws Error if the path is invalid or potentially malicious
+   */
+  private validatePath(inputPath: string): string {
+    try {
+      // Normalize the path to resolve any '..' or '.' segments
+      const normalizedPath = path.normalize(inputPath);
+      
+      // Convert to absolute path if it's not already
+      const absolutePath = path.isAbsolute(normalizedPath)
+        ? normalizedPath
+        : path.resolve(process.cwd(), normalizedPath);
+      
+      // Verify the path exists
+      if (!fs.existsSync(absolutePath)) {
+        throw new Error(`Path does not exist: ${absolutePath}`);
+      }
+      
+      // Verify it's a directory
+      if (!fs.statSync(absolutePath).isDirectory()) {
+        throw new Error(`Path is not a directory: ${absolutePath}`);
+      }
+      
+      return absolutePath;
+    } catch (error) {
+      Feedback.error(`Invalid project path: ${error instanceof Error ? error.message : String(error)}`);
+      // Fall back to current working directory as a safe default
+      return process.cwd();
+    }
   }
 
   /**

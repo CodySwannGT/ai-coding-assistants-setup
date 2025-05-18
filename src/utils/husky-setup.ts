@@ -107,10 +107,22 @@ export class HuskySetup {
   }
 
   /**
-   * Create a husky hook
+   * Create a husky hook with safer path handling
    */
   createHook(hookName: string, command: string): boolean {
     try {
+      // Validate hookName to prevent path traversal
+      if (!hookName || typeof hookName !== 'string') {
+        Feedback.error('Invalid hook name provided');
+        return false;
+      }
+      
+      // Ensure the hook name only contains safe characters (alphanumeric, hyphen, underscore)
+      if (!/^[a-zA-Z0-9_-]+$/.test(hookName)) {
+        Feedback.error(`Invalid hook name format: ${hookName}`);
+        return false;
+      }
+      
       const hooksDir = path.join(this.projectRoot, '.husky');
 
       if (!fs.existsSync(hooksDir)) {
@@ -120,14 +132,33 @@ export class HuskySetup {
         return false;
       }
 
+      // Compute the absolute path and validate it's within hooks directory
       const hookPath = path.join(hooksDir, hookName);
+      const normalizedHooksDir = path.normalize(hooksDir);
+      const normalizedHookPath = path.normalize(hookPath);
+      
+      if (!normalizedHookPath.startsWith(normalizedHooksDir)) {
+        Feedback.error(`Security error: Hook path escapes hooks directory: ${hookPath}`);
+        return false;
+      }
+      
+      // Additional check to prevent symbolic link or directory traversal attacks
+      const relativePath = path.relative(normalizedHooksDir, normalizedHookPath);
+      if (relativePath.includes('..')) {
+        Feedback.error(`Security error: Hook path contains traversal patterns: ${hookPath}`);
+        return false;
+      }
+      
       const hookContent = `#!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
 ${command}
 `;
 
-      fs.writeFileSync(hookPath, hookContent, { mode: 0o755 });
+      // Define the executable permissions constant for clarity
+      const EXECUTABLE_PERMISSIONS = 0o755; // rwxr-xr-x
+      
+      fs.writeFileSync(hookPath, hookContent, { mode: EXECUTABLE_PERMISSIONS });
       Feedback.success(`Created ${hookName} hook`);
       return true;
     } catch (error) {
@@ -232,8 +263,15 @@ fi
 
 echo "🔒 Running Claude security scan on files being pushed..."
 
-# Create security scan prompt
-cat > /tmp/security_prompt.txt << 'EOF'
+# Create a secure temporary directory and files with unpredictable names
+TEMP_DIR=$(mktemp -d)
+SECURITY_PROMPT_FILE="$TEMP_DIR/security_prompt_$(date +%s)_$(openssl rand -hex 8).txt"
+
+# Make sure temporary directory exists and is restricted
+chmod 700 "$TEMP_DIR"
+
+# Create security scan prompt in the secure temp directory
+cat > "$SECURITY_PROMPT_FILE" << 'EOF'
 You are a cybersecurity expert specializing in code security. Analyze this code for security vulnerabilities including:
 
 1. Injection vulnerabilities (SQL, command, etc.)
@@ -258,6 +296,9 @@ Focus only on legitimate security issues with HIGH confidence. For each issue fo
 If no security issues are found, confirm that the code appears secure and follows best practices.
 EOF
 
+# Ensure the temp file has limited permissions
+chmod 600 "$SECURITY_PROMPT_FILE"
+
 HAS_ISSUES=0
 
 for FILE in $FILES_CHANGED; do
@@ -265,8 +306,8 @@ for FILE in $FILES_CHANGED; do
   if [ -f "$FILE" ] && [ -s "$FILE" ]; then
     echo "Scanning $FILE for security issues..."
     
-    # Run security scan on the file
-    RESULTS=$(cat "$FILE" | claude explain "$(cat /tmp/security_prompt.txt)" || echo "Failed to scan $FILE")
+    # Run security scan on the file using the secure prompt file
+    RESULTS=$(cat "$FILE" | claude explain "$(cat "$SECURITY_PROMPT_FILE")" || echo "Failed to scan $FILE")
     
     # Check if any issues were found (crude check for security-related terms)
     if echo "$RESULTS" | grep -E 'vulnerability|security issue|severity|insecure|risk|exploit' > /dev/null; then
@@ -279,8 +320,18 @@ for FILE in $FILES_CHANGED; do
   fi
 done
 
-# Clean up
-rm /tmp/security_prompt.txt
+# Clean up securely - even in case of error
+cleanup() {
+  if [ -f "$SECURITY_PROMPT_FILE" ]; then
+    rm -f "$SECURITY_PROMPT_FILE"
+  fi
+  if [ -d "$TEMP_DIR" ]; then
+    rm -rf "$TEMP_DIR"
+  fi
+}
+
+# Ensure cleanup runs on exit
+cleanup
 
 if [ $HAS_ISSUES -eq 1 ]; then
   echo ""

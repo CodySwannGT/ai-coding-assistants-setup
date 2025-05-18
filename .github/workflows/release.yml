@@ -106,7 +106,6 @@ jobs:
   # In actual usage, you would need to ensure all referenced workflow files exist in your repository.
   quality:
     name: 🔍 Quality Checks
-    if: ${{ !contains(inputs.skip_jobs, 'quality') }}
     # Reference to the quality checks workflow
     uses: ./.github/workflows/quality.yml
     with:

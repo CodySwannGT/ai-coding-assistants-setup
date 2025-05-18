@@ -30,7 +30,7 @@ export enum ConfigFileType {
  */
 export enum ConflictStrategy {
   USE_SOURCE = 'use-source',
-  USE_TARGET = 'use-target'
+  USE_TARGET = 'use-target',
 }
 
 /**
@@ -54,22 +54,22 @@ export interface ConfigMergeOptions {
 const configSchemas = {
   [ConfigFileType.JSON]: {
     type: 'object',
-    additionalProperties: true
+    additionalProperties: true,
   },
   [ConfigFileType.YAML]: {
     type: 'object',
-    additionalProperties: true
+    additionalProperties: true,
   },
   [ConfigFileType.INI]: {
     type: 'object',
-    additionalProperties: true
+    additionalProperties: true,
   },
   [ConfigFileType.ENV]: {
     type: 'object',
     additionalProperties: {
-      type: 'string'
-    }
-  }
+      type: 'string',
+    },
+  },
 };
 
 // Initialize Ajv instance with security-focused options
@@ -78,7 +78,7 @@ const ajv = new Ajv({
   strict: true,
   strictSchema: true,
   strictNumbers: true,
-  strictRequired: true
+  strictRequired: true,
 });
 
 // Compile schemas for each config type
@@ -86,7 +86,7 @@ const validators = {
   [ConfigFileType.JSON]: ajv.compile(configSchemas[ConfigFileType.JSON]),
   [ConfigFileType.YAML]: ajv.compile(configSchemas[ConfigFileType.YAML]),
   [ConfigFileType.INI]: ajv.compile(configSchemas[ConfigFileType.INI]),
-  [ConfigFileType.ENV]: ajv.compile(configSchemas[ConfigFileType.ENV])
+  [ConfigFileType.ENV]: ajv.compile(configSchemas[ConfigFileType.ENV]),
 };
 
 /**
@@ -107,7 +107,9 @@ function validateAndSanitizeConfig(data: any, fileType: ConfigFileType): any {
   const valid = validate(data);
 
   if (!valid) {
-    Feedback.warning(`Config validation failed: ${JSON.stringify(validate.errors)}`);
+    Feedback.warning(
+      `Config validation failed: ${JSON.stringify(validate.errors)}`
+    );
     // Continue with sanitization despite validation errors
   }
 
@@ -121,7 +123,7 @@ function validateAndSanitizeConfig(data: any, fileType: ConfigFileType): any {
     case ConfigFileType.ENV: {
       // For ENV files, ensure all values are strings
       if (typeof data !== 'object' || data === null) return {};
-      
+
       const sanitized: Record<string, string> = {};
       for (const [key, value] of Object.entries(data)) {
         // Convert all values to strings and sanitize
@@ -135,7 +137,7 @@ function validateAndSanitizeConfig(data: any, fileType: ConfigFileType): any {
     case ConfigFileType.INI: {
       // For INI files, ensure sections are objects and values are sanitized
       if (typeof data !== 'object' || data === null) return {};
-      
+
       const sanitizedIni: Record<string, any> = {};
       for (const [section, sectionData] of Object.entries(data)) {
         if (typeof sectionData === 'object' && sectionData !== null) {
@@ -227,7 +229,9 @@ export class ConfigMerger {
             // Validate and sanitize the parsed JSON
             return validateAndSanitizeConfig(parsedConfig, fileType);
           } catch (jsonError) {
-            Feedback.error(`Invalid JSON in ${filePath}: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
+            Feedback.error(
+              `Invalid JSON in ${filePath}: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`
+            );
             return null;
           }
 
@@ -614,7 +618,6 @@ export class ConfigMerger {
             `Keeping target config for: ${path.basename(targetPath)}`
           );
           break;
-
       }
 
       // Write the result

@@ -258,7 +258,6 @@ program
     }
   });
 
-
 // Default command handler
 program
   .option('-n, --non-interactive', 'Run in non-interactive mode')

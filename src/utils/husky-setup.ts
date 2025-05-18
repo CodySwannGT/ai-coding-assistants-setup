@@ -27,25 +27,27 @@ export class HuskySetup {
     try {
       // Normalize the path to resolve any '..' or '.' segments
       const normalizedPath = path.normalize(inputPath);
-      
+
       // Convert to absolute path if it's not already
       const absolutePath = path.isAbsolute(normalizedPath)
         ? normalizedPath
         : path.resolve(process.cwd(), normalizedPath);
-      
+
       // Verify the path exists
       if (!fs.existsSync(absolutePath)) {
         throw new Error(`Path does not exist: ${absolutePath}`);
       }
-      
+
       // Verify it's a directory
       if (!fs.statSync(absolutePath).isDirectory()) {
         throw new Error(`Path is not a directory: ${absolutePath}`);
       }
-      
+
       return absolutePath;
     } catch (error) {
-      Feedback.error(`Invalid project path: ${error instanceof Error ? error.message : String(error)}`);
+      Feedback.error(
+        `Invalid project path: ${error instanceof Error ? error.message : String(error)}`
+      );
       // Fall back to current working directory as a safe default
       return process.cwd();
     }

@@ -43,18 +43,22 @@ const ALLOWED_CLAUDE_MODELS = [
  */
 function validateModelName(modelName: string): string {
   const defaultModel = 'claude-3-opus-20240229';
-  
+
   if (!modelName || typeof modelName !== 'string') {
-    Feedback.warning(`Invalid model name provided. Using default model: ${defaultModel}`);
+    Feedback.warning(
+      `Invalid model name provided. Using default model: ${defaultModel}`
+    );
     return defaultModel;
   }
-  
+
   // Check if the model name is in the allowed list
   if (!ALLOWED_CLAUDE_MODELS.includes(modelName)) {
-    Feedback.warning(`Model "${modelName}" not in allowed list. Using default model: ${defaultModel}`);
+    Feedback.warning(
+      `Model "${modelName}" not in allowed list. Using default model: ${defaultModel}`
+    );
     return defaultModel;
   }
-  
+
   return modelName;
 }
 
@@ -76,7 +80,7 @@ export async function runCodeReview(
     output,
     focusAreas = ['security', 'functionality', 'performance', 'style'],
   } = options;
-  
+
   // Validate the model name to prevent command injection
   const model = validateModelName(requestedModel);
 
@@ -161,38 +165,51 @@ Please organize your response with:
 You're helping a developer who wants clear, actionable feedback to improve this code.`;
 
     // Validate and normalize file paths to prevent path traversal attacks
-    const validateAndNormalizePath = (filePath: string, expectedDir: string): string => {
+    const validateAndNormalizePath = (
+      filePath: string,
+      expectedDir: string
+    ): string => {
       // Normalize the path to resolve '..' and '.' segments
       const normalizedPath = path.normalize(filePath);
-      
+
       // Convert to absolute path if not already
       const absolutePath = path.isAbsolute(normalizedPath)
         ? normalizedPath
         : path.resolve(process.cwd(), normalizedPath);
-      
+
       // Ensure the path is within the expected directory
       if (!absolutePath.startsWith(expectedDir)) {
-        throw new Error(`Security error: Path "${filePath}" resolves outside of the expected directory`);
+        throw new Error(
+          `Security error: Path "${filePath}" resolves outside of the expected directory`
+        );
       }
-      
+
       // Check for suspicious path components that might indicate an attack attempt
       const pathParts = absolutePath.split(path.sep);
       const suspiciousPatterns = ['..', '.', '~', '%', '$'];
-      
+
       for (const part of pathParts) {
         // Check for suspicious patterns in path components
         if (suspiciousPatterns.some(pattern => part.includes(pattern))) {
-          throw new Error(`Security error: Path "${filePath}" contains suspicious components`);
+          throw new Error(
+            `Security error: Path "${filePath}" contains suspicious components`
+          );
         }
       }
-      
+
       return absolutePath;
     };
-    
+
     // Apply validation to both files
     const expectedTempDir = path.join(process.cwd(), '.claude', 'temp');
-    const normalizedPromptFile = validateAndNormalizePath(promptFile, expectedTempDir);
-    const normalizedContentFile = validateAndNormalizePath(contentFile, expectedTempDir);
+    const normalizedPromptFile = validateAndNormalizePath(
+      promptFile,
+      expectedTempDir
+    );
+    const normalizedContentFile = validateAndNormalizePath(
+      contentFile,
+      expectedTempDir
+    );
 
     // Write prompt and content to temp files
     await fs.writeFile(normalizedPromptFile, prompt);

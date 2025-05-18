@@ -551,6 +551,7 @@ jobs:
               issue_number: context.issue.number,
               body: commentBody
             });
+          github-token: ${{ secrets.GITHUB_TOKEN }}
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
 
@@ -651,11 +652,11 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # For pull requests, check all relevant changes
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$' || echo "")
           else
             # For pushes, check the latest commit
             CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$' || echo "")
           fi
 
           if [ -z "$CHANGED_FILES" ]; then
@@ -779,6 +780,7 @@ jobs:
               issue_number: context.issue.number,
               body: commentBody
             });
+          github-token: ${{ secrets.GITHUB_TOKEN }}
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
 

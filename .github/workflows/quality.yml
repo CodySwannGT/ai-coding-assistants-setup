@@ -551,11 +551,11 @@ jobs:
               issue_number: context.issue.number,
               body: commentBody
             });
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PAT }}
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
 
-      - name: � Fail if code review didn't pass
+      - name: ❌ Fail if code review didn't pass
         if: steps.code_review.outputs.review_passed == 'false'
         run: |
           echo "❌ Code review found critical issues that must be fixed before deployment."
@@ -753,11 +753,42 @@ jobs:
           echo "Security scan complete. Results saved to security_scan_summary.md"
         working-directory: ${{ inputs.working_directory || '.' }}
 
-      - name: 📤 Upload security scan results
-        uses: actions/upload-artifact@v4
+      - name: 📤 Upload security scan results and add PR comment
+        uses: actions/github-script@v7
         with:
-          name: security-scan-results
-          path: ${{ inputs.working_directory || '.' }}/security_scan_summary.md
+          script: |
+            const fs = require('fs');
+            const path = process.env.WORKING_DIRECTORY || '.';
+            const summaryPath = `${path}/security_scan_summary.md`;
+            let commentBody;
+            try {
+              commentBody = fs.readFileSync(summaryPath, 'utf8');
+            } catch (e) {
+              commentBody = '⚠️ Security scan summary could not be read.';
+            }
+
+            // Upload as artifact
+            const artifactClient = github.rest.actions.uploadArtifact;
+            await artifactClient.uploadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_name: 'security-scan-results',
+              archive_format: 'zip',
+              files: [summaryPath]
+            });
+
+            // Add comment to PR if this is a pull request
+            if (context.payload.pull_request) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+          github-token: ${{ secrets.PAT }}
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
         if: always() # This ensures results are always uploaded
 
       - name: 💬 Comment security scan results on PR
@@ -784,7 +815,7 @@ jobs:
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
 
-      - name: � Fail if security issues were found
+      - name: ❌ Fail if security issues were found
         if: steps.security_scan.outputs.security_passed == 'false'
         run: |
           echo "❌ Security scan found issues that must be fixed before deployment."

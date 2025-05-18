@@ -382,6 +382,7 @@ jobs:
             echo "" >> code_review_prompt.txt
             echo "IMPORTANT GUIDELINES:" >> code_review_prompt.txt
             echo "- IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)" >> code_review_prompt.txt
+            echo "- IGNORE package-lock.json files" >> code_review_prompt.txt
             echo "- DO NOT review generated files, compiled code, or third-party dependencies" >> code_review_prompt.txt
             echo "- Focus on substantive code issues rather than trivial style issues" >> code_review_prompt.txt
             echo "- Be concise and specific in your feedback" >> code_review_prompt.txt

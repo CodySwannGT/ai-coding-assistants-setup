@@ -416,7 +416,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/')
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
@@ -468,7 +468,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only HEAD~1 HEAD | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/')
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE

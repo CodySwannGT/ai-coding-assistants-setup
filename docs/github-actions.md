@@ -171,7 +171,7 @@ jobs:
       working_directory: ${{ inputs.working_directory || '' }}
       skip_jobs: ${{ inputs.skip_jobs || 'security' }}  # Skip security checks by default
     secrets:
-      PAT: ${{ secrets.GITHUB_TOKEN }}
+      PAT: ${{ secrets.PAT }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
@@ -254,7 +254,7 @@ jobs:
       package_manager: ${{ inputs.package_manager || 'npm' }}
       skip_jobs: ${{ inputs.skip_jobs }}
     secrets:
-      PAT: ${{ secrets.GITHUB_TOKEN }}
+      PAT: ${{ secrets.PAT }}
       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 ```
 
@@ -292,7 +292,7 @@ create_github_issue_on_failure:
     workflow_name: 'My Workflow'
     failed_job: 'build_and_test'
   secrets:
-    PAT: ${{ secrets.GITHUB_TOKEN }}
+    PAT: ${{ secrets.PAT }}
 ```
 
 #### Configuration Options
@@ -363,7 +363,7 @@ jobs:
       package_manager: 'npm'
       skip_jobs: 'security,code_quality_check,claude_security_scan'
     secrets:
-      PAT: ${{ secrets.GITHUB_TOKEN }}
+      PAT: ${{ secrets.PAT }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 

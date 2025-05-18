@@ -21,7 +21,7 @@
 #     package_manager: 'npm'
 #     skip_security: true
 #   secrets:
-#     PAT: ${{ secrets.GITHUB_TOKEN }}
+#     PAT: ${{ secrets.PAT }}
 #     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 # ```
 
@@ -382,6 +382,8 @@ jobs:
             echo "" >> code_review_prompt.txt
             echo "IMPORTANT GUIDELINES:" >> code_review_prompt.txt
             echo "- IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)" >> code_review_prompt.txt
+            echo "- IGNORE package-lock.json files" >> code_review_prompt.txt
+            echo "- IGNORE version regressions" >> code_review_prompt.txt
             echo "- DO NOT review generated files, compiled code, or third-party dependencies" >> code_review_prompt.txt
             echo "- Focus on substantive code issues rather than trivial style issues" >> code_review_prompt.txt
             echo "- Be concise and specific in your feedback" >> code_review_prompt.txt
@@ -529,7 +531,31 @@ jobs:
           path: ${{ inputs.working_directory || '.' }}/code_review_results.md
         if: always() # This ensures results are always uploaded
 
-      - name: 🛑 Fail if code review didn't pass
+      - name: 💬 Comment code review results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = process.env['WORKING_DIRECTORY'] || '.';
+            const resultsPath = `${path}/code_review_results.md`;
+            let commentBody;
+            try {
+              commentBody = fs.readFileSync(resultsPath, 'utf8');
+            } catch (e) {
+              commentBody = '⚠️ Code review results could not be read.';
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: commentBody
+            });
+          github-token: ${{ secrets.PAT }}
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
+
+      - name: ❌ Fail if code review didn't pass
         if: steps.code_review.outputs.review_passed == 'false'
         run: |
           echo "❌ Code review found critical issues that must be fixed before deployment."
@@ -596,7 +622,9 @@ jobs:
             echo "12. Use of unsafe or deprecated functions" >> security_prompt.txt
             echo "" >> security_prompt.txt
             echo "IMPORTANT GUIDELINES:" >> security_prompt.txt
+            echo "- ONLY FAIL the scan for issues of severity 'high' or above " >> security_prompt.txt
             echo "- IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)" >> security_prompt.txt
+            echo "- IGNORE package-lock.json files" >> security_prompt.txt
             echo "- DO NOT review generated files, compiled code, or third-party dependencies" >> security_prompt.txt
             echo "- Focus only on legitimate security issues in actual application code" >> security_prompt.txt
             echo "" >> security_prompt.txt
@@ -624,11 +652,11 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # For pull requests, check all relevant changes
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$' || echo "")
           else
             # For pushes, check the latest commit
             CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$' || echo "")
           fi
 
           if [ -z "$CHANGED_FILES" ]; then
@@ -725,14 +753,40 @@ jobs:
           echo "Security scan complete. Results saved to security_scan_summary.md"
         working-directory: ${{ inputs.working_directory || '.' }}
 
-      - name: 📤 Upload security scan results
+      - name: 📤 Upload security scan results and add PR comment
         uses: actions/upload-artifact@v4
         with:
-          name: security-scan-results
-          path: ${{ inputs.working_directory || '.' }}/security_scan_summary.md
+          name: code-review-results
+          path: ${{ inputs.working_directory || '.' }}/code_review_results.md
         if: always() # This ensures results are always uploaded
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
 
-      - name: 🛑 Fail if security issues were found
+      - name: 💬 Comment security scan results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = process.env['WORKING_DIRECTORY'] || '.';
+            const summaryPath = `${path}/security_scan_summary.md`;
+            let commentBody;
+            try {
+              commentBody = fs.readFileSync(summaryPath, 'utf8');
+            } catch (e) {
+              commentBody = '⚠️ Security scan summary could not be read.';
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: commentBody
+            });
+          github-token: ${{ secrets.PAT }}
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
+
+      - name: ❌ Fail if security issues were found
         if: steps.security_scan.outputs.security_passed == 'false'
         run: |
           echo "❌ Security scan found issues that must be fixed before deployment."

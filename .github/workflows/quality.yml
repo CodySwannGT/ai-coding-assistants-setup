@@ -21,7 +21,7 @@
 #     package_manager: 'npm'
 #     skip_security: true
 #   secrets:
-#     PAT: ${{ secrets.GITHUB_TOKEN }}
+#     PAT: ${{ secrets.PAT }}
 #     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 # ```
 
@@ -754,42 +754,13 @@ jobs:
         working-directory: ${{ inputs.working_directory || '.' }}
 
       - name: 📤 Upload security scan results and add PR comment
-        uses: actions/github-script@v7
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            const fs = require('fs');
-            const path = process.env.WORKING_DIRECTORY || '.';
-            const summaryPath = `${path}/security_scan_summary.md`;
-            let commentBody;
-            try {
-              commentBody = fs.readFileSync(summaryPath, 'utf8');
-            } catch (e) {
-              commentBody = '⚠️ Security scan summary could not be read.';
-            }
-
-            // Upload as artifact
-            const artifactClient = github.rest.actions.uploadArtifact;
-            await artifactClient.uploadArtifact({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              artifact_name: 'security-scan-results',
-              archive_format: 'zip',
-              files: [summaryPath]
-            });
-
-            // Add comment to PR if this is a pull request
-            if (context.payload.pull_request) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: commentBody
-              });
-            }
-          github-token: ${{ secrets.PAT }}
+          name: code-review-results
+          path: ${{ inputs.working_directory || '.' }}/code_review_results.md
+        if: always() # This ensures results are always uploaded
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
-        if: always() # This ensures results are always uploaded
 
       - name: 💬 Comment security scan results on PR
         if: github.event_name == 'pull_request'
@@ -811,7 +782,7 @@ jobs:
               issue_number: context.issue.number,
               body: commentBody
             });
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PAT }}
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
 

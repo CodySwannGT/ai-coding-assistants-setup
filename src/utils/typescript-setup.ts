@@ -469,17 +469,23 @@ export class TypeScriptSetup {
             // Use a safer approach to parse the ESLint config
             // Try parsing with JSON5 (more lenient JSON parsing) if available
             // Otherwise try manual parsing with safety checks
-            
+
             // Sanitize the input before parsing to prevent code execution
-            const sanitizedMatch = match[1].replace(/\b(function|eval|setTimeout|setInterval|new Function|constructor|prototype|__proto__|Object\.create)\b/g, 
-                                                    '__BLOCKED__');
-            
+            const sanitizedMatch = match[1].replace(
+              /\b(function|eval|setTimeout|setInterval|new Function|constructor|prototype|__proto__|Object\.create)\b/g,
+              '__BLOCKED__'
+            );
+
             // Safely parse using JSON.parse with a restricted reviver function
             try {
               // First attempt to parse strictly valid JSON
               config = JSON.parse(sanitizedMatch, (key, value) => {
                 // Block dangerous properties
-                if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+                if (
+                  key === '__proto__' ||
+                  key === 'constructor' ||
+                  key === 'prototype'
+                ) {
                   return undefined;
                 }
                 return value;
@@ -487,13 +493,20 @@ export class TypeScriptSetup {
             } catch (jsonError) {
               // If JSON.parse fails, use a simple object validator
               // This is an imperfect but safer alternative to Function constructor
-              if (!/^[\s{}\[\]:,."'\w\d_\-+*/&|^%<>=!?()]+$/.test(sanitizedMatch)) {
-                throw new Error('Config contains potentially unsafe characters');
+              if (
+                !/^[\s{}[\]:,."'\w\d_\-+*/&|^%<>=!?()]+$/.test(sanitizedMatch)
+              ) {
+                throw new Error(
+                  'Config contains potentially unsafe characters'
+                );
               }
-              
+
               // Fallback to eval-like behavior with strict sandbox
               const sandbox = Object.create(null); // No prototype to minimize risk
-              const safeEval = new Function('sandbox', `with(sandbox) { return ${sanitizedMatch}; }`);
+              const safeEval = new Function(
+                'sandbox',
+                `with(sandbox) { return ${sanitizedMatch}; }`
+              );
               config = safeEval(sandbox);
             }
           } catch (e) {

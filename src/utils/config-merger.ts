@@ -236,8 +236,8 @@ export class ConfigMerger {
           }
 
         case ConfigFileType.YAML:
-          // Using safeLoad instead of load for security (prevents custom YAML tag execution)
-          parsedConfig = yaml.load(content, { schema: yaml.SAFE_SCHEMA });
+          // Using restricted schema for security (prevents custom YAML tag execution)
+          parsedConfig = yaml.load(content, { schema: yaml.FAILSAFE_SCHEMA });
           return validateAndSanitizeConfig(parsedConfig, fileType);
 
         case ConfigFileType.INI:
@@ -632,23 +632,23 @@ export class ConfigMerger {
 
       // Write the result atomically to prevent corrupted files
       const resultString = this.stringifyConfig(resultConfig, fileType);
-      
+
       // Create a temporary file in the same directory
       const tempFile = `${targetPath}.tmp-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-      
+
       try {
         // Write to temporary file first
         await fs.writeFile(tempFile, resultString);
-        
+
         // Verify the file was written correctly
         const writtenContent = await fs.readFile(tempFile, 'utf8');
         if (writtenContent !== resultString) {
           throw new Error('File verification failed - content mismatch');
         }
-        
+
         // Rename temp file to target (atomic operation on most file systems)
         await fs.rename(tempFile, targetPath);
-        
+
         Feedback.success(
           `Successfully merged configuration file: ${path.basename(targetPath)}`
         );
@@ -660,9 +660,11 @@ export class ConfigMerger {
             await fs.remove(tempFile);
           }
         } catch (cleanupError) {
-          Feedback.warning(`Failed to clean up temporary file: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`);
+          Feedback.warning(
+            `Failed to clean up temporary file: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`
+          );
         }
-        
+
         throw error; // Rethrow the original error
       }
     } catch (error) {

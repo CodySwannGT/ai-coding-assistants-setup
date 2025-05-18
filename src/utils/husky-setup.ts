@@ -116,13 +116,13 @@ export class HuskySetup {
         Feedback.error('Invalid hook name provided');
         return false;
       }
-      
+
       // Ensure the hook name only contains safe characters (alphanumeric, hyphen, underscore)
       if (!/^[a-zA-Z0-9_-]+$/.test(hookName)) {
         Feedback.error(`Invalid hook name format: ${hookName}`);
         return false;
       }
-      
+
       const hooksDir = path.join(this.projectRoot, '.husky');
 
       if (!fs.existsSync(hooksDir)) {
@@ -136,19 +136,26 @@ export class HuskySetup {
       const hookPath = path.join(hooksDir, hookName);
       const normalizedHooksDir = path.normalize(hooksDir);
       const normalizedHookPath = path.normalize(hookPath);
-      
+
       if (!normalizedHookPath.startsWith(normalizedHooksDir)) {
-        Feedback.error(`Security error: Hook path escapes hooks directory: ${hookPath}`);
+        Feedback.error(
+          `Security error: Hook path escapes hooks directory: ${hookPath}`
+        );
         return false;
       }
-      
+
       // Additional check to prevent symbolic link or directory traversal attacks
-      const relativePath = path.relative(normalizedHooksDir, normalizedHookPath);
+      const relativePath = path.relative(
+        normalizedHooksDir,
+        normalizedHookPath
+      );
       if (relativePath.includes('..')) {
-        Feedback.error(`Security error: Hook path contains traversal patterns: ${hookPath}`);
+        Feedback.error(
+          `Security error: Hook path contains traversal patterns: ${hookPath}`
+        );
         return false;
       }
-      
+
       const hookContent = `#!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
@@ -157,7 +164,7 @@ ${command}
 
       // Define the executable permissions constant for clarity
       const EXECUTABLE_PERMISSIONS = 0o755; // rwxr-xr-x
-      
+
       fs.writeFileSync(hookPath, hookContent, { mode: EXECUTABLE_PERMISSIONS });
       Feedback.success(`Created ${hookName} hook`);
       return true;

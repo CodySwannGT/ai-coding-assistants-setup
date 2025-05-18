@@ -27,12 +27,12 @@ function getTempFile(name: string): string {
   // Use system temp directory instead of project directory
   const tempDir = path.join(tmpdir(), '.claude', 'temp');
   fs.ensureDirSync(tempDir);
-  
+
   // Use crypto to generate a random filename to prevent predictability
   const randomSuffix = crypto.randomBytes(32).toString('hex');
   const timestamp = Date.now();
   const pid = process.pid;
-  
+
   // Combine multiple entropy sources for filename
   return path.join(tempDir, `${name}-${timestamp}-${pid}-${randomSuffix}.txt`);
 }
@@ -139,30 +139,26 @@ export async function runCodeReview(
     }
 
     // Step 2: Create prompt for code review
-    let promptFile = '';
-    let contentFile = '';
-    
-    try {
-      promptFile = getTempFile('code-review-prompt');
-      contentFile = getTempFile('code-review-content');
-      
-      // Create a prompt that focuses on the specified areas
-      const focusAreaText = focusAreas
-        .map(area => {
-          switch (area) {
-            case 'security':
-              return '- Identify security vulnerabilities, potential injection points, or unsafe practices';
-            case 'functionality':
-              return '- Check for logical errors, edge cases, and functionality issues';
-            case 'performance':
-              return '- Identify performance bottlenecks and inefficient code patterns';
-            case 'style':
-              return '- Check for code style issues, inconsistencies, and maintainability problems';
-            default:
-              return `- ${area}`;
-          }
-        })
-        .join('\n');
+    const promptFile = getTempFile('code-review-prompt');
+    const contentFile = getTempFile('code-review-content');
+
+    // Create a prompt that focuses on the specified areas
+    const focusAreaText = focusAreas
+      .map(area => {
+        switch (area) {
+          case 'security':
+            return '- Identify security vulnerabilities, potential injection points, or unsafe practices';
+          case 'functionality':
+            return '- Check for logical errors, edge cases, and functionality issues';
+          case 'performance':
+            return '- Identify performance bottlenecks and inefficient code patterns';
+          case 'style':
+            return '- Check for code style issues, inconsistencies, and maintainability problems';
+          default:
+            return `- ${area}`;
+        }
+      })
+      .join('\n');
 
     const prompt = `You are an expert code reviewer for a software development team. 
 Please analyze the provided code for quality, security, and correctness issues:
@@ -237,13 +233,18 @@ You're helping a developer who wants clear, actionable feedback to improve this 
 
     // Apply validation to both files
     const expectedTempDir = path.join(tmpdir(), '.claude', 'temp');
-    
+
+    // Use a finally block for cleanup
+    let response = '';
+    let normalizedPromptFile = '';
+    let normalizedContentFile = '';
+
     try {
-      const normalizedPromptFile = validateAndNormalizePath(
+      normalizedPromptFile = validateAndNormalizePath(
         promptFile,
         expectedTempDir
       );
-      const normalizedContentFile = validateAndNormalizePath(
+      normalizedContentFile = validateAndNormalizePath(
         contentFile,
         expectedTempDir
       );
@@ -252,85 +253,83 @@ You're helping a developer who wants clear, actionable feedback to improve this 
       await fs.writeFile(normalizedPromptFile, prompt);
       await fs.writeFile(normalizedContentFile, content);
 
-      try {
-        // Step 3: Call Claude CLI
-        Feedback.info('Calling Claude CLI for code review...');
+      // Step 3: Call Claude CLI
+      Feedback.info('Calling Claude CLI for code review...');
 
-        // Execute commands safely to prevent command injection
-        const startTime = Date.now();
-        
-        // Read the prompt file content
-        const promptContent = await fs.readFile(normalizedPromptFile, 'utf8');
-        
-        // Create a child process with spawn to safely handle arguments
-        const claudeProcess = spawn('claude', [
-          '-p', promptContent,
-          '--model', model,
-          '--file', normalizedContentFile
-        ]);
-        
-        // Collect output from the process
-        let response = '';
-        
-        // Set up promise to handle process completion
-        const processPromise = new Promise<string>((resolve, reject) => {
-          claudeProcess.stdout.on('data', (data: Buffer) => {
-            response += data.toString();
-          });
-          
-          claudeProcess.stderr.on('data', (data: Buffer) => {
-            Feedback.warning(`Claude stderr: ${data}`);
-          });
-          
-          claudeProcess.on('close', (code: number | null) => {
-            if (code === 0) {
-              resolve(response);
-            } else {
-              reject(new Error(`Claude process exited with code ${code}`));
-            }
-          });
-          
-          claudeProcess.on('error', (err: Error) => {
-            reject(err);
-          });
+      // Execute commands safely to prevent command injection
+      const startTime = Date.now();
+
+      // Read the prompt file content
+      const promptContent = await fs.readFile(normalizedPromptFile, 'utf8');
+
+      // Create a child process with spawn to safely handle arguments
+      const claudeProcess = spawn('claude', [
+        '-p',
+        promptContent,
+        '--model',
+        model,
+        '--file',
+        normalizedContentFile,
+      ]);
+
+      // Set up promise to handle process completion
+      const processPromise = new Promise<string>((resolve, reject) => {
+        let output = '';
+
+        claudeProcess.stdout.on('data', (data: Buffer) => {
+          output += data.toString();
         });
-        
-        // Wait for the process to complete
-        response = await processPromise;
-        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
-        Feedback.success(`Claude completed code review in ${duration}s`);
+        claudeProcess.stderr.on('data', (data: Buffer) => {
+          Feedback.warning(`Claude stderr: ${data}`);
+        });
 
-        // Step 4: Save result if output path is provided
-        if (output) {
-          // Validate output path
-          const outputDir = path.dirname(output);
-          const normalizedOutputPath = path.resolve(process.cwd(), output);
-          
-          // Ensure the output path is within the current working directory
-          if (!normalizedOutputPath.startsWith(process.cwd())) {
-            throw new Error('Security error: Output path resolves outside of the current working directory');
+        claudeProcess.on('close', (code: number | null) => {
+          if (code === 0) {
+            resolve(output);
+          } else {
+            reject(new Error(`Claude process exited with code ${code}`));
           }
-          
-          await fs.ensureDir(outputDir);
-          await fs.writeFile(normalizedOutputPath, response);
-          Feedback.success(`Review saved to ${output}`);
+        });
+
+        claudeProcess.on('error', (err: Error) => {
+          reject(err);
+        });
+      });
+
+      // Wait for the process to complete
+      response = await processPromise;
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+
+      Feedback.success(`Claude completed code review in ${duration}s`);
+
+      // Step 4: Save result if output path is provided
+      if (output) {
+        // Validate output path
+        const outputDir = path.dirname(output);
+        const normalizedOutputPath = path.resolve(process.cwd(), output);
+
+        // Ensure the output path is within the current working directory
+        if (!normalizedOutputPath.startsWith(process.cwd())) {
+          throw new Error(
+            'Security error: Output path resolves outside of the current working directory'
+          );
         }
 
-        // The response variable is already defined from the Claude process
-        return response;
-      } finally {
-        // Clean up temp files - ensure this happens even if an error occurs
-        try {
-          await fs.remove(promptFile);
-          await fs.remove(contentFile);
-        } catch (cleanupError) {
-          Feedback.warning(`Failed to clean up temporary files: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`);
-        }
+        await fs.ensureDir(outputDir);
+        await fs.writeFile(normalizedOutputPath, response);
+        Feedback.success(`Review saved to ${output}`);
       }
-    } catch (error) {
-      // Rethrow the error to be caught by the outer try-catch
-      throw error;
+    } finally {
+      // Clean up temp files - ensure this happens even if an error occurs
+      try {
+        if (promptFile) await fs.remove(promptFile);
+        if (contentFile) await fs.remove(contentFile);
+      } catch (cleanupError) {
+        Feedback.warning(
+          `Failed to clean up temporary files: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`
+        );
+      }
     }
 
     return response;
@@ -361,12 +360,12 @@ async function readFiles(files: string[]): Promise<string> {
 
         // Normalize the path to resolve '..' and '.' segments
         const normalizedPath = path.normalize(file);
-        
+
         // Convert to absolute path if not already
         const absolutePath = path.isAbsolute(normalizedPath)
           ? normalizedPath
           : path.resolve(process.cwd(), normalizedPath);
-        
+
         // Ensure the path is within the expected directory
         if (!absolutePath.startsWith(expectedDir)) {
           Feedback.warning(
@@ -374,7 +373,7 @@ async function readFiles(files: string[]): Promise<string> {
           );
           continue;
         }
-        
+
         // Check for path traversal attempts using realpath to resolve symlinks
         try {
           const realPath = fs.realpathSync(absolutePath);
@@ -391,7 +390,7 @@ async function readFiles(files: string[]): Promise<string> {
           );
           continue;
         }
-        
+
         // Additional check for path traversal attempts
         const relativePath = path.relative(expectedDir, absolutePath);
         if (relativePath.includes('..')) {
@@ -402,13 +401,15 @@ async function readFiles(files: string[]): Promise<string> {
         }
 
         // Check if file exists before attempting to read
-        if (!await fs.pathExists(absolutePath)) {
+        if (!(await fs.pathExists(absolutePath))) {
           Feedback.warning(`File does not exist: ${file}`);
           continue;
         }
 
         const content = await fs.readFile(absolutePath, 'utf8');
-        fileContents.push(`### File: ${file}\n\n\`\`\`\n${content}\n\`\`\`\n\n`);
+        fileContents.push(
+          `### File: ${file}\n\n\`\`\`\n${content}\n\`\`\`\n\n`
+        );
       } catch (error) {
         Feedback.warning(
           `Failed to read file ${file}: ${error instanceof Error ? error.message : String(error)}`
@@ -437,8 +438,14 @@ async function findFiles(pattern: string): Promise<string[]> {
     }
 
     // Check for potentially dangerous patterns
-    if (pattern.includes('..') || pattern.startsWith('/') || pattern.startsWith('~')) {
-      Feedback.warning('Potentially unsafe pattern detected. Patterns should be relative to the current directory.');
+    if (
+      pattern.includes('..') ||
+      pattern.startsWith('/') ||
+      pattern.startsWith('~')
+    ) {
+      Feedback.warning(
+        'Potentially unsafe pattern detected. Patterns should be relative to the current directory.'
+      );
       return [];
     }
 
@@ -449,7 +456,7 @@ async function findFiles(pattern: string): Promise<string[]> {
       // Use standard glob options that are supported
       dot: false, // Don't include dot files by default
     });
-    
+
     return files;
   } catch (error) {
     Feedback.error(

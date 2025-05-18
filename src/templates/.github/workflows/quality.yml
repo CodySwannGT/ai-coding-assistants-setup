@@ -571,6 +571,11 @@ jobs:
     timeout-minutes: 15
     if: ${{ github.event_name == 'pull_request' && !contains(inputs.skip_jobs, 'claude_security_scan') }}
     steps:
+- name: Exit if not a pull request
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "This job only runs on pull requests."
+          exit 0
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
         with:

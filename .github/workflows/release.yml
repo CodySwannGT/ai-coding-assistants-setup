@@ -56,7 +56,7 @@ on:
         default: ''
         type: string
       skip_jobs:
-        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,security,code_quality_check,claude_security_scan,quality,github_issue,github_release,jira_release,jira_issue,version)'
+        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,npm_security_scan,code_quality_check,claude_security_scan,quality,github_issue,github_release,jira_release,jira_issue,version)'
         required: false
         default: ''
         type: string

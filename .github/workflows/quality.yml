@@ -71,7 +71,7 @@ on:
         default: false
         type: boolean
       skip_jobs:
-        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,security,code_quality_check,claude_security_scan,quality,github_issue)'
+        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,npm_security_scan,code_quality_check,claude_security_scan,quality,github_issue)'
         required: false
         default: ''
         type: string
@@ -269,11 +269,11 @@ jobs:
         run: ${{ inputs.package_manager }} run build
         working-directory: ${{ inputs.working_directory || '.' }}
 
-  security:
+  npm_security_scan:
     name: 🔒 Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'security') }}
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'npm_security_scan') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4

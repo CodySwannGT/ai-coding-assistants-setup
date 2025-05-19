@@ -438,7 +438,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$' || echo "")
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
@@ -490,7 +490,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only HEAD~1 HEAD | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$' || echo "")
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
@@ -551,7 +551,7 @@ jobs:
         with:
           name: code-review-results
           path: ${{ inputs.working_directory || '.' }}/code_review_results.md
-          retention-days: 14  # Keep artifacts for 14 days
+          retention-days: 14 # Keep artifacts for 14 days
         if: always() # This ensures results are always uploaded
 
       - name: 💬 Comment code review results on PR
@@ -690,7 +690,7 @@ jobs:
             
             exit 0
           fi
-          
+
           echo "🔒 Running Claude security scan on changed files"
 
           mkdir -p security_scan_results
@@ -699,11 +699,11 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # For pull requests, check all relevant changes
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
           else
             # For pushes, check the latest commit
             CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
           fi
 
           if [ -z "$CHANGED_FILES" ]; then
@@ -805,7 +805,7 @@ jobs:
         with:
           name: security-scan-results
           path: ${{ inputs.working_directory || '.' }}/security_scan_summary.md
-          retention-days: 14  # Keep artifacts for 14 days
+          retention-days: 14 # Keep artifacts for 14 days
         if: always() # This ensures results are always uploaded
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}

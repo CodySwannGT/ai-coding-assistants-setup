@@ -372,6 +372,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
+          #!/usr/bin/env bash
           # Check if ANTHROPIC_API_KEY is set
           if [ -z "$ANTHROPIC_API_KEY" ]; then
             echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude code quality check."
@@ -379,12 +380,12 @@ jobs:
             
             # Create a minimal report for artifact upload
             cat > code_review_results.md << 'EOF'
-            # Claude AI Code Review Results
+              # Claude AI Code Review Results
 
-            ⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**
+              ⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**
 
-            Claude code quality check was skipped because the ANTHROPIC_API_KEY secret is not set.
-            To enable AI-powered code reviews, please add the ANTHROPIC_API_KEY secret to your repository or workflow.
+              Claude code quality check was skipped because the ANTHROPIC_API_KEY secret is not set.
+              To enable AI-powered code reviews, please add the ANTHROPIC_API_KEY secret to your repository or workflow.
             EOF
             
             exit 0
@@ -392,7 +393,7 @@ jobs:
 
           # Create basic prompt
           cat > code_review_prompt.txt << 'EOF'
-          Perform a code review on the provided code changes. Focus on code quality, best practices, and potential bugs.
+            Perform a code review on the provided code changes. Focus on code quality, best practices, and potential bugs.
           EOF
 
           # Check if guidelines file exists in the repository and append it
@@ -673,6 +674,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
+          #!/usr/bin/env bash
           # Check if ANTHROPIC_API_KEY is set
           if [ -z "$ANTHROPIC_API_KEY" ]; then
             echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude security scan."

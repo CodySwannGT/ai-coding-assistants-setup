@@ -378,23 +378,19 @@ jobs:
             echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude code quality check."
             echo "review_passed=true" >> $GITHUB_OUTPUT
             
-            # Create a minimal report for artifact upload
-            cat > code_review_results.md << 'EOF'
-              # Claude AI Code Review Results
-
-              ⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**
-
-              Claude code quality check was skipped because the ANTHROPIC_API_KEY secret is not set.
-              To enable AI-powered code reviews, please add the ANTHROPIC_API_KEY secret to your repository or workflow.
-            EOF
+            # Create a minimal report for artifact upload using echo instead of heredoc
+            echo "# Claude AI Code Review Results" > code_review_results.md
+            echo "" >> code_review_results.md
+            echo "⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**" >> code_review_results.md
+            echo "" >> code_review_results.md
+            echo "Claude code quality check was skipped because the ANTHROPIC_API_KEY secret is not set." >> code_review_results.md
+            echo "To enable AI-powered code reviews, please add the ANTHROPIC_API_KEY secret to your repository or workflow." >> code_review_results.md
             
             exit 0
           fi
 
-          # Create basic prompt
-          cat > code_review_prompt.txt << 'EOF'
-            Perform a code review on the provided code changes. Focus on code quality, best practices, and potential bugs.
-          EOF
+          # Create basic prompt using echo instead of heredoc
+          echo "Perform a code review on the provided code changes. Focus on code quality, best practices, and potential bugs." > code_review_prompt.txt
 
           # Check if guidelines file exists in the repository and append it
           if [ -f "docs/code_review_guidelines.md" ]; then
@@ -680,15 +676,13 @@ jobs:
             echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude security scan."
             echo "security_passed=true" >> $GITHUB_OUTPUT
             
-            # Create a minimal report for artifact upload
-            cat > security_scan_summary.md << 'EOF'
-            # Claude Security Scan Results
-
-            ⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**
-
-            Claude security scan was skipped because the ANTHROPIC_API_KEY secret is not set.
-            To enable AI-powered security scanning, please add the ANTHROPIC_API_KEY secret to your repository or workflow.
-            EOF
+            # Create a minimal report for artifact upload using echo instead of heredoc
+            echo "# Claude Security Scan Results" > security_scan_summary.md
+            echo "" >> security_scan_summary.md
+            echo "⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**" >> security_scan_summary.md
+            echo "" >> security_scan_summary.md
+            echo "Claude security scan was skipped because the ANTHROPIC_API_KEY secret is not set." >> security_scan_summary.md
+            echo "To enable AI-powered security scanning, please add the ANTHROPIC_API_KEY secret to your repository or workflow." >> security_scan_summary.md
             
             exit 0
           fi

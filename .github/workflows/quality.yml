@@ -21,7 +21,7 @@
 #     package_manager: 'npm'
 #     skip_security: true
 #   secrets:
-#     PAT: ${{ secrets.PAT }}  # Required scopes: 'repo' (all) and 'admin:hook'
+#     PAT: ${{ secrets.PAT }}  # Required scopes: (repo:status, public_repo, repo_deployment)
 #     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 # ```
 
@@ -84,23 +84,7 @@ on:
       PAT:
         description: 'Personal Access Token for GitHub operations'
         required: false
-        # Documentation for PAT token scopes:
-        # SECURITY NOTE: This PAT token requires full repository access permissions due to the following requirements:
-        # - 'repo' (all repo scopes) - Required for:
-        #   - Posting comments on pull requests (especially from within workflows)
-        #   - Accessing repository contents and creating/updating PRs
-        #   - Commenting on issues created by automated processes
-        #   - Accessing repo contents when triggered by workflow_call
-        # - 'admin:hook' - Required for managing repository webhooks when needed
-        #
-        # While this may appear to violate the principle of least privilege, these broad permissions 
-        # are necessary for the workflow to function correctly, particularly when:
-        # 1. Commenting on PRs through workflows that need cross-repo integration
-        # 2. Creating issues or comments from a workflow that wasn't triggered by the PR itself
-        # 3. Accessing protected resources in a workflow_call context
-        # 
-        # We've carefully reviewed and contained all usage of this token to ensure it's only used for
-        # the specifically documented operations above.
+        # Documentation for PAT token scopes: (repo:status, public_repo, repo_deployment)
       ANTHROPIC_API_KEY:
         description: 'Anthropic API key for Claude code quality integrations'
         required: false
@@ -461,8 +445,14 @@ jobs:
             # Process each file
             for file in $files_to_review; do
               echo "📝 Reviewing $file"
-              review_output=$(git diff -U0 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- "$file" | \
-                            claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              # Sanitize file path to prevent command injection
+              if [[ ! "$file" =~ [^a-zA-Z0-9_./-] ]]; then
+                review_output=$(git diff -U0 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- "$file" | \
+                              claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              else
+                echo "Skipping file with potentially unsafe path: $file"
+                continue
+              fi
               
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
@@ -513,8 +503,14 @@ jobs:
             # Process each file
             for file in $files_to_review; do
               echo "📝 Reviewing $file"
-              review_output=$(git diff -U0 HEAD~1 HEAD -- "$file" | \
-                            claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              # Sanitize file path to prevent command injection
+              if [[ ! "$file" =~ [^a-zA-Z0-9_./-] ]]; then
+                review_output=$(git diff -U0 HEAD~1 HEAD -- "$file" | \
+                              claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              else
+                echo "Skipping file with potentially unsafe path: $file"
+                continue
+              fi
               
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
@@ -586,8 +582,8 @@ jobs:
                 body: commentBody
               });
             } catch (error) {
-              console.error('Error posting comment. Make sure PAT token has correct scopes (repo, admin:hook):', error.message);
-              core.warning('Failed to post PR comment. Verify PAT token has required scopes: repo (all) and admin:hook');
+              console.error('Error posting comment. Make sure PAT token has correct scopes: (repo:status, public_repo, repo_deployment):', error.message);
+              core.warning('Failed to post PR comment. Verify PAT token has required scopes: (repo:status, public_repo, repo_deployment)');
             }
           # SECURITY NOTE: Full repo access is required here ('repo' scope) to post PR comments
           # from within a workflow context, which cannot be done with the default GITHUB_TOKEN
@@ -759,8 +755,14 @@ jobs:
             
             # Check if file exists and has content
             if [ -f "$FILE" ] && [ -s "$FILE" ]; then
-              # Run security scan on the file
-              review_output=$(cat "$FILE" | claude -p "$(cat security_prompt.txt)" --output-format json)
+              # Sanitize file path to prevent command injection
+              if [[ ! "$FILE" =~ [^a-zA-Z0-9_./-] ]]; then
+                # Run security scan on the file
+                review_output=$(cat "$FILE" | claude -p "$(cat security_prompt.txt)" --output-format json)
+              else
+                echo "Skipping file with potentially unsafe path: $FILE"
+                continue
+              fi
               
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
@@ -842,8 +844,8 @@ jobs:
                 body: commentBody
               });
             } catch (error) {
-              console.error('Error posting comment. Make sure PAT token has correct scopes (repo, admin:hook):', error.message);
-              core.warning('Failed to post PR comment. Verify PAT token has required scopes: repo (all) and admin:hook');
+              console.error('Error posting comment. Make sure PAT token has correct scopes: (repo:status, public_repo, repo_deployment):', error.message);
+              core.warning('Failed to post PR comment. Verify PAT token has required scopes: (repo:status, public_repo, repo_deployment)');
             }
           # SECURITY NOTE: Full repo access is required here ('repo' scope) to post PR comments
           # from within a workflow context, which cannot be done with the default GITHUB_TOKEN

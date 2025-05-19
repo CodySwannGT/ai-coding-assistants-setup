@@ -21,7 +21,7 @@
 #     package_manager: 'npm'
 #     skip_security: true
 #   secrets:
-#     PAT: ${{ secrets.PAT }}  # Required scopes: 'repo' (all) and 'admin:hook'
+#     PAT: ${{ secrets.PAT }}  # Required scopes: (repo:status, public_repo, repo_deployment)
 #     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 # ```
 
@@ -84,10 +84,7 @@ on:
       PAT:
         description: 'Personal Access Token for GitHub operations'
         required: false
-        # Documentation for PAT token scopes:
-        # This PAT token requires the following scopes:
-        # - 'repo' (all repo scopes) - For accessing repository contents and creating/updating PRs
-        # - 'admin:hook' - For managing repository webhooks if needed
+        # Documentation for PAT token scopes: (repo:status, public_repo, repo_deployment)
       ANTHROPIC_API_KEY:
         description: 'Anthropic API key for Claude code quality integrations'
         required: false
@@ -378,23 +375,19 @@ jobs:
             echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude code quality check."
             echo "review_passed=true" >> $GITHUB_OUTPUT
             
-            # Create a minimal report for artifact upload
-            cat > code_review_results.md << 'EOF'
-              # Claude AI Code Review Results
-
-              ⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**
-
-              Claude code quality check was skipped because the ANTHROPIC_API_KEY secret is not set.
-              To enable AI-powered code reviews, please add the ANTHROPIC_API_KEY secret to your repository or workflow.
-            EOF
+            # Create a minimal report for artifact upload using echo instead of heredoc
+            echo "# Claude AI Code Review Results" > code_review_results.md
+            echo "" >> code_review_results.md
+            echo "⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**" >> code_review_results.md
+            echo "" >> code_review_results.md
+            echo "Claude code quality check was skipped because the ANTHROPIC_API_KEY secret is not set." >> code_review_results.md
+            echo "To enable AI-powered code reviews, please add the ANTHROPIC_API_KEY secret to your repository or workflow." >> code_review_results.md
             
             exit 0
           fi
 
-          # Create basic prompt
-          cat > code_review_prompt.txt << 'EOF'
-            Perform a code review on the provided code changes. Focus on code quality, best practices, and potential bugs.
-          EOF
+          # Create basic prompt using echo instead of heredoc
+          echo "Perform a code review on the provided code changes. Focus on code quality, best practices, and potential bugs." > code_review_prompt.txt
 
           # Check if guidelines file exists in the repository and append it
           if [ -f "docs/code_review_guidelines.md" ]; then
@@ -439,7 +432,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
@@ -452,8 +445,14 @@ jobs:
             # Process each file
             for file in $files_to_review; do
               echo "📝 Reviewing $file"
-              review_output=$(git diff -U0 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- "$file" | \
-                            claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              # Sanitize file path to prevent command injection
+              if [[ ! "$file" =~ [^a-zA-Z0-9_./-] ]]; then
+                review_output=$(git diff -U0 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- "$file" | \
+                              claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              else
+                echo "Skipping file with potentially unsafe path: $file"
+                continue
+              fi
               
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
@@ -491,7 +490,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only HEAD~1 HEAD | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
@@ -504,8 +503,14 @@ jobs:
             # Process each file
             for file in $files_to_review; do
               echo "📝 Reviewing $file"
-              review_output=$(git diff -U0 HEAD~1 HEAD -- "$file" | \
-                            claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              # Sanitize file path to prevent command injection
+              if [[ ! "$file" =~ [^a-zA-Z0-9_./-] ]]; then
+                review_output=$(git diff -U0 HEAD~1 HEAD -- "$file" | \
+                              claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              else
+                echo "Skipping file with potentially unsafe path: $file"
+                continue
+              fi
               
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
@@ -577,10 +582,11 @@ jobs:
                 body: commentBody
               });
             } catch (error) {
-              console.error('Error posting comment. Make sure PAT token has correct scopes (repo, admin:hook):', error.message);
-              core.warning('Failed to post PR comment. Verify PAT token has required scopes: repo (all) and admin:hook');
+              console.error('Error posting comment. Make sure PAT token has correct scopes: (repo:status, public_repo, repo_deployment):', error.message);
+              core.warning('Failed to post PR comment. Verify PAT token has required scopes: (repo:status, public_repo, repo_deployment)');
             }
-          # This PAT token requires scopes: 'repo' (all) and 'admin:hook'
+          # SECURITY NOTE: Full repo access is required here ('repo' scope) to post PR comments
+          # from within a workflow context, which cannot be done with the default GITHUB_TOKEN
           github-token: ${{ secrets.PAT }}
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
@@ -680,15 +686,13 @@ jobs:
             echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude security scan."
             echo "security_passed=true" >> $GITHUB_OUTPUT
             
-            # Create a minimal report for artifact upload
-            cat > security_scan_summary.md << 'EOF'
-            # Claude Security Scan Results
-
-            ⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**
-
-            Claude security scan was skipped because the ANTHROPIC_API_KEY secret is not set.
-            To enable AI-powered security scanning, please add the ANTHROPIC_API_KEY secret to your repository or workflow.
-            EOF
+            # Create a minimal report for artifact upload using echo instead of heredoc
+            echo "# Claude Security Scan Results" > security_scan_summary.md
+            echo "" >> security_scan_summary.md
+            echo "⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**" >> security_scan_summary.md
+            echo "" >> security_scan_summary.md
+            echo "Claude security scan was skipped because the ANTHROPIC_API_KEY secret is not set." >> security_scan_summary.md
+            echo "To enable AI-powered security scanning, please add the ANTHROPIC_API_KEY secret to your repository or workflow." >> security_scan_summary.md
             
             exit 0
           fi
@@ -701,11 +705,11 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # For pull requests, check all relevant changes
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
           else
             # For pushes, check the latest commit
             CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
           fi
 
           if [ -z "$CHANGED_FILES" ]; then
@@ -751,8 +755,14 @@ jobs:
             
             # Check if file exists and has content
             if [ -f "$FILE" ] && [ -s "$FILE" ]; then
-              # Run security scan on the file
-              review_output=$(cat "$FILE" | claude -p "$(cat security_prompt.txt)" --output-format json)
+              # Sanitize file path to prevent command injection
+              if [[ ! "$FILE" =~ [^a-zA-Z0-9_./-] ]]; then
+                # Run security scan on the file
+                review_output=$(cat "$FILE" | claude -p "$(cat security_prompt.txt)" --output-format json)
+              else
+                echo "Skipping file with potentially unsafe path: $FILE"
+                continue
+              fi
               
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
@@ -834,10 +844,11 @@ jobs:
                 body: commentBody
               });
             } catch (error) {
-              console.error('Error posting comment. Make sure PAT token has correct scopes (repo, admin:hook):', error.message);
-              core.warning('Failed to post PR comment. Verify PAT token has required scopes: repo (all) and admin:hook');
+              console.error('Error posting comment. Make sure PAT token has correct scopes: (repo:status, public_repo, repo_deployment):', error.message);
+              core.warning('Failed to post PR comment. Verify PAT token has required scopes: (repo:status, public_repo, repo_deployment)');
             }
-          # This PAT token requires scopes: 'repo' (all) and 'admin:hook'
+          # SECURITY NOTE: Full repo access is required here ('repo' scope) to post PR comments
+          # from within a workflow context, which cannot be done with the default GITHUB_TOKEN
           github-token: ${{ secrets.PAT }}
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}

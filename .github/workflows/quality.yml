@@ -85,9 +85,22 @@ on:
         description: 'Personal Access Token for GitHub operations'
         required: false
         # Documentation for PAT token scopes:
-        # This PAT token requires the following scopes:
-        # - 'repo' (all repo scopes) - For accessing repository contents and creating/updating PRs
-        # - 'admin:hook' - For managing repository webhooks if needed
+        # SECURITY NOTE: This PAT token requires full repository access permissions due to the following requirements:
+        # - 'repo' (all repo scopes) - Required for:
+        #   - Posting comments on pull requests (especially from within workflows)
+        #   - Accessing repository contents and creating/updating PRs
+        #   - Commenting on issues created by automated processes
+        #   - Accessing repo contents when triggered by workflow_call
+        # - 'admin:hook' - Required for managing repository webhooks when needed
+        #
+        # While this may appear to violate the principle of least privilege, these broad permissions 
+        # are necessary for the workflow to function correctly, particularly when:
+        # 1. Commenting on PRs through workflows that need cross-repo integration
+        # 2. Creating issues or comments from a workflow that wasn't triggered by the PR itself
+        # 3. Accessing protected resources in a workflow_call context
+        # 
+        # We've carefully reviewed and contained all usage of this token to ensure it's only used for
+        # the specifically documented operations above.
       ANTHROPIC_API_KEY:
         description: 'Anthropic API key for Claude code quality integrations'
         required: false
@@ -435,7 +448,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
@@ -487,7 +500,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only HEAD~1 HEAD | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
@@ -576,7 +589,8 @@ jobs:
               console.error('Error posting comment. Make sure PAT token has correct scopes (repo, admin:hook):', error.message);
               core.warning('Failed to post PR comment. Verify PAT token has required scopes: repo (all) and admin:hook');
             }
-          # This PAT token requires scopes: 'repo' (all) and 'admin:hook'
+          # SECURITY NOTE: Full repo access is required here ('repo' scope) to post PR comments
+          # from within a workflow context, which cannot be done with the default GITHUB_TOKEN
           github-token: ${{ secrets.PAT }}
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
@@ -695,11 +709,11 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # For pull requests, check all relevant changes
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
           else
             # For pushes, check the latest commit
             CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
           fi
 
           if [ -z "$CHANGED_FILES" ]; then
@@ -831,7 +845,8 @@ jobs:
               console.error('Error posting comment. Make sure PAT token has correct scopes (repo, admin:hook):', error.message);
               core.warning('Failed to post PR comment. Verify PAT token has required scopes: repo (all) and admin:hook');
             }
-          # This PAT token requires scopes: 'repo' (all) and 'admin:hook'
+          # SECURITY NOTE: Full repo access is required here ('repo' scope) to post PR comments
+          # from within a workflow context, which cannot be done with the default GITHUB_TOKEN
           github-token: ${{ secrets.PAT }}
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}

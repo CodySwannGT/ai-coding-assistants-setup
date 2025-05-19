@@ -21,7 +21,7 @@
 #     package_manager: 'npm'
 #     skip_security: true
 #   secrets:
-#     PAT: ${{ secrets.PAT }}
+#     PAT: ${{ secrets.PAT }}  # Required scopes: 'repo' (all) and 'admin:hook'
 #     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 # ```
 
@@ -84,6 +84,10 @@ on:
       PAT:
         description: 'Personal Access Token for GitHub operations'
         required: false
+        # Documentation for PAT token scopes:
+        # This PAT token requires the following scopes:
+        # - 'repo' (all repo scopes) - For accessing repository contents and creating/updating PRs
+        # - 'admin:hook' - For managing repository webhooks if needed
       ANTHROPIC_API_KEY:
         description: 'Anthropic API key for Claude code quality integrations'
         required: false
@@ -316,7 +320,7 @@ jobs:
     name: 🤖 Claude Code Quality Check
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !contains(inputs.skip_jobs, 'code_quality_check') }}
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'code_quality_check') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -368,6 +372,24 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
+          # Check if ANTHROPIC_API_KEY is set
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude code quality check."
+            echo "review_passed=true" >> $GITHUB_OUTPUT
+            
+            # Create a minimal report for artifact upload
+            cat > code_review_results.md << 'EOF'
+            # Claude AI Code Review Results
+
+            ⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**
+
+            Claude code quality check was skipped because the ANTHROPIC_API_KEY secret is not set.
+            To enable AI-powered code reviews, please add the ANTHROPIC_API_KEY secret to your repository or workflow.
+            EOF
+            
+            exit 0
+          fi
+
           # Create basic prompt
           cat > code_review_prompt.txt << 'EOF'
           Perform a code review on the provided code changes. Focus on code quality, best practices, and potential bugs.
@@ -529,6 +551,7 @@ jobs:
         with:
           name: code-review-results
           path: ${{ inputs.working_directory || '.' }}/code_review_results.md
+          retention-days: 14  # Keep artifacts for 14 days
         if: always() # This ensures results are always uploaded
 
       - name: 💬 Comment code review results on PR
@@ -545,12 +568,18 @@ jobs:
             } catch (e) {
               commentBody = '⚠️ Code review results could not be read.';
             }
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: commentBody
-            });
+            try {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            } catch (error) {
+              console.error('Error posting comment. Make sure PAT token has correct scopes (repo, admin:hook):', error.message);
+              core.warning('Failed to post PR comment. Verify PAT token has required scopes: repo (all) and admin:hook');
+            }
+          # This PAT token requires scopes: 'repo' (all) and 'admin:hook'
           github-token: ${{ secrets.PAT }}
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
@@ -565,7 +594,7 @@ jobs:
     name: 🛡️ Claude Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ !contains(inputs.skip_jobs, 'claude_security_scan') }}
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'claude_security_scan') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -644,6 +673,24 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
+          # Check if ANTHROPIC_API_KEY is set
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude security scan."
+            echo "security_passed=true" >> $GITHUB_OUTPUT
+            
+            # Create a minimal report for artifact upload
+            cat > security_scan_summary.md << 'EOF'
+            # Claude Security Scan Results
+
+            ⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**
+
+            Claude security scan was skipped because the ANTHROPIC_API_KEY secret is not set.
+            To enable AI-powered security scanning, please add the ANTHROPIC_API_KEY secret to your repository or workflow.
+            EOF
+            
+            exit 0
+          fi
+          
           echo "🔒 Running Claude security scan on changed files"
 
           mkdir -p security_scan_results
@@ -753,11 +800,12 @@ jobs:
           echo "Security scan complete. Results saved to security_scan_summary.md"
         working-directory: ${{ inputs.working_directory || '.' }}
 
-      - name: 📤 Upload security scan results and add PR comment
+      - name: 📤 Upload security scan results
         uses: actions/upload-artifact@v4
         with:
-          name: code-review-results
-          path: ${{ inputs.working_directory || '.' }}/code_review_results.md
+          name: security-scan-results
+          path: ${{ inputs.working_directory || '.' }}/security_scan_summary.md
+          retention-days: 14  # Keep artifacts for 14 days
         if: always() # This ensures results are always uploaded
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
@@ -776,12 +824,18 @@ jobs:
             } catch (e) {
               commentBody = '⚠️ Security scan summary could not be read.';
             }
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: commentBody
-            });
+            try {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            } catch (error) {
+              console.error('Error posting comment. Make sure PAT token has correct scopes (repo, admin:hook):', error.message);
+              core.warning('Failed to post PR comment. Verify PAT token has required scopes: repo (all) and admin:hook');
+            }
+          # This PAT token requires scopes: 'repo' (all) and 'admin:hook'
           github-token: ${{ secrets.PAT }}
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}

@@ -59,20 +59,48 @@ export class CommitLintSetup {
         packages.push('commitizen', 'cz-conventional-changelog');
       }
 
+      // Validate package names to prevent command injection
+      const validPackageNameRegex = /^(@[a-z0-9][\w-.]+\/)?[a-z0-9][\w-.]*$/;
+      const securityCheckRegex = /[;&|`$><\\]/;
+
+      const validatedPackages = packages.filter(pkg => {
+        // Trim whitespace
+        const trimmedPkg = pkg.trim();
+
+        // Check against valid npm package name pattern
+        const isValidFormat = validPackageNameRegex.test(trimmedPkg);
+
+        // Check for potentially dangerous characters
+        const hasDangerousChars = securityCheckRegex.test(trimmedPkg);
+
+        // Package is valid if it matches the format and has no dangerous characters
+        const isValid = isValidFormat && !hasDangerousChars;
+
+        if (!isValid) {
+          Feedback.warning(`Skipping invalid package name: ${trimmedPkg}`);
+        }
+
+        return isValid;
+      });
+
+      if (validatedPackages.length === 0) {
+        throw new Error('No valid packages to install after validation');
+      }
+
       // Install packages based on package manager
       if (this.isYarn) {
-        execSync(`yarn add --dev ${packages.join(' ')}`, {
+        execSync(`yarn add --dev ${validatedPackages.join(' ')}`, {
           cwd: this.cwd,
           stdio: 'inherit',
         });
       } else if (this.isPnpm) {
-        execSync(`pnpm add --save-dev ${packages.join(' ')}`, {
+        execSync(`pnpm add --save-dev ${validatedPackages.join(' ')}`, {
           cwd: this.cwd,
           stdio: 'inherit',
         });
       } else {
         // Default to npm
-        execSync(`npm install --save-dev ${packages.join(' ')}`, {
+        execSync(`npm install --save-dev ${validatedPackages.join(' ')}`, {
           cwd: this.cwd,
           stdio: 'inherit',
         });

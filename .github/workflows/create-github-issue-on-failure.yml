@@ -16,7 +16,7 @@
 #     workflow_name: 'My Workflow'
 #     failed_job: 'build_and_test'
 #   secrets:
-#     PAT: ${{ secrets.GITHUB_TOKEN }}
+#     PAT: ${{ secrets.PAT }}
 # ```
 
 name: 🚨 GitHub Issue on Workflow Failure

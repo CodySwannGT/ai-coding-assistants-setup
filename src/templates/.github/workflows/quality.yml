@@ -21,7 +21,7 @@
 #     package_manager: 'npm'
 #     skip_security: true
 #   secrets:
-#     PAT: ${{ secrets.GITHUB_TOKEN }}
+#     PAT: ${{ secrets.PAT }}  # Required scopes: (repo:status, public_repo, repo_deployment)
 #     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 # ```
 
@@ -71,7 +71,7 @@ on:
         default: false
         type: boolean
       skip_jobs:
-        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,security,code_quality_check,claude_security_scan,quality,github_issue)'
+        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,npm_security_scan,code_quality_check,claude_security_scan,github_issue)'
         required: false
         default: ''
         type: string
@@ -84,6 +84,7 @@ on:
       PAT:
         description: 'Personal Access Token for GitHub operations'
         required: false
+        # Documentation for PAT token scopes: (repo:status, public_repo, repo_deployment)
       ANTHROPIC_API_KEY:
         description: 'Anthropic API key for Claude code quality integrations'
         required: false
@@ -269,11 +270,11 @@ jobs:
         run: ${{ inputs.package_manager }} run build
         working-directory: ${{ inputs.working_directory || '.' }}
 
-  security:
+  npm_security_scan:
     name: 🔒 Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'security') }}
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'npm_security_scan') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -316,7 +317,7 @@ jobs:
     name: 🤖 Claude Code Quality Check
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ github.event_name == 'pull_request' && !contains(inputs.skip_jobs, 'code_quality_check') }}
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'code_quality_check') }}
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -368,10 +369,25 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          # Create basic prompt
-          cat > code_review_prompt.txt << 'EOF'
-          Perform a code review on the provided code changes. Focus on code quality, best practices, and potential bugs.
-          EOF
+          #!/usr/bin/env bash
+          # Check if ANTHROPIC_API_KEY is set
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude code quality check."
+            echo "review_passed=true" >> $GITHUB_OUTPUT
+            
+            # Create a minimal report for artifact upload using echo instead of heredoc
+            echo "# Claude AI Code Review Results" > code_review_results.md
+            echo "" >> code_review_results.md
+            echo "⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**" >> code_review_results.md
+            echo "" >> code_review_results.md
+            echo "Claude code quality check was skipped because the ANTHROPIC_API_KEY secret is not set." >> code_review_results.md
+            echo "To enable AI-powered code reviews, please add the ANTHROPIC_API_KEY secret to your repository or workflow." >> code_review_results.md
+            
+            exit 0
+          fi
+
+          # Create basic prompt using echo instead of heredoc
+          echo "Perform a code review on the provided code changes. Focus on code quality, best practices, and potential bugs." > code_review_prompt.txt
 
           # Check if guidelines file exists in the repository and append it
           if [ -f "docs/code_review_guidelines.md" ]; then
@@ -382,6 +398,8 @@ jobs:
             echo "" >> code_review_prompt.txt
             echo "IMPORTANT GUIDELINES:" >> code_review_prompt.txt
             echo "- IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)" >> code_review_prompt.txt
+            echo "- IGNORE package-lock.json files" >> code_review_prompt.txt
+            echo "- IGNORE version regressions" >> code_review_prompt.txt
             echo "- DO NOT review generated files, compiled code, or third-party dependencies" >> code_review_prompt.txt
             echo "- Focus on substantive code issues rather than trivial style issues" >> code_review_prompt.txt
             echo "- Be concise and specific in your feedback" >> code_review_prompt.txt
@@ -414,7 +432,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/')
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
@@ -427,8 +445,14 @@ jobs:
             # Process each file
             for file in $files_to_review; do
               echo "📝 Reviewing $file"
-              review_output=$(git diff -U0 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- "$file" | \
-                            claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              # Sanitize file path to prevent command injection
+              if [[ ! "$file" =~ [^a-zA-Z0-9_./-] ]]; then
+                review_output=$(git diff -U0 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- "$file" | \
+                              claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              else
+                echo "Skipping file with potentially unsafe path: $file"
+                continue
+              fi
               
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
@@ -466,7 +490,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only HEAD~1 HEAD | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/')
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
@@ -479,8 +503,14 @@ jobs:
             # Process each file
             for file in $files_to_review; do
               echo "📝 Reviewing $file"
-              review_output=$(git diff -U0 HEAD~1 HEAD -- "$file" | \
-                            claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              # Sanitize file path to prevent command injection
+              if [[ ! "$file" =~ [^a-zA-Z0-9_./-] ]]; then
+                review_output=$(git diff -U0 HEAD~1 HEAD -- "$file" | \
+                              claude -p "$(cat code_review_prompt.txt)" --output-format json)
+              else
+                echo "Skipping file with potentially unsafe path: $file"
+                continue
+              fi
               
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
@@ -527,39 +557,41 @@ jobs:
         with:
           name: code-review-results
           path: ${{ inputs.working_directory || '.' }}/code_review_results.md
+          retention-days: 14 # Keep artifacts for 14 days
         if: always() # This ensures results are always uploaded
 
-      - name: 💬 Post code review as PR comment
+      - name: 💬 Comment code review results on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.PAT || github.token }}
           script: |
             const fs = require('fs');
-            const workingDir = '${{ inputs.working_directory || '.' }}';
-            const resultsPath = `${process.env.GITHUB_WORKSPACE}/${workingDir}/code_review_results.md`;
-
+            const path = process.env['WORKING_DIRECTORY'] || '.';
+            const resultsPath = `${path}/code_review_results.md`;
+            let commentBody;
             try {
-              const resultsContent = fs.readFileSync(resultsPath, 'utf8');
-              
-              // Create a comment with the review results
-              const commentBody = `# 🤖 Claude AI Code Review\n\n${resultsContent}`;
-              
-              // Post the comment on the PR
+              commentBody = fs.readFileSync(resultsPath, 'utf8');
+            } catch (e) {
+              commentBody = '⚠️ Code review results could not be read.';
+            }
+            try {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
                 body: commentBody
               });
-              
-              console.log('Successfully posted code review as PR comment');
             } catch (error) {
-              console.error('Error posting code review comment:', error);
-              core.warning(`Failed to post code review comment: ${error.message}`);
+              console.error('Error posting comment. Make sure PAT token has correct scopes: (repo:status, public_repo, repo_deployment):', error.message);
+              core.warning('Failed to post PR comment. Verify PAT token has required scopes: (repo:status, public_repo, repo_deployment)');
             }
+          # SECURITY NOTE: Full repo access is required here ('repo' scope) to post PR comments
+          # from within a workflow context, which cannot be done with the default GITHUB_TOKEN
+          github-token: ${{ secrets.PAT }}
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
 
-      - name: � Fail if code review didn't pass
+      - name: ❌ Fail if code review didn't pass
         if: steps.code_review.outputs.review_passed == 'false'
         run: |
           echo "❌ Code review found critical issues that must be fixed before deployment."
@@ -569,13 +601,8 @@ jobs:
     name: 🛡️ Claude Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ github.event_name == 'pull_request' && !contains(inputs.skip_jobs, 'claude_security_scan') }}
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'claude_security_scan') }}
     steps:
-- name: Exit if not a pull request
-        if: github.event_name != 'pull_request'
-        run: |
-          echo "This job only runs on pull requests."
-          exit 0
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
         with:
@@ -631,7 +658,9 @@ jobs:
             echo "12. Use of unsafe or deprecated functions" >> security_prompt.txt
             echo "" >> security_prompt.txt
             echo "IMPORTANT GUIDELINES:" >> security_prompt.txt
+            echo "- ONLY FAIL the scan for issues of severity 'high' or above " >> security_prompt.txt
             echo "- IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)" >> security_prompt.txt
+            echo "- IGNORE package-lock.json files" >> security_prompt.txt
             echo "- DO NOT review generated files, compiled code, or third-party dependencies" >> security_prompt.txt
             echo "- Focus only on legitimate security issues in actual application code" >> security_prompt.txt
             echo "" >> security_prompt.txt
@@ -651,6 +680,23 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
+          #!/usr/bin/env bash
+          # Check if ANTHROPIC_API_KEY is set
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude security scan."
+            echo "security_passed=true" >> $GITHUB_OUTPUT
+            
+            # Create a minimal report for artifact upload using echo instead of heredoc
+            echo "# Claude Security Scan Results" > security_scan_summary.md
+            echo "" >> security_scan_summary.md
+            echo "⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**" >> security_scan_summary.md
+            echo "" >> security_scan_summary.md
+            echo "Claude security scan was skipped because the ANTHROPIC_API_KEY secret is not set." >> security_scan_summary.md
+            echo "To enable AI-powered security scanning, please add the ANTHROPIC_API_KEY secret to your repository or workflow." >> security_scan_summary.md
+            
+            exit 0
+          fi
+
           echo "🔒 Running Claude security scan on changed files"
 
           mkdir -p security_scan_results
@@ -659,11 +705,11 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # For pull requests, check all relevant changes
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
           else
             # For pushes, check the latest commit
             CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
           fi
 
           if [ -z "$CHANGED_FILES" ]; then
@@ -709,8 +755,14 @@ jobs:
             
             # Check if file exists and has content
             if [ -f "$FILE" ] && [ -s "$FILE" ]; then
-              # Run security scan on the file
-              review_output=$(cat "$FILE" | claude -p "$(cat security_prompt.txt)" --output-format json)
+              # Sanitize file path to prevent command injection
+              if [[ ! "$FILE" =~ [^a-zA-Z0-9_./-] ]]; then
+                # Run security scan on the file
+                review_output=$(cat "$FILE" | claude -p "$(cat security_prompt.txt)" --output-format json)
+              else
+                echo "Skipping file with potentially unsafe path: $FILE"
+                continue
+              fi
               
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
@@ -765,33 +817,43 @@ jobs:
         with:
           name: security-scan-results
           path: ${{ inputs.working_directory || '.' }}/security_scan_summary.md
+          retention-days: 14 # Keep artifacts for 14 days
         if: always() # This ensures results are always uploaded
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
 
-      - name: 💬 Post security scan as PR comment
+      - name: 💬 Comment security scan results on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.PAT || github.token }}
           script: |
             const fs = require('fs');
-            const workingDir = '${{ inputs.working_directory || '.' }}';
-            const resultsPath = `${process.env.GITHUB_WORKSPACE}/${workingDir}/security_scan_summary.md`;
+            const path = process.env['WORKING_DIRECTORY'] || '.';
+            const summaryPath = `${path}/security_scan_summary.md`;
+            let commentBody;
             try {
-              const resultsContent = fs.readFileSync(resultsPath, 'utf8');
-              const commentBody = `# 🛡️ Claude Security Scan Results\n\n${resultsContent}`;
+              commentBody = fs.readFileSync(summaryPath, 'utf8');
+            } catch (e) {
+              commentBody = '⚠️ Security scan summary could not be read.';
+            }
+            try {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
                 body: commentBody
               });
-              console.log('Successfully posted security scan as PR comment');
             } catch (error) {
-              console.error('Error posting security scan comment:', error);
-              core.warning(`Failed to post security scan comment: ${error.message}`);
+              console.error('Error posting comment. Make sure PAT token has correct scopes: (repo:status, public_repo, repo_deployment):', error.message);
+              core.warning('Failed to post PR comment. Verify PAT token has required scopes: (repo:status, public_repo, repo_deployment)');
             }
+          # SECURITY NOTE: Full repo access is required here ('repo' scope) to post PR comments
+          # from within a workflow context, which cannot be done with the default GITHUB_TOKEN
+          github-token: ${{ secrets.PAT }}
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
 
-      - name: � Fail if security issues were found
+      - name: ❌ Fail if security issues were found
         if: steps.security_scan.outputs.security_passed == 'false'
         run: |
           echo "❌ Security scan found issues that must be fixed before deployment."

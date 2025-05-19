@@ -66,20 +66,20 @@ export class CommitLintSetup {
       const validatedPackages = packages.filter(pkg => {
         // Trim whitespace
         const trimmedPkg = pkg.trim();
-        
+
         // Check against valid npm package name pattern
         const isValidFormat = validPackageNameRegex.test(trimmedPkg);
-        
+
         // Check for potentially dangerous characters
         const hasDangerousChars = securityCheckRegex.test(trimmedPkg);
-        
+
         // Package is valid if it matches the format and has no dangerous characters
         const isValid = isValidFormat && !hasDangerousChars;
-        
+
         if (!isValid) {
           Feedback.warning(`Skipping invalid package name: ${trimmedPkg}`);
         }
-        
+
         return isValid;
       });
 

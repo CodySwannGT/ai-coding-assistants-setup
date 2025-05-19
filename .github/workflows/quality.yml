@@ -432,7 +432,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$|\.yml$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
@@ -490,7 +490,7 @@ jobs:
             
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only HEAD~1 HEAD | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
+                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$|\.yml$' || echo "")
             
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
@@ -705,11 +705,11 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # For pull requests, check all relevant changes
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$|\.yml$' || echo "")
           else
             # For pushes, check the latest commit
             CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$' || echo "")
+                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$|\.yml$' || echo "")
           fi
 
           if [ -z "$CHANGED_FILES" ]; then

@@ -238,7 +238,7 @@ jobs:
     if: ${{ !contains(inputs.skip_jobs, 'github_release') && (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
     steps:
       - name: 📢 Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.version.outputs.tag }}
           generate_release_notes: true

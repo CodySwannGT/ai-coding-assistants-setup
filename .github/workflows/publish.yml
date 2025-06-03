@@ -44,12 +44,14 @@ jobs:
     needs: [determine_environment]
     with:
       environment: ${{ needs.determine_environment.outputs.environment }}
-      node_version: '20.x'
-      package_manager: 'npm'
+      release_strategy: 'semantic'
       skip_jobs: 'claude_security_scan,code_quality_check'
-    secrets:
-      PAT: ${{ secrets.PAT }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      require_approval: false
+      require_signatures: false
+      generate_sbom: true
+      node_version: '20'
+      package_manager: 'npm'
+    secrets: inherit
 
   # Publish to npm
   publish_npm:
@@ -104,5 +106,4 @@ jobs:
     uses: ./.github/workflows/create-github-issue-on-failure.yml
     with:
       workflow_name: 'Version and Release'
-    secrets:
-      PAT: ${{ secrets.PAT }}
+    secrets: inherit

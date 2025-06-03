@@ -44,6 +44,8 @@ jobs:
       generate_sbom: true
       require_approval: false
       require_signatures: false
+      node_version: '20'
+      package_manager: 'npm'
     secrets: inherit
 
   validate-results:

@@ -82,6 +82,15 @@ on:
         required: false
         type: boolean
         default: false
+      node_version:
+        description: 'Node.js version to use'
+        required: true
+        type: string
+      package_manager:
+        description: 'Package manager to use (npm, yarn, pnpm)'
+        required: false
+        type: string
+        default: 'npm'
     outputs:
       version:
         description: 'The new version number'
@@ -277,7 +286,8 @@ jobs:
     uses: ./.github/workflows/quality.yml
     with:
       skip_jobs: ${{ inputs.skip_jobs }}
-      node_version: '20'
+      node_version: ${{ inputs.node_version }}
+      package_manager: ${{ inputs.package_manager }}
     secrets: inherit
 
   # Version management with observability
@@ -383,8 +393,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: ${{ inputs.node_version }}
+          cache: ${{ inputs.package_manager }}
 
       - name: Determine Version
         id: version

@@ -53,7 +53,7 @@ jobs:
           ERRORS=0
           for workflow in .github/workflows/release*.yml; do
             echo "Validating $workflow..."
-            
+
             # YAML lint
             if yamllint -c .yamllint "$workflow"; then
               echo "✅ YAML valid: $workflow" >> $GITHUB_STEP_SUMMARY
@@ -61,7 +61,7 @@ jobs:
               echo "❌ YAML invalid: $workflow" >> $GITHUB_STEP_SUMMARY
               ((ERRORS++))
             fi
-            
+
             # Action lint
             if actionlint "$workflow" 2>/dev/null; then
               echo "✅ Actions valid: $workflow" >> $GITHUB_STEP_SUMMARY
@@ -81,14 +81,14 @@ jobs:
           # Test input validation
           for workflow in .github/workflows/release*.yml; do
             echo "Testing inputs for $workflow"
-            
+
             # Extract inputs
             yq eval '.on.workflow_call.inputs' "$workflow" > /tmp/inputs.yml
-            
+
             # Validate required inputs
             REQUIRED=$(yq eval '.[] | select(.required == true) | key' /tmp/inputs.yml)
             echo "Required inputs: $REQUIRED"
-            
+
             # Validate input types
             TYPES=$(yq eval '.[] | .type' /tmp/inputs.yml | sort -u)
             for type in $TYPES; do
@@ -154,11 +154,11 @@ jobs:
             if [ -f ".github/workflows/$workflow" ]; then
               echo "### $workflow" >> $GITHUB_STEP_SUMMARY
               echo "Required secrets: ${WORKFLOW_SECRETS[$workflow]}" >> $GITHUB_STEP_SUMMARY
-              
+
               # Extract secret references from workflow
               USED_SECRETS=$(grep -oE '\$\{\{\s*secrets\.[A-Z_]+\s*\}\}' ".github/workflows/$workflow" | \
                 sed -E 's/.*secrets\.([A-Z_]+).*/\1/' | sort -u)
-              
+
               echo "Used secrets: $USED_SECRETS" >> $GITHUB_STEP_SUMMARY
             fi
           done
@@ -210,7 +210,7 @@ jobs:
 
           for strategy in "${STRATEGIES[@]}"; do
             echo "Testing $strategy strategy..."
-            
+
             case $strategy in
               "standard-version")
                 # Should work with standard-version
@@ -228,7 +228,7 @@ jobs:
                 VERSION="custom-1.2.3"
                 ;;
             esac
-            
+
             if [ "$VERSION" != "error" ]; then
               echo "✅ $strategy: $VERSION" >> $GITHUB_STEP_SUMMARY
             else
@@ -279,7 +279,7 @@ jobs:
           echo "Test content" > test-file.txt
           if gpg --armor --detach-sign --local-user test@example.com test-file.txt; then
             echo "✅ GPG signing works" >> $GITHUB_STEP_SUMMARY
-            
+
             # Verify signature
             if gpg --verify test-file.txt.asc test-file.txt; then
               echo "✅ Signature verification works" >> $GITHUB_STEP_SUMMARY
@@ -418,12 +418,12 @@ jobs:
 
           for op in "${OPERATIONS[@]}"; do
             IFS=':' read -r name command <<< "$op"
-            
+
             START=$(date +%s.%N)
             eval "$command" >/dev/null 2>&1 || true
             END=$(date +%s.%N)
             DURATION=$(echo "$END - $START" | bc)
-            
+
             echo "- $name: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
           done
 

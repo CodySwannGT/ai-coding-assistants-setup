@@ -175,12 +175,12 @@ jobs:
           # Check signatures
           if [ "${{ needs.test_signed.outputs.signed }}" == "true" ]; then
             echo "✅ Release signed successfully" >> $GITHUB_STEP_SUMMARY
-            
+
             # Look for signature files
             if ls signed-artifacts-*/release-manifest.json.sig 2>/dev/null; then
               echo "✅ Manifest signature found" >> $GITHUB_STEP_SUMMARY
             fi
-            
+
             if ls signed-artifacts-*/*.sha256 2>/dev/null; then
               echo "✅ Checksums generated" >> $GITHUB_STEP_SUMMARY
             fi
@@ -315,7 +315,7 @@ jobs:
           # Check for compliance evidence
           if ls compliance-evidence-*/*.tar.gz 2>/dev/null; then
             echo "✅ Compliance evidence package created" >> $GITHUB_STEP_SUMMARY
-            
+
             # Extract and check contents
             tar -tzf compliance-evidence-*/*.tar.gz | head -10 >> $GITHUB_STEP_SUMMARY
           else

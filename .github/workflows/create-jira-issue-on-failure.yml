@@ -167,12 +167,12 @@ jobs:
           else
             echo "Failed to create Jira issue. API response:"
             echo "$RESPONSE"
-            
+
             # Extract HTTP status code for better error diagnosis
             HTTP_STATUS=$(echo "$RESPONSE" | grep -oE "^HTTP/[0-9.]+ [0-9]+" | awk '{print $2}')
             if [ -n "$HTTP_STATUS" ]; then
               echo "HTTP Status Code: $HTTP_STATUS"
-              
+
               if [ "$HTTP_STATUS" = "404" ]; then
                 echo "Error: API endpoint not found. Please check JIRA_BASE_URL configuration."
               elif [ "$HTTP_STATUS" = "401" ]; then
@@ -181,11 +181,11 @@ jobs:
                 echo "Error: Permission denied. Please check user permissions."
               fi
             fi
-            
+
             # Print payload for debugging (with sensitive data redacted)
             echo "Request payload (redacted):"
             echo "$PAYLOAD" | sed 's/"key":"[^"]*"/"key":"***"/g'
-            
+
             exit 1
           fi
 

@@ -191,20 +191,20 @@ jobs:
                 IS_BLACKOUT=true
                 BLACKOUT_REASON="Weekend release restriction for production"
               fi
-              
+
               # No late night releases (10 PM - 6 AM)
               if [[ $CURRENT_HOUR -ge 22 || $CURRENT_HOUR -lt 6 ]]; then
                 IS_BLACKOUT=true
                 BLACKOUT_REASON="Late night release restriction (10 PM - 6 AM)"
               fi
-              
+
               # Holiday blackouts
               HOLIDAYS=(
                 "2024-12-24:2025-01-02:Holiday Season"
                 "2025-07-03:2025-07-05:Independence Day"
                 "2025-11-27:2025-11-29:Thanksgiving"
               )
-              
+
               for holiday in "${HOLIDAYS[@]}"; do
                 IFS=':' read -r start end name <<< "$holiday"
                 if [[ "$CURRENT_DATE" > "$start" && "$CURRENT_DATE" < "$end" ]]; then
@@ -214,7 +214,7 @@ jobs:
                 fi
               done
               ;;
-            
+
             staging|stage)
               # Staging has fewer restrictions
               if [[ "$CURRENT_DAY" == "Sunday" && $CURRENT_HOUR -ge 20 ]]; then
@@ -326,14 +326,14 @@ jobs:
             local event_status="$2"
             local event_message="$3"
             shift 3
-            
+
             # Additional key-value pairs
             local additional_fields=""
             while [ $# -gt 0 ] && [ $# -ge 2 ]; do
               additional_fields="$additional_fields,\"$1\":\"$2\""
               shift 2
             done
-            
+
             # Create structured log entry
             local log_entry=$(jq -n \
               --arg correlation_id "$RELEASE_CORRELATION_ID" \
@@ -368,10 +368,10 @@ jobs:
                   \"sha\": \$sha
                 }${additional_fields}
               }")
-            
+
             # Output to stdout and file
             echo "$log_entry" | tee -a release-events.jsonl
-            
+
             # Also log to GitHub Actions if debug enabled
             if [ "${{ inputs.debug }}" == "true" ]; then
               echo "::notice title=Release Event::$event_type - $event_status: $event_message"
@@ -414,7 +414,7 @@ jobs:
               else
                 BUMP_TYPE="patch"
               fi
-              
+
               CURRENT_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
               VERSION=$(npx semver -i $BUMP_TYPE ${CURRENT_VERSION#v})
               ;;
@@ -467,7 +467,7 @@ jobs:
             else
               COMMIT_RANGE="HEAD"
             fi
-            
+
             # Generate changelog with categories
             cat > CHANGELOG_ENTRY.md << EOF
           ## [${{ steps.version.outputs.version }}] - $(date +%Y-%m-%d)
@@ -480,20 +480,20 @@ jobs:
           - **Approved By**: ${{ needs.release_approval.outputs.approver || 'N/A' }}
 
           EOF
-            
+
             # Add commit categories
             if git log $COMMIT_RANGE --format=%B | grep -qE "^(feat|feature)(\(.+\))?:"; then
               echo "### ✨ Features" >> CHANGELOG_ENTRY.md
               git log $COMMIT_RANGE --format="- %s (%h)" --grep="^feat" --grep="^feature" >> CHANGELOG_ENTRY.md
               echo "" >> CHANGELOG_ENTRY.md
             fi
-            
+
             if git log $COMMIT_RANGE --format=%B | grep -qE "^fix(\(.+\))?:"; then
               echo "### 🐛 Bug Fixes" >> CHANGELOG_ENTRY.md
               git log $COMMIT_RANGE --format="- %s (%h)" --grep="^fix" >> CHANGELOG_ENTRY.md
               echo "" >> CHANGELOG_ENTRY.md
             fi
-            
+
             # Update CHANGELOG.md
             if [ -f CHANGELOG.md ]; then
               cp CHANGELOG.md CHANGELOG.md.bak
@@ -528,8 +528,8 @@ jobs:
           jq --arg version "${{ steps.version.outputs.version }}" \
              --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
              --arg sha "${{ github.sha }}" \
-             '.metadata.component.version = $version | 
-              .metadata.timestamp = $timestamp | 
+             '.metadata.component.version = $version |
+              .metadata.timestamp = $timestamp |
               .metadata.component["bom-ref"] = $sha' \
              sbom.json > sbom-release.json
 
@@ -624,17 +624,17 @@ jobs:
             local file="$1"
             local sig_file="${file}.sig"
             local sha_file="${file}.sha256"
-            
+
             if [ -f "$file" ]; then
               # Create detached signature
               gpg --armor --detach-sign \
                 --local-user "${{ secrets.SIGNING_KEY_ID || secrets.RELEASE_SIGNING_KEY_ID }}" \
                 --output "$sig_file" \
                 "$file"
-              
+
               # Generate checksum
               sha256sum "$file" | cut -d' ' -f1 > "$sha_file"
-              
+
               echo "✅ Signed: $file"
               return 0
             else
@@ -679,7 +679,7 @@ jobs:
               echo "," >> release-manifest.json
             fi
             first=false
-            
+
             cat >> release-manifest.json << EOF
               {
                 "name": "$file",

@@ -109,7 +109,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Test Scenario**: ${{ github.event.inputs.test_scenario }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           case "${{ github.event.inputs.test_scenario }}" in
             "basic-quality-checks")
               echo "✅ Basic quality checks should run without security tools" >> $GITHUB_STEP_SUMMARY
@@ -133,6 +133,6 @@ jobs:
               echo "✅ All jobs should be skipped" >> $GITHUB_STEP_SUMMARY
               ;;
           esac
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Check the individual workflow runs above for detailed results." >> $GITHUB_STEP_SUMMARY

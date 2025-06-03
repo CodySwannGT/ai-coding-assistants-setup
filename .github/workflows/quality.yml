@@ -470,7 +470,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high --all-projects
-          
+
       - name: 📤 Upload Snyk results
         if: steps.check_token.outputs.skip != 'true' && always()
         uses: actions/upload-artifact@v4
@@ -603,7 +603,7 @@ jobs:
           if [ -z "$ANTHROPIC_API_KEY" ]; then
             echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude code quality check."
             echo "review_passed=true" >> $GITHUB_OUTPUT
-            
+
             # Create a minimal report for artifact upload using echo instead of heredoc
             echo "# Claude AI Code Review Results" > code_review_results.md
             echo "" >> code_review_results.md
@@ -611,7 +611,7 @@ jobs:
             echo "" >> code_review_results.md
             echo "Claude code quality check was skipped because the ANTHROPIC_API_KEY secret is not set." >> code_review_results.md
             echo "To enable AI-powered code reviews, please add the ANTHROPIC_API_KEY secret to your repository or workflow." >> code_review_results.md
-            
+
             exit 0
           fi
 
@@ -656,13 +656,13 @@ jobs:
             echo "- Author: ${{ github.event.pull_request.user.login }}" >> $RESULTS_FILE
             echo "- Branch: ${{ github.head_ref }}" >> $RESULTS_FILE
             echo "" >> $RESULTS_FILE
-            
+
             echo "🔍 Reviewing files changed in PR #${{ github.event.pull_request.number }}"
-            
+
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
                               grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$|\.yml$' || echo "")
-            
+
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
             echo "" >> $RESULTS_FILE
@@ -670,7 +670,7 @@ jobs:
               echo "- [${file}](#$(echo ${file} | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]'))" >> $RESULTS_FILE
             done
             echo "" >> $RESULTS_FILE
-            
+
             # Process each file
             for file in $files_to_review; do
               echo "📝 Reviewing $file"
@@ -682,22 +682,22 @@ jobs:
                 echo "Skipping file with potentially unsafe path: $file"
                 continue
               fi
-              
+
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
-              
+
               # Print formatted review
               echo "===================== REVIEW FOR $file ====================="
               echo "$review_text"
               echo "==========================================================="
               echo ""
-              
+
               # Add to markdown file
               echo "## $file" >> $RESULTS_FILE
               echo "" >> $RESULTS_FILE
               echo "$(echo "$review_text" | sed 's/VERDICT: PASS/✅ VERDICT: PASS/g' | sed 's/VERDICT: FAIL/❌ VERDICT: FAIL/g')" >> $RESULTS_FILE
               echo "" >> $RESULTS_FILE
-              
+
               # Check for verdict
               if echo "$review_text" | grep -q "VERDICT: FAIL"; then
                 echo "❌ CRITICAL ISSUES FOUND IN $file"
@@ -714,13 +714,13 @@ jobs:
             echo "- Date: $(git log -1 --pretty=format:'%ad' --date=format:'%Y-%m-%d %H:%M:%S')" >> $RESULTS_FILE
             echo "- Message: $(git log -1 --pretty=format:'%s')" >> $RESULTS_FILE
             echo "" >> $RESULTS_FILE
-            
+
             echo "🔍 Reviewing files in latest commit"
-            
+
             # Get all files to review
             files_to_review=$(git diff -U0 --name-only HEAD~1 HEAD | \
                               grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$|\.yml$' || echo "")
-            
+
             # Add TOC to markdown file
             echo "## Files Reviewed" >> $RESULTS_FILE
             echo "" >> $RESULTS_FILE
@@ -728,7 +728,7 @@ jobs:
               echo "- [${file}](#$(echo ${file} | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]'))" >> $RESULTS_FILE
             done
             echo "" >> $RESULTS_FILE
-            
+
             # Process each file
             for file in $files_to_review; do
               echo "📝 Reviewing $file"
@@ -740,22 +740,22 @@ jobs:
                 echo "Skipping file with potentially unsafe path: $file"
                 continue
               fi
-              
+
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
-              
+
               # Print formatted review
               echo "===================== REVIEW FOR $file ====================="
               echo "$review_text"
               echo "==========================================================="
               echo ""
-              
+
               # Add to markdown file
               echo "## $file" >> $RESULTS_FILE
               echo "" >> $RESULTS_FILE
               echo "$(echo "$review_text" | sed 's/VERDICT: PASS/✅ VERDICT: PASS/g' | sed 's/VERDICT: FAIL/❌ VERDICT: FAIL/g')" >> $RESULTS_FILE
               echo "" >> $RESULTS_FILE
-              
+
               # Check for verdict
               if echo "$review_text" | grep -q "VERDICT: FAIL"; then
                 echo "❌ CRITICAL ISSUES FOUND IN $file"
@@ -929,7 +929,7 @@ jobs:
           if [ -z "$ANTHROPIC_API_KEY" ]; then
             echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude security scan."
             echo "security_passed=true" >> $GITHUB_OUTPUT
-            
+
             # Create a minimal report for artifact upload using echo instead of heredoc
             echo "# Claude Security Scan Results" > security_scan_summary.md
             echo "" >> security_scan_summary.md
@@ -937,7 +937,7 @@ jobs:
             echo "" >> security_scan_summary.md
             echo "Claude security scan was skipped because the ANTHROPIC_API_KEY secret is not set." >> security_scan_summary.md
             echo "To enable AI-powered security scanning, please add the ANTHROPIC_API_KEY secret to your repository or workflow." >> security_scan_summary.md
-            
+
             exit 0
           fi
 
@@ -996,7 +996,7 @@ jobs:
           for FILE in $CHANGED_FILES; do
             SAFENAME=$(echo "$FILE" | sed 's/\//_/g')
             echo "Scanning $FILE for security issues..."
-            
+
             # Check if file exists and has content
             if [ -f "$FILE" ] && [ -s "$FILE" ]; then
               # Sanitize file path to prevent command injection
@@ -1007,19 +1007,19 @@ jobs:
                 echo "Skipping file with potentially unsafe path: $FILE"
                 continue
               fi
-              
+
               # Extract the review text
               review_text=$(echo "$review_output" | jq -r ".result")
-              
+
               # Save to file
               echo "$review_text" > "security_scan_results/${SAFENAME}_scan.md"
-              
+
               # Print formatted review
               echo "===================== SECURITY SCAN FOR $FILE ====================="
               echo "$review_text"
               echo "=================================================================="
               echo ""
-              
+
               # Add to markdown file
               ANCHOR_NAME=$(echo "$FILE" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
               echo "<a id=\"${ANCHOR_NAME}\"></a>" >> security_scan_summary.md
@@ -1027,7 +1027,7 @@ jobs:
               echo "" >> security_scan_summary.md
               echo "$(echo "$review_text" | sed 's/VERDICT: PASS/✅ VERDICT: PASS/g' | sed 's/VERDICT: FAIL/❌ VERDICT: FAIL/g')" >> security_scan_summary.md
               echo "" >> security_scan_summary.md
-              
+
               # Check for verdict
               if echo "$review_text" | grep -q "VERDICT: FAIL"; then
                 echo "❌ SECURITY ISSUES FOUND IN $FILE"
@@ -1125,7 +1125,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Status Overview" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Code Quality Check status
           if [ "${{ needs.code_quality_check.result }}" == "skipped" ]; then
             echo "- 🤖 **Code Quality Check**: ⏭️ Skipped" >> $GITHUB_STEP_SUMMARY
@@ -1136,7 +1136,7 @@ jobs:
           else
             echo "- 🤖 **Code Quality Check**: ❓ Unknown status" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Security Scan status
           if [ "${{ needs.claude_security_scan.result }}" == "skipped" ]; then
             echo "- 🛡️ **Security Scan**: ⏭️ Skipped" >> $GITHUB_STEP_SUMMARY
@@ -1147,19 +1147,19 @@ jobs:
           else
             echo "- 🛡️ **Security Scan**: ❓ Unknown status" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📝 Notes" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- AI scanners are **non-blocking** and provide recommendations only" >> $GITHUB_STEP_SUMMARY
           echo "- Review the artifacts for detailed findings" >> $GITHUB_STEP_SUMMARY
           echo "- Consider addressing high-priority issues before merging" >> $GITHUB_STEP_SUMMARY
-          
+
           # Overall recommendation
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🎯 Recommendation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ needs.code_quality_check.outputs.review_status }}" == "failed" ] || [ "${{ needs.claude_security_scan.outputs.security_status }}" == "failed" ]; then
             echo "⚠️ **AI scanners found issues.** While not blocking, we recommend reviewing the findings before proceeding." >> $GITHUB_STEP_SUMMARY
           else
@@ -1179,7 +1179,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # SonarCloud SAST status
           if [ "${{ needs.sonarcloud.result }}" == "skipped" ]; then
             echo "- 🔍 **SonarCloud SAST**: ⏭️ Skipped (no token)" >> $GITHUB_STEP_SUMMARY
@@ -1188,7 +1188,7 @@ jobs:
           else
             echo "- 🔍 **SonarCloud SAST**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Snyk Dependency Scan status
           if [ "${{ needs.snyk.result }}" == "skipped" ]; then
             echo "- 🛡️ **Snyk Dependency Scan**: ⏭️ Skipped (no token)" >> $GITHUB_STEP_SUMMARY
@@ -1197,7 +1197,7 @@ jobs:
           else
             echo "- 🛡️ **Snyk Dependency Scan**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # GitGuardian Secret Detection status
           if [ "${{ needs.secret_scanning.result }}" == "skipped" ]; then
             echo "- 🔐 **GitGuardian Secret Detection**: ⏭️ Skipped (no token)" >> $GITHUB_STEP_SUMMARY
@@ -1206,7 +1206,7 @@ jobs:
           else
             echo "- 🔐 **GitGuardian Secret Detection**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # FOSSA License Compliance status
           if [ "${{ needs.license_compliance.result }}" == "skipped" ]; then
             echo "- 📜 **FOSSA License Compliance**: ⏭️ Skipped (no token)" >> $GITHUB_STEP_SUMMARY
@@ -1215,51 +1215,51 @@ jobs:
           else
             echo "- 📜 **FOSSA License Compliance**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📊 Security Posture" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Count active tools
           ACTIVE_TOOLS=0
           PASSED_TOOLS=0
-          
+
           if [ "${{ needs.sonarcloud.result }}" != "skipped" ]; then
             ACTIVE_TOOLS=$((ACTIVE_TOOLS + 1))
             if [ "${{ needs.sonarcloud.result }}" == "success" ]; then
               PASSED_TOOLS=$((PASSED_TOOLS + 1))
             fi
           fi
-          
+
           if [ "${{ needs.snyk.result }}" != "skipped" ]; then
             ACTIVE_TOOLS=$((ACTIVE_TOOLS + 1))
             if [ "${{ needs.snyk.result }}" == "success" ]; then
               PASSED_TOOLS=$((PASSED_TOOLS + 1))
             fi
           fi
-          
+
           if [ "${{ needs.secret_scanning.result }}" != "skipped" ]; then
             ACTIVE_TOOLS=$((ACTIVE_TOOLS + 1))
             if [ "${{ needs.secret_scanning.result }}" == "success" ]; then
               PASSED_TOOLS=$((PASSED_TOOLS + 1))
             fi
           fi
-          
+
           if [ "${{ needs.license_compliance.result }}" != "skipped" ]; then
             ACTIVE_TOOLS=$((ACTIVE_TOOLS + 1))
             if [ "${{ needs.license_compliance.result }}" == "success" ]; then
               PASSED_TOOLS=$((PASSED_TOOLS + 1))
             fi
           fi
-          
+
           echo "- **Active Security Tools**: $ACTIVE_TOOLS / 4" >> $GITHUB_STEP_SUMMARY
           echo "- **Passed Checks**: $PASSED_TOOLS / $ACTIVE_TOOLS" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ $ACTIVE_TOOLS -gt 0 ]; then
             SCORE=$((PASSED_TOOLS * 100 / ACTIVE_TOOLS))
             echo "- **Security Score**: $SCORE%" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🔧 Configuration" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -1268,12 +1268,12 @@ jobs:
           echo "- \`SNYK_TOKEN\` - [Get from Snyk](https://app.snyk.io/)" >> $GITHUB_STEP_SUMMARY
           echo "- \`GITGUARDIAN_API_KEY\` - [Get from GitGuardian](https://dashboard.gitguardian.com/)" >> $GITHUB_STEP_SUMMARY
           echo "- \`FOSSA_API_KEY\` - [Get from FOSSA](https://app.fossa.com/)" >> $GITHUB_STEP_SUMMARY
-          
+
           # Overall status
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🎯 Overall Status" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ $ACTIVE_TOOLS -eq 0 ]; then
             echo "⚠️ **No security tools are active.** Configure tokens to enable security scanning." >> $GITHUB_STEP_SUMMARY
           elif [ $PASSED_TOOLS -eq $ACTIVE_TOOLS ]; then
@@ -1306,24 +1306,24 @@ jobs:
         run: |
           echo "## SOC 2 Type II Controls" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # CC6.1 - Logical and Physical Access Controls
           if [ "${{ needs.secret_scanning.result }}" == "success" ] || [ "${{ needs.secret_scanning.result }}" == "skipped" ]; then
             echo "✅ **CC6.1**: No hardcoded credentials detected" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **CC6.1**: Secret scanning failed - potential credential exposure" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # CC7.1 - System Operations
           if [ "${{ needs.npm_security_scan.result }}" == "success" ] && [ "${{ needs.snyk.result }}" == "success" ]; then
             echo "✅ **CC7.1**: Vulnerability management controls validated" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ **CC7.1**: Security scanning incomplete - manual review required" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # CC7.2 - System Monitoring
           echo "✅ **CC7.2**: Audit logging enabled (retention: ${{ inputs.audit_retention_days }} days)" >> $GITHUB_STEP_SUMMARY
-          
+
           # CC8.1 - Change Management
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             echo "✅ **CC8.1**: Change management process followed (PR #${{ github.event.pull_request.number }})" >> $GITHUB_STEP_SUMMARY
@@ -1337,27 +1337,27 @@ jobs:
         run: |
           echo "## ISO 27001:2022 Controls" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # A.8.1 - Asset Management
           if [ "${{ needs.license_compliance.result }}" == "success" ]; then
             echo "✅ **A.8.1**: Software asset inventory validated" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ **A.8.1**: License compliance check skipped" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # A.12.1 - Operational Security
           if [ "${{ needs.sonarcloud.result }}" == "success" ]; then
             echo "✅ **A.12.1**: Code quality and security controls validated" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ **A.12.1**: Static analysis skipped" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # A.14.2 - Security in Development
           SECURITY_TESTS=0
           [ "${{ needs.npm_security_scan.result }}" == "success" ] && SECURITY_TESTS=$((SECURITY_TESTS + 1))
           [ "${{ needs.snyk.result }}" == "success" ] && SECURITY_TESTS=$((SECURITY_TESTS + 1))
           [ "${{ needs.secret_scanning.result }}" == "success" ] && SECURITY_TESTS=$((SECURITY_TESTS + 1))
-          
+
           if [ $SECURITY_TESTS -ge 2 ]; then
             echo "✅ **A.14.2**: Security testing in SDLC validated ($SECURITY_TESTS/3 tools)" >> $GITHUB_STEP_SUMMARY
           else
@@ -1370,23 +1370,23 @@ jobs:
         run: |
           echo "## HIPAA Security Rule Controls" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Access Control - 164.312(a)(1)
           echo "✅ **164.312(a)(1)**: Access controls implemented via GitHub permissions" >> $GITHUB_STEP_SUMMARY
-          
+
           # Audit Controls - 164.312(b)
           echo "✅ **164.312(b)**: Audit logging enabled with ${{ inputs.audit_retention_days }}-day retention" >> $GITHUB_STEP_SUMMARY
-          
+
           # Integrity - 164.312(c)(1)
           if [ "${{ needs.test.result }}" == "success" ]; then
             echo "✅ **164.312(c)(1)**: Data integrity validated through testing" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **164.312(c)(1)**: Testing failed or skipped" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Transmission Security - 164.312(e)(1)
           echo "✅ **164.312(e)(1)**: All transmissions use HTTPS/TLS" >> $GITHUB_STEP_SUMMARY
-          
+
           # PHI Detection Warning
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "⚠️ **Note**: Automated PHI detection not implemented. Manual review required for PHI handling." >> $GITHUB_STEP_SUMMARY
@@ -1397,35 +1397,35 @@ jobs:
         run: |
           echo "## PCI-DSS v4.0 Requirements" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Requirement 2 - Default Passwords
           if [ "${{ needs.secret_scanning.result }}" == "success" ]; then
             echo "✅ **Req 2.2**: No hardcoded passwords detected" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **Req 2.2**: Secret scanning incomplete" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Requirement 6 - Secure Development
           if [ "${{ needs.sonarcloud.result }}" == "success" ]; then
             echo "✅ **Req 6.3**: Secure coding practices validated" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ **Req 6.3**: Static analysis skipped" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Requirement 6.4 - Change Control
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             echo "✅ **Req 6.4**: Change control process followed" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ **Req 6.4**: Direct push detected" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Requirement 11 - Security Testing
           if [ "${{ needs.npm_security_scan.result }}" == "success" ] && [ "${{ needs.snyk.result }}" == "success" ]; then
             echo "✅ **Req 11.3**: Vulnerability scanning completed" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **Req 11.3**: Vulnerability scanning incomplete" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "⚠️ **Note**: This validates security controls only. PCI compliance requires additional network and infrastructure controls." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -1434,37 +1434,37 @@ jobs:
         run: |
           echo "## Compliance Score" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           TOTAL_CONTROLS=0
           PASSED_CONTROLS=0
-          
+
           # Count quality checks
           [ "${{ needs.lint.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
           [ "${{ needs.typecheck.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
           [ "${{ needs.test.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
           [ "${{ needs.build.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
           TOTAL_CONTROLS=$((TOTAL_CONTROLS + 4))
-          
+
           # Count security checks
           [ "${{ needs.npm_security_scan.result }}" != "skipped" ] && TOTAL_CONTROLS=$((TOTAL_CONTROLS + 1))
           [ "${{ needs.npm_security_scan.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-          
+
           [ "${{ needs.sonarcloud.result }}" != "skipped" ] && TOTAL_CONTROLS=$((TOTAL_CONTROLS + 1))
           [ "${{ needs.sonarcloud.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-          
+
           [ "${{ needs.snyk.result }}" != "skipped" ] && TOTAL_CONTROLS=$((TOTAL_CONTROLS + 1))
           [ "${{ needs.snyk.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-          
+
           [ "${{ needs.secret_scanning.result }}" != "skipped" ] && TOTAL_CONTROLS=$((TOTAL_CONTROLS + 1))
           [ "${{ needs.secret_scanning.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-          
+
           [ "${{ needs.license_compliance.result }}" != "skipped" ] && TOTAL_CONTROLS=$((TOTAL_CONTROLS + 1))
           [ "${{ needs.license_compliance.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-          
+
           if [ $TOTAL_CONTROLS -gt 0 ]; then
             SCORE=$((PASSED_CONTROLS * 100 / TOTAL_CONTROLS))
             echo "**Overall Compliance Score**: $SCORE% ($PASSED_CONTROLS/$TOTAL_CONTROLS controls passed)" >> $GITHUB_STEP_SUMMARY
-            
+
             if [ $SCORE -ge 90 ]; then
               echo "🟢 **Status**: Excellent compliance posture" >> $GITHUB_STEP_SUMMARY
             elif [ $SCORE -ge 70 ]; then
@@ -1539,19 +1539,19 @@ jobs:
                 runner_arch: '${{ runner.arch }}'
               }
             };
-            
+
             // Write to file
             const fs = require('fs');
             const filename = `audit-log-${auditLog.workflow.run_id}-${Date.now()}.json`;
             fs.writeFileSync(filename, JSON.stringify(auditLog, null, 2));
-            
+
             console.log(`Audit log generated: ${filename}`);
-            
+
             // Add to job summary
             core.summary.addHeading('📊 Audit Log Entry', 3);
             core.summary.addCodeBlock(JSON.stringify(auditLog, null, 2), 'json');
             await core.summary.write();
-            
+
             // Set output for artifact upload
             core.setOutput('filename', filename);
 
@@ -1566,40 +1566,40 @@ jobs:
         if: ${{ inputs.generate_evidence_package == true }}
         run: |
           echo "📦 Generating compliance evidence package..."
-          
+
           # Create evidence directory
           mkdir -p evidence-package
-          
+
           # Create evidence summary
           cat > evidence-package/evidence-summary.md << EOF
           # Compliance Evidence Package
-          
+
           **Generated**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
           **Workflow Run**: ${{ github.run_id }}
           **Repository**: ${{ github.repository }}
           **Compliance Framework**: ${{ inputs.compliance_framework }}
-          
+
           ## Evidence Contents
-          
+
           1. **Audit Log**: Full workflow execution audit trail
           2. **Security Scan Results**: Results from all security tools
           3. **Test Reports**: Unit test execution results
           4. **Build Artifacts**: Compiled output verification
           5. **Approval Records**: Change approval documentation
-          
+
           ## Control Validation Summary
-          
+
           - Quality Controls: Validated through automated testing
           - Security Controls: Validated through multiple scanning tools
           - Change Management: Validated through PR process
           - Audit Controls: Continuous logging with ${{ inputs.audit_retention_days }}-day retention
-          
+
           ## Attestation
-          
+
           This evidence package was automatically generated from workflow run ${{ github.run_id }}.
           All artifacts are cryptographically signed by GitHub Actions.
           EOF
-          
+
           echo "✅ Evidence package created"
 
       - name: 📤 Upload evidence package
@@ -1676,25 +1676,25 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🏃 Execution Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Calculate total workflow time (approximation)
           echo "- **Workflow Run ID**: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered By**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Runner**: ${{ runner.os }} (${{ runner.arch }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "## 📦 Dependency Caching" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ needs.install_dependencies.outputs.cache-hit }}" == "true" ]; then
             echo "✅ **Cache Hit!** Dependencies loaded from cache." >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **Cache Miss** - Fresh dependency installation was required." >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Cache Key**: \`${{ needs.install_dependencies.outputs.cache-key }}\`" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🎯 Job Status Overview" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -1713,7 +1713,7 @@ jobs:
           echo "| License Check | ${{ needs.license_compliance.result }} | Security |" >> $GITHUB_STEP_SUMMARY
           echo "| Claude Code Review | ${{ needs.code_quality_check.result }} | AI |" >> $GITHUB_STEP_SUMMARY
           echo "| Claude Security | ${{ needs.claude_security_scan.result }} | AI |" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 💡 Performance Tips" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -1721,21 +1721,21 @@ jobs:
           echo "- Quality checks (lint, typecheck, format) run in parallel" >> $GITHUB_STEP_SUMMARY
           echo "- Security tools run in parallel where tokens are available" >> $GITHUB_STEP_SUMMARY
           echo "- Dependency caching saves ~2-3 minutes on subsequent runs" >> $GITHUB_STEP_SUMMARY
-          
+
           # Count parallel jobs
           QUALITY_JOBS=0
           SECURITY_JOBS=0
-          
+
           [ "${{ needs.lint.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
           [ "${{ needs.typecheck.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
           [ "${{ needs.test.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
           [ "${{ needs.format.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
-          
+
           [ "${{ needs.sonarcloud.result }}" != "skipped" ] && SECURITY_JOBS=$((SECURITY_JOBS + 1))
           [ "${{ needs.snyk.result }}" != "skipped" ] && SECURITY_JOBS=$((SECURITY_JOBS + 1))
           [ "${{ needs.secret_scanning.result }}" != "skipped" ] && SECURITY_JOBS=$((SECURITY_JOBS + 1))
           [ "${{ needs.license_compliance.result }}" != "skipped" ] && SECURITY_JOBS=$((SECURITY_JOBS + 1))
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🚀 Optimization Metrics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

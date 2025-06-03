@@ -538,7 +538,7 @@ jobs:
   code_quality_check:
     name: 🤖 Claude Code Quality Check
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'code_quality_check') }}
     continue-on-error: true  # AI scanner is non-blocking
     outputs:
@@ -837,7 +837,7 @@ jobs:
   claude_security_scan:
     name: 🛡️ Claude Security Scan
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'claude_security_scan') }}
     continue-on-error: true  # AI scanner is non-blocking
     outputs:

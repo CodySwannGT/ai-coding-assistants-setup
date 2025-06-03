@@ -92,8 +92,10 @@ jobs:
 
       - name: 🔖 Create Jira Issue
         id: create_jira_issue
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message || 'N/A' }}
         run: |
-          cd ${{ inputs.working_directory || '.' }} && \
+          cd "${{ inputs.working_directory || '.' }}" && \
           # Set variables
           WORKFLOW_NAME="${{ inputs.workflow_name }}"
           FAILED_JOB="${{ inputs.failed_job || 'Unknown' }}"
@@ -122,7 +124,7 @@ jobs:
           * *Workflow Run*: [View Run Details|${RUN_URL}]
           * *Repository*: ${{ github.repository }}
           * *Commit*: ${{ github.sha }}
-          * *Commit Message*: ${{ github.event.head_commit.message || 'N/A' }}
+          * *Commit Message*: ${COMMIT_MESSAGE}
           * *Triggered by*: ${{ github.actor }}
           * *Failed at*: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
@@ -190,6 +192,6 @@ jobs:
       - name: 📢 Report Issue Creation
         if: steps.create_jira_issue.outputs.issue_key
         run: |
-          cd ${{ inputs.working_directory || '.' }} && \
+          cd "${{ inputs.working_directory || '.' }}" && \
           echo "Created Jira issue: ${{ steps.create_jira_issue.outputs.issue_key }}"
           echo "Issue URL: ${{ steps.create_jira_issue.outputs.issue_url }}"

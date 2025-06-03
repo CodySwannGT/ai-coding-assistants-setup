@@ -2,14 +2,63 @@ import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 import * as path from 'path';
 
+interface WorkflowInput {
+  description: string;
+  required: boolean;
+  default?: string | number | boolean;
+  type: string;
+}
+
+interface WorkflowSecret {
+  description: string;
+  required: boolean;
+}
+
+interface WorkflowStep {
+  name?: string;
+  id?: string;
+  uses?: string;
+  if?: string;
+  with?: Record<string, unknown>;
+}
+
+interface WorkflowJob {
+  if?: string;
+  needs?: string | string[];
+  steps: WorkflowStep[];
+  outputs?: Record<string, string>;
+  'timeout-minutes'?: number;
+  'continue-on-error'?: boolean;
+  environment?: {
+    name: string;
+  };
+}
+
+interface WorkflowContent {
+  name: string;
+  on: {
+    workflow_call: {
+      inputs: Record<string, WorkflowInput>;
+      secrets: Record<string, WorkflowSecret>;
+    };
+  };
+  jobs: Record<string, WorkflowJob>;
+}
+
 describe('Quality Workflow Tests', () => {
-  let workflowContent: any;
+  let workflowContent: WorkflowContent;
 
   beforeEach(() => {
     // Load the workflow file
-    const workflowPath = path.join(__dirname, '..', '.github', 'workflows', 'quality.yml');
+    const workflowPath = path.join(
+      __dirname,
+      '..',
+      '.github',
+      'workflows',
+      'quality.yml'
+    );
     const fileContent = fs.readFileSync(workflowPath, 'utf8');
-    workflowContent = yaml.load(fileContent);
+    workflowContent = yaml.load(fileContent) as WorkflowContent;
   });
 
   describe('Workflow Structure', () => {
@@ -37,7 +86,8 @@ describe('Quality Workflow Tests', () => {
         'compliance_framework',
         'require_approval',
         'audit_retention_days',
-        'generate_evidence_package'
+        'generate_evidence_package',
+        'approval_environment',
       ];
 
       requiredInputs.forEach(input => {
@@ -53,7 +103,7 @@ describe('Quality Workflow Tests', () => {
         'SONAR_TOKEN',
         'SNYK_TOKEN',
         'GITGUARDIAN_API_KEY',
-        'FOSSA_API_KEY'
+        'FOSSA_API_KEY',
       ];
 
       requiredSecrets.forEach(secret => {
@@ -85,7 +135,7 @@ describe('Quality Workflow Tests', () => {
         'compliance_validation',
         'audit_logger',
         'approval_gate',
-        'performance_summary'
+        'performance_summary',
       ];
 
       requiredJobs.forEach(job => {
@@ -103,26 +153,40 @@ describe('Quality Workflow Tests', () => {
     it('should have all quality jobs depend on install_dependencies', () => {
       const qualityJobs = ['lint', 'typecheck', 'test', 'format', 'build'];
       qualityJobs.forEach(job => {
-        expect(workflowContent.jobs[job].needs).toContain('install_dependencies');
+        expect(workflowContent.jobs[job].needs).toContain(
+          'install_dependencies'
+        );
       });
     });
 
     it('should have AI scanners with continue-on-error', () => {
-      expect(workflowContent.jobs.code_quality_check['continue-on-error']).toBe(true);
-      expect(workflowContent.jobs.claude_security_scan['continue-on-error']).toBe(true);
+      expect(workflowContent.jobs.code_quality_check['continue-on-error']).toBe(
+        true
+      );
+      expect(
+        workflowContent.jobs.claude_security_scan['continue-on-error']
+      ).toBe(true);
     });
 
     it('should have proper timeout settings for performance', () => {
-      expect(workflowContent.jobs.lint['timeout-minutes']).toBeLessThanOrEqual(5);
-      expect(workflowContent.jobs.typecheck['timeout-minutes']).toBeLessThanOrEqual(5);
-      expect(workflowContent.jobs.format['timeout-minutes']).toBeLessThanOrEqual(3);
+      expect(workflowContent.jobs.lint['timeout-minutes']).toBeLessThanOrEqual(
+        5
+      );
+      expect(
+        workflowContent.jobs.typecheck['timeout-minutes']
+      ).toBeLessThanOrEqual(5);
+      expect(
+        workflowContent.jobs.format['timeout-minutes']
+      ).toBeLessThanOrEqual(3);
     });
   });
 
   describe('Compliance Features', () => {
     it('should have compliance validation job with correct condition', () => {
       const complianceJob = workflowContent.jobs.compliance_validation;
-      expect(complianceJob.if).toContain("inputs.compliance_framework != 'none'");
+      expect(complianceJob.if).toContain(
+        "inputs.compliance_framework != 'none'"
+      );
     });
 
     it('should have audit logger job that always runs', () => {
@@ -134,14 +198,19 @@ describe('Quality Workflow Tests', () => {
       const approvalJob = workflowContent.jobs.approval_gate;
       expect(approvalJob.if).toContain('inputs.require_approval == true');
       expect(approvalJob.if).toContain("inputs.compliance_framework != 'none'");
-      expect(approvalJob.environment.name).toBe('production');
+      expect(approvalJob.environment?.name).toBe(
+        '${{ inputs.approval_environment }}'
+      );
     });
 
     it('should support all compliance frameworks', () => {
-      const defaultFramework = workflowContent.on.workflow_call.inputs.compliance_framework.default;
+      const defaultFramework =
+        workflowContent.on.workflow_call.inputs.compliance_framework.default;
       expect(defaultFramework).toBe('none');
-      
-      const description = workflowContent.on.workflow_call.inputs.compliance_framework.description;
+
+      const description =
+        workflowContent.on.workflow_call.inputs.compliance_framework
+          .description;
       expect(description).toContain('soc2');
       expect(description).toContain('iso27001');
       expect(description).toContain('hipaa');
@@ -151,55 +220,65 @@ describe('Quality Workflow Tests', () => {
 
   describe('Security Tool Integration', () => {
     it('should have token checks for each security tool', () => {
-      const securityJobs = ['sonarcloud', 'snyk', 'secret_scanning', 'license_compliance'];
-      
+      const securityJobs = [
+        'sonarcloud',
+        'snyk',
+        'secret_scanning',
+        'license_compliance',
+      ];
+
       securityJobs.forEach(jobName => {
         const job = workflowContent.jobs[jobName];
         const steps = job.steps;
-        
+
         // Should have a token check step
-        const tokenCheckStep = steps.find((step: any) => 
-          step.name && step.name.toLowerCase().includes('check') && 
-          (step.name.toLowerCase().includes('token') || step.name.toLowerCase().includes('api key'))
+        const tokenCheckStep = steps.find(
+          (step: WorkflowStep) =>
+            step.name &&
+            step.name.toLowerCase().includes('check') &&
+            (step.name.toLowerCase().includes('token') ||
+              step.name.toLowerCase().includes('api key'))
         );
         expect(tokenCheckStep).toBeDefined();
-        expect(tokenCheckStep.id).toBe('check_token');
+        expect(tokenCheckStep?.id).toBe('check_token');
       });
     });
 
     it('should skip security tool steps when token not present', () => {
       const job = workflowContent.jobs.snyk;
-      const scanStep = job.steps.find((step: any) => 
-        step.name && step.name.includes('Run Snyk')
+      const scanStep = job.steps.find(
+        (step: WorkflowStep) => step.name && step.name.includes('Run Snyk')
       );
-      expect(scanStep.if).toBe("steps.check_token.outputs.skip != 'true'");
+      expect(scanStep?.if).toBe("steps.check_token.outputs.skip != 'true'");
     });
   });
 
   describe('Performance Optimizations', () => {
     it('should use artifact upload/download for dependencies', () => {
       const installJob = workflowContent.jobs.install_dependencies;
-      const uploadStep = installJob.steps.find((step: any) => 
-        step.uses && step.uses.includes('upload-artifact')
+      const uploadStep = installJob.steps.find(
+        (step: WorkflowStep) =>
+          step.uses && step.uses.includes('upload-artifact')
       );
       expect(uploadStep).toBeDefined();
-      expect(uploadStep.with.name).toContain('node-modules');
+      expect(uploadStep?.with?.name).toContain('node-modules');
 
       const lintJob = workflowContent.jobs.lint;
-      const downloadStep = lintJob.steps.find((step: any) => 
-        step.uses && step.uses.includes('download-artifact')
+      const downloadStep = lintJob.steps.find(
+        (step: WorkflowStep) =>
+          step.uses && step.uses.includes('download-artifact')
       );
       expect(downloadStep).toBeDefined();
     });
 
     it('should have proper cache configuration', () => {
       const installJob = workflowContent.jobs.install_dependencies;
-      const cacheStep = installJob.steps.find((step: any) => 
-        step.uses && step.uses.includes('actions/cache')
+      const cacheStep = installJob.steps.find(
+        (step: WorkflowStep) => step.uses && step.uses.includes('actions/cache')
       );
       expect(cacheStep).toBeDefined();
-      expect(cacheStep.with.path).toContain('node_modules');
-      expect(cacheStep.with.path).toContain('.npm');
+      expect(cacheStep?.with?.path).toContain('node_modules');
+      expect(cacheStep?.with?.path).toContain('.npm');
     });
   });
 
@@ -231,17 +310,25 @@ describe('Quality Workflow Tests', () => {
 describe('Workflow Behavior Tests', () => {
   describe('Skip Conditions', () => {
     it('should validate skip conditions for all jobs', () => {
-      const workflowPath = path.join(__dirname, '..', '.github', 'workflows', 'quality.yml');
+      const workflowPath = path.join(
+        __dirname,
+        '..',
+        '.github',
+        'workflows',
+        'quality.yml'
+      );
       const fileContent = fs.readFileSync(workflowPath, 'utf8');
-      const workflowContent = yaml.load(fileContent) as any;
+      const workflowContent = yaml.load(fileContent) as WorkflowContent;
 
       const skipPatterns = {
         lint: "!inputs.skip_lint && !contains(inputs.skip_jobs, 'lint')",
-        typecheck: "!inputs.skip_typecheck && !contains(inputs.skip_jobs, 'typecheck')",
+        typecheck:
+          "!inputs.skip_typecheck && !contains(inputs.skip_jobs, 'typecheck')",
         test: "!inputs.skip_test && !contains(inputs.skip_jobs, 'test')",
         format: "!inputs.skip_format && !contains(inputs.skip_jobs, 'format')",
         build: "!inputs.skip_build && !contains(inputs.skip_jobs, 'build')",
-        npm_security_scan: "!inputs.skip_security && !contains(inputs.skip_jobs, 'npm_security_scan')",
+        npm_security_scan:
+          "!inputs.skip_security && !contains(inputs.skip_jobs, 'npm_security_scan')",
       };
 
       Object.entries(skipPatterns).forEach(([job, expectedCondition]) => {
@@ -255,9 +342,15 @@ describe('Workflow Behavior Tests', () => {
     it('should validate framework-specific controls', () => {
       // This is more of an integration test that would run in CI
       // Here we just verify the structure exists
-      const workflowPath = path.join(__dirname, '..', '.github', 'workflows', 'quality.yml');
+      const workflowPath = path.join(
+        __dirname,
+        '..',
+        '.github',
+        'workflows',
+        'quality.yml'
+      );
       const fileContent = fs.readFileSync(workflowPath, 'utf8');
-      
+
       // Check for framework-specific validation steps
       expect(fileContent).toContain('SOC 2 Control Validation');
       expect(fileContent).toContain('ISO 27001 Control Validation');

@@ -775,9 +775,9 @@ jobs:
           echo "Perform a code review on the provided code changes. Focus on code quality, best practices, and potential bugs." > code_review_prompt.txt
 
           # Check if guidelines file exists in the repository and append it
-          if [ -f "docs/code_review_guidelines.md" ]; then
-            cat docs/code_review_guidelines.md >> code_review_prompt.txt
-            echo "Using custom guidelines from docs/code_review_guidelines.md"
+          if [ -f ".github/workflows/code_review_guidelines.md" ]; then
+            cat .github/workflows/code_review_guidelines.md >> code_review_prompt.txt
+            echo "Using custom guidelines from .github/workflows/code_review_guidelines.md"
           else
             # Fallback to default guidelines if the file doesn't exist
             echo "" >> code_review_prompt.txt
@@ -791,7 +791,7 @@ jobs:
             echo "- When suggesting improvements, explain why they matter" >> code_review_prompt.txt
             echo "- End your review with \"VERDICT: PASS\" if the code is acceptable for deployment" >> code_review_prompt.txt
             echo "- End your review with \"VERDICT: FAIL\" if there are critical issues that must be fixed before deployment" >> code_review_prompt.txt
-            echo "Using default guidelines (docs/code_review_guidelines.md not found)"
+            echo "Using default guidelines (.github/workflows/code_review_guidelines.md not found)"
           fi
 
           # Initialize failure flag
@@ -1037,9 +1037,9 @@ jobs:
       - name: 📝 Create security scan prompt
         run: |
           # Check if guidelines file exists in the repository and use it
-          if [ -f "docs/security_scan_guidelines.md" ]; then
-            cat docs/security_scan_guidelines.md > security_prompt.txt
-            echo "Using custom guidelines from docs/security_scan_guidelines.md"
+          if [ -f ".github/workflows/security_scan_guidelines.md" ]; then
+            cat .github/workflows/security_scan_guidelines.md > security_prompt.txt
+            echo "Using custom guidelines from .github/workflows/security_scan_guidelines.md"
           else
             # Fallback to default guidelines
             echo "You are a cybersecurity expert specializing in code security. Analyze this code for security vulnerabilities including:" > security_prompt.txt

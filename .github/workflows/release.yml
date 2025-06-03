@@ -91,6 +91,11 @@ on:
         required: false
         type: string
         default: 'npm'
+      sourcemaps:
+        description: 'Path to source maps for Sentry release (optional)'
+        required: false
+        type: string
+        default: ''
     outputs:
       version:
         description: 'The new version number'
@@ -116,6 +121,9 @@ on:
       compliance_status:
         description: 'Compliance validation status'
         value: ${{ jobs.release_compliance.outputs.status }}
+      sentry_release_url:
+        description: 'URL to Sentry release'
+        value: ${{ jobs.sentry_release.outputs.sentry_release_url }}
     secrets:
       NPM_TOKEN:
         required: false
@@ -132,6 +140,12 @@ on:
       SIGNING_KEY_ID:
         required: false
       SIGNING_KEY_PASSPHRASE:
+        required: false
+      SENTRY_AUTH_TOKEN:
+        required: false
+      SENTRY_ORG:
+        required: false
+      SENTRY_PROJECT:
         required: false
 
 jobs:
@@ -1043,6 +1057,82 @@ jobs:
               "${UPLOAD_URL}?name=sbom.json"
           fi
 
+  # Sentry Release Creation
+  sentry_release:
+    name: 🚨 Create Sentry Release
+    needs: [release_init, version, github_release]
+    runs-on: ubuntu-latest
+    if: |
+      always() && 
+      !cancelled() && 
+      needs.github_release.result == 'success'
+    outputs:
+      sentry_release_created: ${{ steps.set_outputs.outputs.created }}
+      sentry_release_url: ${{ steps.set_outputs.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check Sentry Configuration
+        id: check_config
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        run: |
+          # Check if all required Sentry secrets are available
+          if [ -z "$SENTRY_AUTH_TOKEN" ] || [ -z "$SENTRY_ORG" ] || [ -z "$SENTRY_PROJECT" ]; then
+            echo "⚠️ Sentry configuration incomplete - skipping Sentry release" >> $GITHUB_STEP_SUMMARY
+            echo "configured=false" >> $GITHUB_OUTPUT
+            # Set default outputs for skipped job
+            echo "created=false" >> $GITHUB_OUTPUT
+            echo "url=" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Sentry configuration verified" >> $GITHUB_STEP_SUMMARY
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Sentry Release
+        id: sentry
+        if: steps.check_config.outputs.configured == 'true'
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        with:
+          environment: ${{ inputs.environment }}
+          version: ${{ needs.version.outputs.version }}
+          sourcemaps: ${{ inputs.sourcemaps }}
+
+      - name: Update Release Summary
+        if: steps.check_config.outputs.configured == 'true' && steps.sentry.outcome == 'success'
+        run: |
+          echo "## 🚨 Sentry Release" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Sentry release created successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ inputs.sourcemaps }}" ]; then
+            echo "- **Source Maps**: Uploaded from \`${{ inputs.sourcemaps }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- **Organization**: ${{ secrets.SENTRY_ORG }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Project**: ${{ secrets.SENTRY_PROJECT }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Set Outputs
+        if: always()
+        id: set_outputs
+        run: |
+          # Set outputs based on whether Sentry was configured and successful
+          if [ "${{ steps.check_config.outputs.configured }}" == "true" ] && [ "${{ steps.sentry.outcome }}" == "success" ]; then
+            echo "created=true" >> $GITHUB_OUTPUT
+            echo "url=https://sentry.io/organizations/${{ secrets.SENTRY_ORG }}/releases/${{ needs.version.outputs.version }}/" >> $GITHUB_OUTPUT
+          else
+            echo "created=false" >> $GITHUB_OUTPUT
+            echo "url=" >> $GITHUB_OUTPUT
+          fi
+
   # Release compliance validation
   release_compliance:
     name: ✅ Release Compliance
@@ -1054,6 +1144,7 @@ jobs:
         release_signing,
         release_attestation,
         github_release,
+        sentry_release,
       ]
     if: always()
     runs-on: ubuntu-latest
@@ -1245,6 +1336,7 @@ jobs:
         release_signing,
         release_attestation,
         github_release,
+        sentry_release,
         release_compliance,
       ]
     if: always()
@@ -1279,6 +1371,7 @@ jobs:
           - **Release URL**: ${{ needs.github_release.outputs.release_url || 'N/A' }}
           - **Attestation**: ${{ needs.release_attestation.outputs.attestation_url || 'N/A' }}
           - **Compliance Report**: ${{ needs.release_compliance.outputs.report_url || 'N/A' }}
+          - **Sentry Release**: ${{ needs.sentry_release.outputs.sentry_release_url || 'Not configured' }}
 
           ## Security & Compliance
           - ✅ Audit trail generated

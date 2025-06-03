@@ -31,6 +31,7 @@ jobs:
       generate_sbom: false
       force_release: true
       debug: true
+      node_version: '18'
     secrets: inherit
 
   # Test signed release
@@ -46,6 +47,7 @@ jobs:
       generate_sbom: true
       force_release: true
       debug: true
+      node_version: '18'
     secrets: inherit
 
   # Test with approval
@@ -61,6 +63,7 @@ jobs:
       require_signatures: false
       force_release: true
       debug: true
+      node_version: '18'
     secrets: inherit
 
   # Test emergency release
@@ -79,6 +82,7 @@ jobs:
       release_notes_template: 'security'
       force_release: true
       debug: true
+      node_version: '18'
     secrets: inherit
 
   # Test blackout override
@@ -94,6 +98,7 @@ jobs:
       require_signatures: false
       force_release: true
       debug: true
+      node_version: '18'
     secrets: inherit
 
   # Test full enterprise features
@@ -112,6 +117,7 @@ jobs:
       release_notes_template: 'detailed'
       force_release: true
       debug: true
+      node_version: '18'
     secrets: inherit
 
   # Validate test results

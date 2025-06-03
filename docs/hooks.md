@@ -13,20 +13,21 @@ Git hooks are scripts that Git executes before or after events such as commit, p
 
 ## Available Git Hooks
 
-| Hook Type | When It Runs | Purpose |
-|-----------|--------------|---------|
-| `pre-commit` | Before a commit is created | Run code quality checks and AI review |
-| `prepare-commit-msg` | Before commit message editor | Generate/modify commit messages |
-| `commit-msg` | After entering a commit message | Validate commit message format |
-| `post-commit` | After a commit is created | Store commit information in project memory |
-| `pre-push` | Before pushing to remote | Final checks before sharing code |
-| `post-merge` | After merge operations | Update dependencies or run migrations |
+| Hook Type            | When It Runs                    | Purpose                                    |
+| -------------------- | ------------------------------- | ------------------------------------------ |
+| `pre-commit`         | Before a commit is created      | Run code quality checks and AI review      |
+| `prepare-commit-msg` | Before commit message editor    | Generate/modify commit messages            |
+| `commit-msg`         | After entering a commit message | Validate commit message format             |
+| `post-commit`        | After a commit is created       | Store commit information in project memory |
+| `pre-push`           | Before pushing to remote        | Final checks before sharing code           |
+| `post-merge`         | After merge operations          | Update dependencies or run migrations      |
 
 ## AI-Enhanced Capabilities
 
 Our Git hooks are enhanced with AI capabilities:
 
 1. **AI Code Review** - Claude analyzes staged changes for:
+
    - Bugs and logical errors
    - Performance issues
    - Security vulnerabilities
@@ -123,6 +124,54 @@ feat(user-auth): implement password reset functionality
 - Set up expiring reset tokens
 - Update user documentation
 ```
+
+## Jira Integration
+
+The `commit-msg` hook includes automatic Jira key detection and appending. When working on branches created from Jira, the hook will automatically append the Jira issue key to your commit messages.
+
+### How It Works
+
+1. **Branch Detection**: The hook examines your current branch name for Jira keys
+2. **Key Extraction**: Extracts Jira keys in the format `PROJECT-123`
+3. **Auto-Append**: Appends the key to your commit message as `[PROJECT-123]`
+
+### Supported Branch Formats
+
+The hook recognizes these branch naming patterns:
+
+- `feat/SE-2397-implement-feature`
+- `SE-2397-implement-feature`
+- `chore/PROJ-123-update-dependencies`
+- `fix/ABC-4567-resolve-bug`
+- Any branch with `<TYPE>/<JIRA-KEY>-description`
+
+### Configuration
+
+You can customize the Jira project key pattern using the `JIRA_PROJECT_KEY` environment variable:
+
+```bash
+# Single project key
+export JIRA_PROJECT_KEY="SE"
+
+# Multiple project keys
+export JIRA_PROJECT_KEY="SE|PROJ|ABC"
+
+# Default (matches any 2-10 uppercase letters)
+export JIRA_PROJECT_KEY="[A-Z]{2,10}"
+```
+
+Add this to your `.env` file for persistent configuration.
+
+### Example
+
+When on branch `feat/SE-2397-implement-login`:
+
+```bash
+git commit -m "feat: add user authentication"
+# Result: "feat: add user authentication [SE-2397]"
+```
+
+The hook won't duplicate keys if they're already present in your message.
 
 ## Best Practices
 

@@ -80,7 +80,7 @@ on:
         default: false
         type: boolean
       skip_jobs:
-        description: 'Jobs to skip (comma-separated: lint,typecheck,test,format,build,npm_security_scan,code_quality_check,claude_security_scan,github_issue)'
+        description: 'Jobs to skip (comma-separated: lint,typecheck,test,test:unit,test:integration,test:e2e,format,build,npm_security_scan,code_quality_check,claude_security_scan,github_issue)'
         required: false
         default: ''
         type: string
@@ -300,6 +300,162 @@ jobs:
             bun test
           fi
         working-directory: ${{ inputs.working_directory || '.' }}
+
+  test_unit:
+    name: 🧪 Run Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: install_dependencies
+    if: ${{ !inputs.skip_test && !contains(inputs.skip_jobs, 'test:unit') }}
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: 📥 Download dependencies
+        uses: actions/download-artifact@v4
+        with:
+          name: node-modules-${{ github.run_id }}
+          path: .
+
+      - name: 🔍 Check for test:unit script
+        id: check_script
+        run: |
+          if [ -f "package.json" ]; then
+            if grep -q '"test:unit"' package.json; then
+              echo "exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "exists=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        working-directory: ${{ inputs.working_directory || '.' }}
+
+      - name: 🧪 Run unit tests
+        if: steps.check_script.outputs.exists == 'true'
+        run: |
+          if [ "${{ inputs.package_manager }}" = "npm" ]; then
+            npm run test:unit
+          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+            yarn test:unit
+          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
+            bun run test:unit
+          fi
+        working-directory: ${{ inputs.working_directory || '.' }}
+
+      - name: ⏭️ Skip unit tests (no test:unit script)
+        if: steps.check_script.outputs.exists == 'false'
+        run: echo "Skipping unit tests - test:unit script not found in package.json"
+
+  test_integration:
+    name: 🧪 Run Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: install_dependencies
+    if: ${{ !inputs.skip_test && !contains(inputs.skip_jobs, 'test:integration') }}
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: 📥 Download dependencies
+        uses: actions/download-artifact@v4
+        with:
+          name: node-modules-${{ github.run_id }}
+          path: .
+
+      - name: 🔍 Check for test:integration script
+        id: check_script
+        run: |
+          if [ -f "package.json" ]; then
+            if grep -q '"test:integration"' package.json; then
+              echo "exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "exists=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        working-directory: ${{ inputs.working_directory || '.' }}
+
+      - name: 🧪 Run integration tests
+        if: steps.check_script.outputs.exists == 'true'
+        run: |
+          if [ "${{ inputs.package_manager }}" = "npm" ]; then
+            npm run test:integration
+          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+            yarn test:integration
+          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
+            bun run test:integration
+          fi
+        working-directory: ${{ inputs.working_directory || '.' }}
+
+      - name: ⏭️ Skip integration tests (no test:integration script)
+        if: steps.check_script.outputs.exists == 'false'
+        run: echo "Skipping integration tests - test:integration script not found in package.json"
+
+  test_e2e:
+    name: 🧪 Run E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: install_dependencies
+    if: ${{ !inputs.skip_test && !contains(inputs.skip_jobs, 'test:e2e') }}
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: 📥 Download dependencies
+        uses: actions/download-artifact@v4
+        with:
+          name: node-modules-${{ github.run_id }}
+          path: .
+
+      - name: 🔍 Check for test:e2e script
+        id: check_script
+        run: |
+          if [ -f "package.json" ]; then
+            if grep -q '"test:e2e"' package.json; then
+              echo "exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "exists=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        working-directory: ${{ inputs.working_directory || '.' }}
+
+      - name: 🧪 Run E2E tests
+        if: steps.check_script.outputs.exists == 'true'
+        run: |
+          if [ "${{ inputs.package_manager }}" = "npm" ]; then
+            npm run test:e2e
+          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+            yarn test:e2e
+          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
+            bun run test:e2e
+          fi
+        working-directory: ${{ inputs.working_directory || '.' }}
+
+      - name: ⏭️ Skip E2E tests (no test:e2e script)
+        if: steps.check_script.outputs.exists == 'false'
+        run: echo "Skipping E2E tests - test:e2e script not found in package.json"
 
   format:
     name: 📐 Check Formatting
@@ -1287,7 +1443,7 @@ jobs:
     name: ✅ Compliance Validation
     runs-on: ubuntu-latest
     if: ${{ inputs.compliance_framework != 'none' }}
-    needs: [lint, typecheck, test, format, build, npm_security_scan, sonarcloud, snyk, secret_scanning, license_compliance]
+    needs: [lint, typecheck, test, test_unit, test_integration, test_e2e, format, build, npm_security_scan, sonarcloud, snyk, secret_scanning, license_compliance]
     steps:
       - name: 📋 Validate compliance framework
         id: validate_framework
@@ -1479,7 +1635,7 @@ jobs:
     name: 📊 Audit Logger
     runs-on: ubuntu-latest
     if: always()
-    needs: [install_dependencies, lint, typecheck, test, format, build, npm_security_scan, sonarcloud, snyk, secret_scanning, license_compliance, code_quality_check, claude_security_scan, compliance_validation]
+    needs: [install_dependencies, lint, typecheck, test, test_unit, test_integration, test_e2e, format, build, npm_security_scan, sonarcloud, snyk, secret_scanning, license_compliance, code_quality_check, claude_security_scan, compliance_validation]
     steps:
       - name: 📝 Generate audit log
         uses: actions/github-script@v7
@@ -1518,6 +1674,9 @@ jobs:
                   lint: '${{ needs.lint.result }}',
                   typecheck: '${{ needs.typecheck.result }}',
                   test: '${{ needs.test.result }}',
+                  test_unit: '${{ needs.test_unit.result }}',
+                  test_integration: '${{ needs.test_integration.result }}',
+                  test_e2e: '${{ needs.test_e2e.result }}',
                   format: '${{ needs.format.result }}',
                   build: '${{ needs.build.result }}'
                 },
@@ -1668,7 +1827,7 @@ jobs:
     name: ⚡ Performance Summary
     runs-on: ubuntu-latest
     if: always()
-    needs: [install_dependencies, lint, typecheck, test, format, build, npm_security_scan, sonarcloud, snyk, secret_scanning, license_compliance, code_quality_check, claude_security_scan]
+    needs: [install_dependencies, lint, typecheck, test, test_unit, test_integration, test_e2e, format, build, npm_security_scan, sonarcloud, snyk, secret_scanning, license_compliance, code_quality_check, claude_security_scan]
     steps:
       - name: 📊 Generate performance report
         run: |
@@ -1704,6 +1863,9 @@ jobs:
           echo "| Lint | ${{ needs.lint.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
           echo "| Type Check | ${{ needs.typecheck.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
           echo "| Tests | ${{ needs.test.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.test_unit.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.test_integration.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E Tests | ${{ needs.test_e2e.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
           echo "| Format Check | ${{ needs.format.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
           echo "| Build | ${{ needs.build.result }} | Build |" >> $GITHUB_STEP_SUMMARY
           echo "| NPM Security | ${{ needs.npm_security_scan.result }} | Security |" >> $GITHUB_STEP_SUMMARY
@@ -1729,6 +1891,9 @@ jobs:
           [ "${{ needs.lint.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
           [ "${{ needs.typecheck.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
           [ "${{ needs.test.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
+          [ "${{ needs.test_unit.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
+          [ "${{ needs.test_integration.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
+          [ "${{ needs.test_e2e.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
           [ "${{ needs.format.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
 
           [ "${{ needs.sonarcloud.result }}" != "skipped" ] && SECURITY_JOBS=$((SECURITY_JOBS + 1))

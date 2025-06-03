@@ -28,6 +28,10 @@
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       }
     },
+    "atlassian": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.atlassian.com/v1/sse"]
+    },
     "memory": {
       "command": "npx",
       "args": [
@@ -37,7 +41,7 @@
         ".ai/memory.jsonl"
       ],
       "env": {
-        "MEMORY_PATH": ".ai/memory.jsonl"
+        "MEMORY_PATH": "${MEMORY_PATH}"
       },
       "autoapprove": [
         "create_entities",
@@ -50,11 +54,6 @@
         "search_nodes",
         "open_nodes"
       ]
-    },
-    "task-master-ai": {
-      "command": "npx",
-      "args": ["-y", "--package=task-master-ai", "task-master-ai"],
-      "env": {}
     },
     "fetch": {
       "command": "uvx",

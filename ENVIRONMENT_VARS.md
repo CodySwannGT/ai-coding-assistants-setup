@@ -7,7 +7,6 @@ This document provides a comprehensive reference for all environment variables u
 - [Core API Keys](#core-api-keys)
 - [Jira Integration](#jira-integration)
 - [GitHub Actions Secrets](#github-actions-secrets)
-- [System Variables](#system-variables)
 - [MCP Server Variables](#mcp-server-variables)
 
 ## Core API Keys
@@ -49,10 +48,7 @@ These secrets are used in GitHub Actions workflows for CI/CD operations.
 | Variable       | Required     | Description                                                                        | Workflow                         |
 | -------------- | ------------ | ---------------------------------------------------------------------------------- | -------------------------------- |
 | `PAT`          | **Required** | GitHub Personal Access Token (alternative name for `GITHUB_PERSONAL_ACCESS_TOKEN`) | ci.yml, quality.yml, release.yml |
-| `NPM_TOKEN`    | Required\*   | NPM authentication token for package publishing                                    | publish.yml                      |
 | `GITHUB_TOKEN` | Automatic    | Built-in GitHub Actions token (automatically provided)                             | All workflows                    |
-
-\*Required only if publishing to NPM
 
 ### Security & Quality Scanning
 
@@ -81,18 +77,6 @@ These secrets are used in GitHub Actions workflows for CI/CD operations.
 | ---------------- | -------- | ---------------------------------------------- | ---------------- |
 | `K6_CLOUD_TOKEN` | Optional | K6 Cloud token for load testing                | k6-load-test.yml |
 | `CUSTOM_HEADERS` | Optional | Custom headers for K6 load tests (JSON format) | k6-load-test.yml |
-
-## System Variables
-
-Standard system environment variables used by the application.
-
-| Variable      | Required  | Description                                       | Used In                |
-| ------------- | --------- | ------------------------------------------------- | ---------------------- |
-| `HOME`        | Automatic | User home directory on Unix/macOS systems         | VS Code setup          |
-| `USERPROFILE` | Automatic | User home directory on Windows systems            | VS Code setup          |
-| `NODE_ENV`    | Optional  | Node.js environment (development/production/test) | Runtime configuration  |
-| `PORT`        | Optional  | Application port number                           | Example configurations |
-| `DEBUG`       | Optional  | Enable debug mode                                 | Example configurations |
 
 ## MCP Server Variables
 
@@ -131,9 +115,8 @@ JIRA_USER_EMAIL=your-email@company.com
 Configure these in your repository's Settings → Secrets and variables → Actions:
 
 1. **Required**: `PAT` (your GitHub personal access token)
-2. **For Publishing**: `NPM_TOKEN`
-3. **For Security Scanning**: `SONAR_TOKEN`, `SNYK_TOKEN`, etc.
-4. **For Monitoring**: `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`
+2. **For Security Scanning**: `SONAR_TOKEN`, `SNYK_TOKEN`, etc.
+3. **For Monitoring**: `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`
 
 ## Security Best Practices
 

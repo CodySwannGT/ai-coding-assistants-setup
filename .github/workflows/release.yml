@@ -1063,8 +1063,8 @@ jobs:
     needs: [release_init, version, github_release]
     runs-on: ubuntu-latest
     if: |
-      always() && 
-      !cancelled() && 
+      always() &&
+      !cancelled() &&
       needs.github_release.result == 'success'
     outputs:
       sentry_release_created: ${{ steps.set_outputs.outputs.created }}

@@ -1,0 +1,73 @@
+name: Test Enhanced Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+      version_strategy:
+        description: 'Version strategy to test'
+        required: true
+        default: 'semantic'
+        type: choice
+        options:
+          - semantic
+          - calendar
+          - custom
+      prerelease:
+        description: 'Enable prerelease'
+        required: false
+        default: false
+        type: boolean
+      skip_quality:
+        description: 'Skip quality checks (for testing only)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  test-release:
+    name: Test Enhanced Release
+    uses: ./.github/workflows/release.yml
+    with:
+      environment: ${{ inputs.environment }}
+      release_strategy: ${{ inputs.version_strategy }}
+      prerelease: ${{ inputs.prerelease && 'alpha' || '' }}
+      skip_jobs: ${{ inputs.skip_quality && 'quality' || '' }}
+      generate_sbom: true
+      require_approval: false
+      require_signatures: false
+    secrets: inherit
+
+  validate-results:
+    name: Validate Release Results
+    needs: test-release
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: 📝 Display release information
+        run: |
+          echo "# 🧪 Enhanced Release Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Release Information" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ needs.test-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: ${{ needs.test-release.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Strategy**: ${{ inputs.version_strategy }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Prerelease**: ${{ inputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -n "${{ needs.test-release.outputs.release_url }}" ]; then
+            echo "## Artifacts" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- [Release URL](${{ needs.test-release.outputs.release_url }})" >> $GITHUB_STEP_SUMMARY
+            echo "- [Attestation](${{ needs.test-release.outputs.attestation_url }})" >> $GITHUB_STEP_SUMMARY
+          fi

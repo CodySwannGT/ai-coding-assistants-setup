@@ -1,5 +1,12 @@
 {
   "mcpServers": {
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": {
+        "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+      }
+    },
     "github": {
       "command": "docker",
       "args": [
@@ -16,10 +23,7 @@
     },
     "context7-mcp": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp@latest"
-      ],
+      "args": ["-y", "@upstash/context7-mcp@latest"],
       "env": {
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       }
@@ -30,8 +34,11 @@
         "-y",
         "mcp-knowledge-graph",
         "--memory-path",
-        "${MEMORY_PATH}"
+        ".ai/memory.jsonl"
       ],
+      "env": {
+        "MEMORY_PATH": ".ai/memory.jsonl"
+      },
       "autoapprove": [
         "create_entities",
         "create_relations",
@@ -46,34 +53,23 @@
     },
     "task-master-ai": {
       "command": "npx",
-      "args": [
-        "-y",
-        "--package=task-master-ai",
-        "task-master-ai"
-      ],
+      "args": ["-y", "--package=task-master-ai", "task-master-ai"],
       "env": {}
     },
     "fetch": {
       "command": "uvx",
-      "args": [
-        "mcp-server-fetch"
-      ]
+      "args": ["mcp-server-fetch"]
     },
     "brave-search": {
       "command": "npx",
-      "args": [
-        "-y",
-        "brave-search-mcp-server"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
       "env": {
         "BRAVE_API_KEY": "${BRAVE_API_KEY}"
       }
     },
     "aws-documentation-mcp-server": {
       "command": "uvx",
-      "args": [
-        "awslabs.aws-documentation-mcp-server@latest"
-      ],
+      "args": ["awslabs.aws-documentation-mcp-server@latest"],
       "env": {
         "FASTMCP_LOG_LEVEL": "ERROR"
       },

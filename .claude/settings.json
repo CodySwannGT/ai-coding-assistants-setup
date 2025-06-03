@@ -1,0 +1,20 @@
+{
+  "ignoredPatterns": [
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    ".git/**",
+    ".env",
+    "*.log",
+    "*.lock",
+    ".next/**",
+    "coverage/**"
+  ],
+  "env": {
+    "AWS_PROFILE": "gemini-dev-v2",
+    "AWS_REGION": "us-east-1",
+    "CDK_CONTEXT_ENV": "dev",
+    "CDK_CONTEXT_ACCOUNT": "017820663466"
+  },
+  "includeCoAuthoredBy": false
+}

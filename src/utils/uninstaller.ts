@@ -363,6 +363,7 @@ export class Uninstaller {
               'COMMAND_TIMEOUT_MS',
               'CLAUDE_MEMORY_LIMIT',
               'ROO_MAX_TOKENS',
+              'FIRECRAWL_API_KEY',
             ];
 
             const isAIVar = varNames.some(name => line.startsWith(name + '='));

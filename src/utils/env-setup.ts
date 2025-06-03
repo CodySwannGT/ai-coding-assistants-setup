@@ -93,6 +93,7 @@ class EnvSetup {
     // Define which keys are optional
     const optionalKeys = [
       'OPENAI_API_KEY',
+      'FIRECRAWL_API_KEY',
       'JIRA_API_TOKEN',
       'JIRA_AUTOMATION_WEBHOOK',
       'JIRA_AUTOMATION_WEBHOOK_DEV',

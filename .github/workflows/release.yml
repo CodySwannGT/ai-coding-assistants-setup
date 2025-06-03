@@ -150,6 +150,50 @@ jobs:
       - name: 🔼 Bump version
         id: version
         run: |
+          # Function to check if a tag exists
+          tag_exists() {
+            git ls-remote --tags origin | grep -q "refs/tags/$1$"
+          }
+
+          # Function to find next available version
+          find_next_version() {
+            local base_version=$1
+            local environment=$2
+            local tag_prefix="v"
+            local tag_suffix=""
+            
+            if [ "$environment" != "main" ]; then
+              tag_suffix="-$environment"
+            fi
+            
+            # Try the base version first
+            local test_tag="${tag_prefix}${base_version}${tag_suffix}"
+            if ! tag_exists "$test_tag"; then
+              echo "$base_version"
+              return
+            fi
+            
+            # If base version exists, try incrementing patch version
+            local major=$(echo "$base_version" | cut -d. -f1)
+            local minor=$(echo "$base_version" | cut -d. -f2)
+            local patch=$(echo "$base_version" | cut -d. -f3)
+            
+            # Try up to 100 patch versions
+            for i in $(seq 1 100); do
+              local new_patch=$((patch + i))
+              local new_version="${major}.${minor}.${new_patch}"
+              local test_tag="${tag_prefix}${new_version}${tag_suffix}"
+              
+              if ! tag_exists "$test_tag"; then
+                echo "$new_version"
+                return
+              fi
+            done
+            
+            # If all patch versions are taken, increment minor
+            echo "${major}.$((minor + 1)).0"
+          }
+
           # Bump version, create changelog, and commit, but DO NOT tag yet.
           # Use --releaseCommitMessageFormat instead of deprecated --message.
           if [ "${{ inputs.package_manager }}" = "npm" ]; then
@@ -164,7 +208,29 @@ jobs:
           fi
 
           # Get the new version from package.json
-          NEW_VERSION=$(node -p "require('./package.json').version")
+          PROPOSED_VERSION=$(node -p "require('./package.json').version")
+          
+          # Find the next available version
+          NEW_VERSION=$(find_next_version "$PROPOSED_VERSION" "${{ inputs.environment }}")
+          
+          # If we need to use a different version, update package.json
+          if [ "$NEW_VERSION" != "$PROPOSED_VERSION" ]; then
+            echo "Tag for v$PROPOSED_VERSION already exists, using v$NEW_VERSION instead"
+            # Update package.json with the new version
+            if [ "${{ inputs.package_manager }}" = "npm" ]; then
+              npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version
+            elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
+              yarn version --new-version "$NEW_VERSION" --no-git-tag-version
+            elif [ "${{ inputs.package_manager }}" = "bun" ]; then
+              # Bun doesn't have a built-in version command, use npm's
+              npx npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version
+            fi
+            
+            # Amend the commit to include the version change
+            git add package.json package-lock.json yarn.lock bun.lockb 2>/dev/null || true
+            git commit --amend --no-edit
+          fi
+          
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
           # Determine the actual tag name based on the environment

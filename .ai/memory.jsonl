@@ -1,8 +1,1 @@
-{
-  "type": "entity",
-  "name": "Project:ai-coding-assistants-setup",
-  "entityType": "Project",
-  "observations": [
-    "Project initialized with AI coding assistants"
-  ]
-}
+{"type":"entity","name":"Project:ai-coding-assistants-setup","entityType":"Project","observations":["Project initialized with AI coding assistants"]}

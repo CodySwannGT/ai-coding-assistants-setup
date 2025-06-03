@@ -1,0 +1,1 @@
+Run all E2E Tests, following ALL the instructions in @__tests__/e2e/README.md 

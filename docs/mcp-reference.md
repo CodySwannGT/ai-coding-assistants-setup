@@ -49,12 +49,15 @@
     - [Brave Search](#brave-search)
       - [Example Configuration](#example-configuration-10)
       - [Example Usage Prompts](#example-usage-prompts-10)
-    - [AWS Documentation](#aws-documentation)
+    - [Firecrawl](#firecrawl)
       - [Example Configuration](#example-configuration-11)
       - [Example Usage Prompts](#example-usage-prompts-11)
-    - [FileSystem](#filesystem)
+    - [AWS Documentation](#aws-documentation)
       - [Example Configuration](#example-configuration-12)
       - [Example Usage Prompts](#example-usage-prompts-12)
+    - [FileSystem](#filesystem)
+      - [Example Configuration](#example-configuration-13)
+      - [Example Usage Prompts](#example-usage-prompts-13)
   - [⚙️ Configuration Management](#️-configuration-management)
     - [Configuration Files](#configuration-files)
     - [Environment Variables](#environment-variables)
@@ -224,13 +227,27 @@ Provides persistent memory between sessions for Claude/Roo, allowing knowledge t
   "mcpServers": {
     "memory": {
       "command": "npx",
-      "args": ["-y", "mcp-knowledge-graph", "--memory-path", "${MEMORY_PATH}"],
+      "args": [
+        "-y",
+        "mcp-knowledge-graph",
+        "--memory-path",
+        ".ai/memory.jsonl"
+      ],
+      "env": {
+        "MEMORY_PATH": ".ai/memory.jsonl"
+      },
       "autoapprove": [
-        "create_entities", "create_relations", "add_observations",
-        "delete_entities", "delete_observations", "delete_relations",
-        "read_graph", "search_nodes", "open_nodes"
+        "create_entities",
+        "create_relations",
+        "add_observations",
+        "delete_entities",
+        "delete_observations",
+        "delete_relations",
+        "read_graph",
+        "search_nodes",
+        "open_nodes"
       ]
-    }
+    },
   }
 }
 ```
@@ -602,7 +619,7 @@ Performs web searches using the Brave Search API.
   "mcpServers": {
     "brave-search": {
       "command": "npx",
-      "args": ["-y", "brave-search-mcp-server"]
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"]
     }
   }
 }
@@ -622,6 +639,61 @@ Let me find nearby businesses matching that description.
 // Recent events
 Let me find the latest news about this technology.
 @brave-search brave_web_search --query "React 19 release date" --count 5
+```
+
+### Firecrawl
+
+Advanced web scraping, crawling, and data extraction MCP for comprehensive web research and content extraction.
+
+| Aspect | Details |
+|--------|---------|
+| **Capabilities** | Web scraping, site mapping, web crawling, search, structured data extraction, deep research |
+| **Configuration Requirements** | Firecrawl API key |
+| **API Keys/Credentials** | Firecrawl API Key required |
+| **Rate Limits** | Based on Firecrawl account tier |
+
+#### Example Configuration
+
+```json
+{
+  "mcpServers": {
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": {
+        "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+#### Example Usage Prompts
+
+```
+// Scrape a single web page
+Let me extract the content from this webpage.
+@firecrawl-mcp firecrawl_scrape --url "https://example.com" --formats ["markdown"] --onlyMainContent true
+
+// Map a website's structure
+Let me discover all the URLs on this website.
+@firecrawl-mcp firecrawl_map --url "https://example.com" --limit 100
+
+// Crawl multiple pages
+Let me extract content from multiple pages on this site.
+@firecrawl-mcp firecrawl_crawl --url "https://example.com/blog/*" --maxDepth 2 --limit 10 --deduplicateSimilarURLs true
+
+// Search and extract
+Let me find and extract specific information from the web.
+@firecrawl-mcp firecrawl_search --query "latest AI research papers 2023" --limit 5 --scrapeOptions {"formats": ["markdown"], "onlyMainContent": true}
+
+// Extract structured data
+Let me extract specific structured data from these product pages.
+@firecrawl-mcp firecrawl_extract --urls ["https://example.com/product1", "https://example.com/product2"] --prompt "Extract product name, price, and description"
+
+// Conduct deep research
+Let me research this topic comprehensively.
+@firecrawl-mcp firecrawl_deep_research --query "Environmental impacts of electric vehicles compared to gasoline vehicles" --maxDepth 3 --maxUrls 20
 ```
 
 ### AWS Documentation

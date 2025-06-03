@@ -1,0 +1,40 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Detect package manager
+if [ -f "package-lock.json" ]; then
+  PACKAGE_MANAGER="npm"
+  EXECUTOR="npx"
+elif [ -f "yarn.lock" ]; then
+  PACKAGE_MANAGER="yarn"
+  EXECUTOR="yarn"
+elif [ -f "bun.lockb" ]; then
+  PACKAGE_MANAGER="bun"
+  EXECUTOR="bunx"
+else
+  # Default to npm if no lock file is found
+  PACKAGE_MANAGER="npm"
+  EXECUTOR="npx"
+fi
+
+echo "📝 Validating commit message with commitlint..."
+$EXECUTOR commitlint --edit $1
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Commit message does not follow conventional commits format!"
+  echo ""
+  echo "📖 Examples of valid commit messages:"
+  echo "  - feat: add new feature"
+  echo "  - fix: resolve bug in login"
+  echo "  - docs: update README"
+  echo "  - style: format code"
+  echo "  - refactor: restructure auth module"
+  echo "  - test: add unit tests for utils"
+  echo "  - chore: update dependencies"
+  echo ""
+  echo "Format: <type>(<optional scope>): <subject>"
+  echo ""
+  echo "For more info, see: https://www.conventionalcommits.org/"
+  exit 1
+fi

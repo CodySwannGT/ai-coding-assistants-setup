@@ -543,11 +543,6 @@ jobs:
     timeout-minutes: 10
     if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'sonarcloud') }}
     steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Full depth for proper analysis
-
       - name: 🔍 Check for SonarCloud token
         id: check_token
         env:
@@ -555,10 +550,18 @@ jobs:
         run: |
           if [ -z "$SONAR_TOKEN" ]; then
             echo "⚠️ SONAR_TOKEN is not set. Skipping SonarCloud analysis."
+            echo "::warning::SonarCloud analysis skipped - SONAR_TOKEN not configured"
+            echo "To enable SonarCloud analysis, add SONAR_TOKEN to your repository secrets"
             echo "skip=true" >> $GITHUB_OUTPUT
           else
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: 📥 Checkout repository
+        if: steps.check_token.outputs.skip != 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full depth for proper analysis
 
       - name: 📊 SonarCloud Scan
         if: steps.check_token.outputs.skip != 'true'
@@ -572,12 +575,6 @@ jobs:
           args: >
             -Dsonar.organization=${{ github.repository_owner }}
             -Dsonar.projectKey=${{ github.repository_owner }}_${{ github.event.repository.name }}
-
-      - name: 📊 SonarCloud Scan Skipped
-        if: steps.check_token.outputs.skip == 'true'
-        run: |
-          echo "::warning::SonarCloud analysis skipped - SONAR_TOKEN not configured"
-          echo "To enable SonarCloud analysis, add SONAR_TOKEN to your repository secrets"
 
   snyk:
     name: 🛡️ Snyk Dependency Scan

@@ -1,39 +1,3 @@
-# -----------------------------------------------------------------------------
-# Quality Checks Workflow
-# -----------------------------------------------------------------------------
-# ⚠️ WARNING: THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY! ⚠️
-# Any changes may be overwritten by the generation process.
-# This workflow runs various quality checks on the codebase including:
-# - Linting
-# - Type checking
-# - Unit tests
-# - Format checking
-# - Build verification
-# - Security scanning
-# - AI-powered code quality and security analysis (non-blocking)
-# - Enterprise security tools:
-#   - SonarCloud SAST analysis
-#   - Snyk dependency vulnerability scanning
-#   - GitGuardian secret detection
-#   - FOSSA license compliance checking
-#
-# Example usage in another workflow:
-# ```yaml
-# quality:
-#   uses: ./.github/workflows/quality.yml
-#   with:
-#     node_version: '20.x'
-#     package_manager: 'npm'
-#     skip_security: true
-#   secrets:
-#     PAT: ${{ secrets.PAT }}  # Required scopes: (repo:status, public_repo, repo_deployment)
-#     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-#     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # For SonarCloud SAST
-#     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}  # For Snyk dependency scanning
-#     GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}  # For secret detection
-#     FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}  # For license compliance
-# ```
-
 name: 🔍 Quality Checks
 
 on:
@@ -41,202 +5,78 @@ on:
     inputs:
       node_version:
         description: 'Node.js version to use'
-        required: false
-        default: '20.x'
         type: string
+        default: '20'
       package_manager:
-        description: 'Package manager to use (npm, yarn, or bun)'
-        required: false
+        description: 'Package manager (npm, yarn, bun)'
+        type: string
         default: 'npm'
-        type: string
-      skip_lint:
-        description: 'Skip the lint job'
-        required: false
-        default: false
-        type: boolean
-      skip_typecheck:
-        description: 'Skip the typecheck job'
-        required: false
-        default: false
-        type: boolean
       skip_test:
-        description: 'Skip the test job'
-        required: false
-        default: false
+        description: 'Skip test jobs'
         type: boolean
-      skip_format:
-        description: 'Skip the format check job'
-        required: false
         default: false
+      skip_lint:
+        description: 'Skip linting'
         type: boolean
-      skip_build:
-        description: 'Skip the build job'
-        required: false
         default: false
+      skip_typecheck:
+        description: 'Skip type checking'
         type: boolean
+        default: false
       skip_security:
-        description: 'Skip the security scan job'
-        required: false
-        default: false
+        description: 'Skip security checks'
         type: boolean
+        default: false
+      skip_coverage:
+        description: 'Skip code coverage'
+        type: boolean
+        default: false
       skip_jobs:
-        description: 'Jobs to skip (comma-separated: lint,typecheck,test,test:unit,test:integration,test:e2e,format,build,npm_security_scan,code_quality_check,claude_security_scan,github_issue)'
-        required: false
-        default: ''
+        description: 'Comma-separated list of jobs to skip'
         type: string
+        default: ''
       working_directory:
-        description: 'Directory to run commands in (if not root)'
-        required: false
-        default: ''
+        description: 'Working directory for all operations'
         type: string
-      compliance_framework:
-        description: 'Compliance framework to validate against (none, soc2, iso27001, hipaa, pci-dss)'
-        required: false
-        default: 'none'
-        type: string
-      require_approval:
-        description: 'Require approval for production deployments (uses GitHub environments)'
-        required: false
-        default: false
-        type: boolean
-      audit_retention_days:
-        description: 'Number of days to retain audit logs'
-        required: false
-        default: 90
-        type: number
-      generate_evidence_package:
-        description: 'Generate compliance evidence package for audits'
-        required: false
-        default: false
-        type: boolean
-      approval_environment:
-        description: 'GitHub environment name for approval gate (must exist in repo settings). Set to empty string to skip even when require_approval is true.'
-        required: false
-        default: 'production'
-        type: string
+        default: '.'
     secrets:
-      PAT:
-        description: 'Personal Access Token for GitHub operations'
-        required: false
-        # Documentation for PAT token scopes: (repo:status, public_repo, repo_deployment)
-      ANTHROPIC_API_KEY:
-        description: 'Anthropic API key for Claude code quality integrations'
+      GITHUB_TOKEN:
         required: false
       SONAR_TOKEN:
-        description: 'SonarCloud token for SAST analysis'
         required: false
       SNYK_TOKEN:
-        description: 'Snyk token for dependency vulnerability scanning'
         required: false
       GITGUARDIAN_API_KEY:
-        description: 'GitGuardian API key for secret detection'
         required: false
       FOSSA_API_KEY:
-        description: 'FOSSA API key for license compliance checking'
+        required: false
+      ANTHROPIC_API_KEY:
         required: false
 
-# Concurrency is managed by the parent workflow that calls this one
-# This avoids deadlocks between parent and child workflows
+# Improved concurrency handling with smarter cancellation
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Central dependency installation job to optimize performance
-  install_dependencies:
-    name: 📦 Install Dependencies
-    runs-on: ubuntu-latest
-    outputs:
-      cache-key: ${{ steps.cache.outputs.cache-key }}
-      cache-hit: ${{ steps.cache.outputs.cache-hit }}
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ inputs.node_version }}
-          cache: ${{ inputs.package_manager }}
-
-      - name: 🔑 Generate cache key
-        id: cache
-        run: |
-          if [ -f "package-lock.json" ]; then
-            echo "cache-key=${{ runner.os }}-node-${{ inputs.node_version }}-npm-${{ hashFiles('package-lock.json') }}" >> $GITHUB_OUTPUT
-          elif [ -f "yarn.lock" ]; then
-            echo "cache-key=${{ runner.os }}-node-${{ inputs.node_version }}-yarn-${{ hashFiles('yarn.lock') }}" >> $GITHUB_OUTPUT
-          elif [ -f "bun.lockb" ]; then
-            echo "cache-key=${{ runner.os }}-node-${{ inputs.node_version }}-bun-${{ hashFiles('bun.lockb') }}" >> $GITHUB_OUTPUT
-          else
-            echo "cache-key=${{ runner.os }}-node-${{ inputs.node_version }}-${{ inputs.package_manager }}-${{ hashFiles('package.json') }}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 📦 Cache node_modules
-        id: cache-modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.npm
-            ~/.yarn/cache
-            ~/.bun/install/cache
-          key: ${{ steps.cache.outputs.cache-key }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ inputs.node_version }}-${{ inputs.package_manager }}-
-            ${{ runner.os }}-node-${{ inputs.node_version }}-
-            ${{ runner.os }}-node-
-
-      - name: 📥 Install dependencies
-        if: steps.cache-modules.outputs.cache-hit != 'true'
-        run: |
-          if [ "${{ inputs.package_manager }}" = "npm" ]; then
-            npm ci
-          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
-            yarn install --frozen-lockfile
-          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
-            bun install --frozen-lockfile
-          else
-            echo "Unsupported package manager: ${{ inputs.package_manager }}"
-            exit 1
-          fi
-        working-directory: ${{ inputs.working_directory || '.' }}
-
-      - name: 📤 Upload dependencies artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-modules-${{ github.run_id }}
-          path: |
-            node_modules
-            package.json
-            package-lock.json
-            yarn.lock
-            bun.lockb
-          retention-days: 1
-          if-no-files-found: error
-
-      - name: 📊 Cache status
-        run: |
-          echo "cache-hit=${{ steps.cache-modules.outputs.cache-hit }}" >> $GITHUB_OUTPUT
-        id: cache-status
+  # Removed the centralized install_dependencies job
+  
   lint:
     name: 🧹 Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: install_dependencies
+    timeout-minutes: 10
     if: ${{ !inputs.skip_lint && !contains(inputs.skip_jobs, 'lint') }}
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
           node-version: ${{ inputs.node_version }}
-
-      - name: 📥 Download dependencies
-        uses: actions/download-artifact@v4
-        with:
-          name: node-modules-${{ github.run_id }}
-          path: .
+          package-manager: ${{ inputs.package_manager }}
+          working-directory: ${{ inputs.working_directory }}
 
       - name: 🧹 Run linter
         run: ${{ inputs.package_manager }} run lint
@@ -245,83 +85,80 @@ jobs:
   typecheck:
     name: 🔍 Type Check
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: install_dependencies
+    timeout-minutes: 10
     if: ${{ !inputs.skip_typecheck && !contains(inputs.skip_jobs, 'typecheck') }}
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
           node-version: ${{ inputs.node_version }}
-
-      - name: 📥 Download dependencies
-        uses: actions/download-artifact@v4
-        with:
-          name: node-modules-${{ github.run_id }}
-          path: .
+          package-manager: ${{ inputs.package_manager }}
+          working-directory: ${{ inputs.working_directory }}
 
       - name: 🔍 Run type check
         run: ${{ inputs.package_manager }} run typecheck
         working-directory: ${{ inputs.working_directory || '.' }}
 
-  test:
-    name: 🧪 Run Tests
+  format_check:
+    name: 💅 Format Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: install_dependencies
-    if: ${{ !inputs.skip_test && !contains(inputs.skip_jobs, 'test') }}
+    if: ${{ !inputs.skip_lint && !contains(inputs.skip_jobs, 'format:check') }}
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
           node-version: ${{ inputs.node_version }}
+          package-manager: ${{ inputs.package_manager }}
+          working-directory: ${{ inputs.working_directory }}
 
-      - name: 📥 Download dependencies
-        uses: actions/download-artifact@v4
-        with:
-          name: node-modules-${{ github.run_id }}
-          path: .
-
-      - name: 🧪 Run tests
+      - name: 🔍 Check for format:check script
+        id: check_script
         run: |
-          if [ "${{ inputs.package_manager }}" = "npm" ]; then
-            npm test
-          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
-            yarn test
-          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
-            bun test
+          if [ -f "package.json" ]; then
+            if grep -q '"format:check"' package.json; then
+              echo "exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "exists=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
           fi
         working-directory: ${{ inputs.working_directory || '.' }}
+
+      - name: 💅 Check formatting
+        if: steps.check_script.outputs.exists == 'true'
+        run: ${{ inputs.package_manager }} run format:check
+        working-directory: ${{ inputs.working_directory || '.' }}
+
+      - name: ⏭️ Skip format check (no format:check script)
+        if: steps.check_script.outputs.exists == 'false'
+        run: echo "Skipping format check - format:check script not found in package.json"
 
   test_unit:
     name: 🧪 Run Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: install_dependencies
+    timeout-minutes: 15
     if: ${{ !inputs.skip_test && !contains(inputs.skip_jobs, 'test:unit') }}
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
           node-version: ${{ inputs.node_version }}
-
-      - name: 📥 Download dependencies
-        uses: actions/download-artifact@v4
-        with:
-          name: node-modules-${{ github.run_id }}
-          path: .
+          package-manager: ${{ inputs.package_manager }}
+          working-directory: ${{ inputs.working_directory }}
 
       - name: 🔍 Check for test:unit script
         id: check_script
@@ -357,23 +194,18 @@ jobs:
     name: 🧪 Run Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: install_dependencies
     if: ${{ !inputs.skip_test && !contains(inputs.skip_jobs, 'test:integration') }}
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
           node-version: ${{ inputs.node_version }}
-
-      - name: 📥 Download dependencies
-        uses: actions/download-artifact@v4
-        with:
-          name: node-modules-${{ github.run_id }}
-          path: .
+          package-manager: ${{ inputs.package_manager }}
+          working-directory: ${{ inputs.working_directory }}
 
       - name: 🔍 Check for test:integration script
         id: check_script
@@ -406,26 +238,21 @@ jobs:
         run: echo "Skipping integration tests - test:integration script not found in package.json"
 
   test_e2e:
-    name: 🧪 Run E2E Tests
+    name: 🎯 Run E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: install_dependencies
     if: ${{ !inputs.skip_test && !contains(inputs.skip_jobs, 'test:e2e') }}
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
           node-version: ${{ inputs.node_version }}
-
-      - name: 📥 Download dependencies
-        uses: actions/download-artifact@v4
-        with:
-          name: node-modules-${{ github.run_id }}
-          path: .
+          package-manager: ${{ inputs.package_manager }}
+          working-directory: ${{ inputs.working_directory }}
 
       - name: 🔍 Check for test:e2e script
         id: check_script
@@ -441,7 +268,7 @@ jobs:
           fi
         working-directory: ${{ inputs.working_directory || '.' }}
 
-      - name: 🧪 Run E2E tests
+      - name: 🎯 Run E2E tests
         if: steps.check_script.outputs.exists == 'true'
         run: |
           if [ "${{ inputs.package_manager }}" = "npm" ]; then
@@ -457,285 +284,61 @@ jobs:
         if: steps.check_script.outputs.exists == 'false'
         run: echo "Skipping E2E tests - test:e2e script not found in package.json"
 
-  format:
-    name: 📐 Check Formatting
+  test_coverage:
+    name: 📊 Code Coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 3
-    needs: install_dependencies
-    if: ${{ !inputs.skip_format && !contains(inputs.skip_jobs, 'format') }}
+    timeout-minutes: 15
+    if: ${{ !inputs.skip_coverage && !contains(inputs.skip_jobs, 'coverage') }}
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
           node-version: ${{ inputs.node_version }}
+          package-manager: ${{ inputs.package_manager }}
+          working-directory: ${{ inputs.working_directory }}
 
-      - name: 📥 Download dependencies
-        uses: actions/download-artifact@v4
-        with:
-          name: node-modules-${{ github.run_id }}
-          path: .
-
-      - name: 📐 Check formatting
-        run: ${{ inputs.package_manager }} run format:check
+      - name: 📊 Run test coverage
+        run: |
+          if [ -f "package.json" ] && grep -q '"test:coverage"' package.json; then
+            ${{ inputs.package_manager }} run test:coverage
+          else
+            echo "No test:coverage script found, running default test"
+            ${{ inputs.package_manager }} test -- --coverage
+          fi
         working-directory: ${{ inputs.working_directory || '.' }}
 
-  build:
-    name: 🏗️ Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: install_dependencies
-    if: ${{ !inputs.skip_build && !contains(inputs.skip_jobs, 'build') }}
-
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ inputs.node_version }}
-
-      - name: 📥 Download dependencies
-        uses: actions/download-artifact@v4
-        with:
-          name: node-modules-${{ github.run_id }}
-          path: .
-
-      - name: 🏗️ Build project
-        run: ${{ inputs.package_manager }} run build
-        working-directory: ${{ inputs.working_directory || '.' }}
-
-      - name: 📤 Upload build artifacts
+      - name: 📤 Upload coverage reports
+        if: always()
         uses: actions/upload-artifact@v4
-        if: success()
         with:
-          name: build-output-${{ github.run_id }}
+          name: coverage-reports
           path: |
-            dist
-            build
-            .next
-            out
-          retention-days: 1
-          if-no-files-found: ignore
+            coverage/
+            .nyc_output/
+          retention-days: 7
 
-  npm_security_scan:
-    name: 🔒 Security Scan
+  ai_code_review:
+    name: 🤖 AI Code Quality Check
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: install_dependencies
-    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'npm_security_scan') }}
+    timeout-minutes: 10
+    if: ${{ !inputs.skip_lint && !contains(inputs.skip_jobs, 'ai_code_review') && github.event_name == 'pull_request' }}
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full depth for better diffs
 
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
           node-version: ${{ inputs.node_version }}
-
-      - name: 📥 Download dependencies
-        uses: actions/download-artifact@v4
-        with:
-          name: node-modules-${{ github.run_id }}
-          path: .
-
-      - name: 🔒 Run security audit
-        run: |
-          if [ "${{ inputs.package_manager }}" = "npm" ]; then
-            npm audit --production
-          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
-            yarn audit --groups dependencies
-          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
-            bun pm audit
-          else
-            echo "Unsupported package manager: ${{ inputs.package_manager }}"
-            exit 1
-          fi
-        working-directory: ${{ inputs.working_directory || '.' }}
-
-  sonarcloud:
-    name: 🔍 SonarCloud SAST
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: install_dependencies
-    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'sonarcloud') }}
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Full depth for proper analysis
-
-      - name: 🔍 Check for SonarCloud token
-        id: check_token
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          if [ -z "$SONAR_TOKEN" ]; then
-            echo "⚠️ SONAR_TOKEN is not set. Skipping SonarCloud analysis."
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 📊 SonarCloud Scan
-        if: steps.check_token.outputs.skip != 'true'
-        uses: SonarSource/sonarqube-scan-action@v5.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          # Project configuration should be in sonar-project.properties
-          # or passed as args here
-          args: >
-            -Dsonar.organization=${{ github.repository_owner }}
-            -Dsonar.projectKey=${{ github.repository_owner }}_${{ github.event.repository.name }}
-
-      - name: 📊 SonarCloud Scan Skipped
-        if: steps.check_token.outputs.skip == 'true'
-        run: |
-          echo "::warning::SonarCloud analysis skipped - SONAR_TOKEN not configured"
-          echo "To enable SonarCloud analysis, add SONAR_TOKEN to your repository secrets"
-
-  snyk:
-    name: 🛡️ Snyk Dependency Scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: install_dependencies
-    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'snyk') }}
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: 🔍 Check for Snyk token
-        id: check_token
-        run: |
-          if [ -z "${{ secrets.SNYK_TOKEN }}" ]; then
-            echo "⚠️ SNYK_TOKEN is not set. Skipping Snyk scan."
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 🔧 Setup Node.js
-        if: steps.check_token.outputs.skip != 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ inputs.node_version }}
-          cache: ${{ inputs.package_manager }}
-
-      - name: 🛡️ Run Snyk to check for vulnerabilities
-        if: steps.check_token.outputs.skip != 'true'
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --all-projects
-
-      - name: 📤 Upload Snyk results
-        if: steps.check_token.outputs.skip != 'true' && always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: snyk-results
-          path: snyk-results.json
-          retention-days: 14
-
-  secret_scanning:
-    name: 🔐 GitGuardian Secret Detection
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'secret_scanning') }}
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Full depth for scanning history
-
-      - name: 🔍 Check for GitGuardian API key
-        id: check_token
-        run: |
-          if [ -z "${{ secrets.GITGUARDIAN_API_KEY }}" ]; then
-            echo "⚠️ GITGUARDIAN_API_KEY is not set. Skipping secret detection."
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 🔐 GitGuardian scan
-        if: steps.check_token.outputs.skip != 'true'
-        uses: GitGuardian/ggshield-action@master
-        env:
-          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
-        with:
-          args: --show-secrets --all-policies
-
-  license_compliance:
-    name: 📜 FOSSA License Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'license_compliance') }}
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: 🔍 Check for FOSSA API key
-        id: check_token
-        run: |
-          if [ -z "${{ secrets.FOSSA_API_KEY }}" ]; then
-            echo "⚠️ FOSSA_API_KEY is not set. Skipping license compliance check."
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 📜 Run FOSSA license scan
-        if: steps.check_token.outputs.skip != 'true'
-        uses: fossas/fossa-action@main
-        with:
-          api-key: ${{ secrets.FOSSA_API_KEY }}
-          # Optional: specify the team
-          # team: 'your-team-name'
-
-  code_quality_check:
-    name: 🤖 Claude Code Quality Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'code_quality_check') }}
-    continue-on-error: true  # AI scanner is non-blocking
-    outputs:
-      review_passed: ${{ steps.code_review.outputs.review_passed }}
-      review_status: ${{ steps.set_status.outputs.status }}
-    # This job uses Claude AI to review code changes for quality issues.
-    # It will NOT block the workflow if issues are found (continue-on-error: true).
-    # Results are uploaded as artifacts and posted as PR comments for visibility.
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ inputs.node_version }}
-          cache: ${{ inputs.package_manager }}
-
-      - name: 📦 Install dependencies
-        run: |
-          if [ "${{ inputs.package_manager }}" = "npm" ]; then
-            npm ci
-          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
-            yarn install --frozen-lockfile
-          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
-            bun install --frozen-lockfile
-          else
-            echo "Unsupported package manager: ${{ inputs.package_manager }}"
-            exit 1
-          fi
-        working-directory: ${{ inputs.working_directory || '.' }}
+          package-manager: ${{ inputs.package_manager }}
+          working-directory: ${{ inputs.working_directory }}
 
       - name: 🤖 Install Claude CLI
         run: |
@@ -785,305 +388,97 @@ jobs:
           # Check if guidelines file exists in the repository and append it
           if [ -f ".github/workflows/code_review_guidelines.md" ]; then
             cat .github/workflows/code_review_guidelines.md >> code_review_prompt.txt
-            echo "Using custom guidelines from .github/workflows/code_review_guidelines.md"
-          else
-            # Fallback to default guidelines if the file doesn't exist
-            echo "" >> code_review_prompt.txt
-            echo "IMPORTANT GUIDELINES:" >> code_review_prompt.txt
-            echo "- IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)" >> code_review_prompt.txt
-            echo "- IGNORE package-lock.json files" >> code_review_prompt.txt
-            echo "- IGNORE version regressions" >> code_review_prompt.txt
-            echo "- DO NOT review generated files, compiled code, or third-party dependencies" >> code_review_prompt.txt
-            echo "- Focus on substantive code issues rather than trivial style issues" >> code_review_prompt.txt
-            echo "- Be concise and specific in your feedback" >> code_review_prompt.txt
-            echo "- When suggesting improvements, explain why they matter" >> code_review_prompt.txt
-            echo "- End your review with \"VERDICT: PASS\" if the code is acceptable for deployment" >> code_review_prompt.txt
-            echo "- End your review with \"VERDICT: FAIL\" if there are critical issues that must be fixed before deployment" >> code_review_prompt.txt
-            echo "Using default guidelines (.github/workflows/code_review_guidelines.md not found)"
+          elif [ -f ".github/code_review_guidelines.md" ]; then
+            cat .github/code_review_guidelines.md >> code_review_prompt.txt
           fi
 
-          # Initialize failure flag
-          REVIEW_FAILED=0
+          # Get the diff for the PR using echo to create content
+          echo "Analyzing the following code changes:" >> code_review_prompt.txt
+          echo "" >> code_review_prompt.txt
+          git diff origin/${{ github.base_ref }}...HEAD >> code_review_prompt.txt
 
-          # Create markdown file for results
-          RESULTS_FILE="code_review_results.md"
-          echo "# Claude AI Code Review Results" > $RESULTS_FILE
-          echo "" >> $RESULTS_FILE
-          echo "Generated on: $(date)" >> $RESULTS_FILE
-          echo "" >> $RESULTS_FILE
-
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # For pull requests, add PR info
-            echo "## Pull Request #${{ github.event.pull_request.number }}" >> $RESULTS_FILE
-            echo "" >> $RESULTS_FILE
-            echo "- Title: ${{ github.event.pull_request.title }}" >> $RESULTS_FILE
-            echo "- Author: ${{ github.event.pull_request.user.login }}" >> $RESULTS_FILE
-            echo "- Branch: ${{ github.head_ref }}" >> $RESULTS_FILE
-            echo "" >> $RESULTS_FILE
-
-            echo "🔍 Reviewing files changed in PR #${{ github.event.pull_request.number }}"
-
-            # Get all files to review
-            files_to_review=$(git diff -U0 --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$|\.yml$' || echo "")
-
-            # Add TOC to markdown file
-            echo "## Files Reviewed" >> $RESULTS_FILE
-            echo "" >> $RESULTS_FILE
-            for file in $files_to_review; do
-              echo "- [${file}](#$(echo ${file} | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]'))" >> $RESULTS_FILE
-            done
-            echo "" >> $RESULTS_FILE
-
-            # Process each file
-            for file in $files_to_review; do
-              echo "📝 Reviewing $file"
-              # Sanitize file path to prevent command injection
-              if [[ ! "$file" =~ [^a-zA-Z0-9_./-] ]]; then
-                review_output=$(git diff -U0 ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- "$file" | \
-                              claude -p "$(cat code_review_prompt.txt)" --output-format json)
-              else
-                echo "Skipping file with potentially unsafe path: $file"
-                continue
-              fi
-
-              # Extract the review text
-              review_text=$(echo "$review_output" | jq -r ".result")
-
-              # Print formatted review
-              echo "===================== REVIEW FOR $file ====================="
-              echo "$review_text"
-              echo "==========================================================="
-              echo ""
-
-              # Add to markdown file
-              echo "## $file" >> $RESULTS_FILE
-              echo "" >> $RESULTS_FILE
-              echo "$(echo "$review_text" | sed 's/VERDICT: PASS/✅ VERDICT: PASS/g' | sed 's/VERDICT: FAIL/❌ VERDICT: FAIL/g')" >> $RESULTS_FILE
-              echo "" >> $RESULTS_FILE
-
-              # Check for verdict
-              if echo "$review_text" | grep -q "VERDICT: FAIL"; then
-                echo "❌ CRITICAL ISSUES FOUND IN $file"
-                REVIEW_FAILED=1
-              else
-                echo "✅ $file passed review"
-              fi
-            done
-          else
-            # For pushes, check the latest commit
-            echo "## Latest Commit: $(git rev-parse --short HEAD)" >> $RESULTS_FILE
-            echo "" >> $RESULTS_FILE
-            echo "- Author: $(git log -1 --pretty=format:'%an <%ae>')" >> $RESULTS_FILE
-            echo "- Date: $(git log -1 --pretty=format:'%ad' --date=format:'%Y-%m-%d %H:%M:%S')" >> $RESULTS_FILE
-            echo "- Message: $(git log -1 --pretty=format:'%s')" >> $RESULTS_FILE
-            echo "" >> $RESULTS_FILE
-
-            echo "🔍 Reviewing files in latest commit"
-
-            # Get all files to review
-            files_to_review=$(git diff -U0 --name-only HEAD~1 HEAD | \
-                              grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$|\.yml$' || echo "")
-
-            # Add TOC to markdown file
-            echo "## Files Reviewed" >> $RESULTS_FILE
-            echo "" >> $RESULTS_FILE
-            for file in $files_to_review; do
-              echo "- [${file}](#$(echo ${file} | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]'))" >> $RESULTS_FILE
-            done
-            echo "" >> $RESULTS_FILE
-
-            # Process each file
-            for file in $files_to_review; do
-              echo "📝 Reviewing $file"
-              # Sanitize file path to prevent command injection
-              if [[ ! "$file" =~ [^a-zA-Z0-9_./-] ]]; then
-                review_output=$(git diff -U0 HEAD~1 HEAD -- "$file" | \
-                              claude -p "$(cat code_review_prompt.txt)" --output-format json)
-              else
-                echo "Skipping file with potentially unsafe path: $file"
-                continue
-              fi
-
-              # Extract the review text
-              review_text=$(echo "$review_output" | jq -r ".result")
-
-              # Print formatted review
-              echo "===================== REVIEW FOR $file ====================="
-              echo "$review_text"
-              echo "==========================================================="
-              echo ""
-
-              # Add to markdown file
-              echo "## $file" >> $RESULTS_FILE
-              echo "" >> $RESULTS_FILE
-              echo "$(echo "$review_text" | sed 's/VERDICT: PASS/✅ VERDICT: PASS/g' | sed 's/VERDICT: FAIL/❌ VERDICT: FAIL/g')" >> $RESULTS_FILE
-              echo "" >> $RESULTS_FILE
-
-              # Check for verdict
-              if echo "$review_text" | grep -q "VERDICT: FAIL"; then
-                echo "❌ CRITICAL ISSUES FOUND IN $file"
-                REVIEW_FAILED=1
-              else
-                echo "✅ $file passed review"
-              fi
-            done
-          fi
-
-          # Add summary to the markdown file
-          echo "## Summary" >> $RESULTS_FILE
-          echo "" >> $RESULTS_FILE
-          if [ $REVIEW_FAILED -eq 1 ]; then
-            echo "⚠️ **REVIEW FOUND ISSUES: Critical issues were identified. While not blocking the workflow, these should be addressed.**" >> $RESULTS_FILE
-            echo "" >> $RESULTS_FILE
-            echo "📝 **Note:** AI code review is non-blocking and provides recommendations only." >> $RESULTS_FILE
-            # Set output for use in subsequent steps
-            echo "review_passed=false" >> $GITHUB_OUTPUT
-          else
-            echo "✅ **REVIEW PASSED: All files passed code review!**" >> $RESULTS_FILE
-            # Set output for use in subsequent steps
+          # Run Claude review and capture output
+          if claude-code review --prompt "$(cat code_review_prompt.txt)" > code_review_results.md 2>&1; then
+            echo "✅ Code review completed successfully"
             echo "review_passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Code review found issues"
+            echo "review_passed=false" >> $GITHUB_OUTPUT
           fi
-        working-directory: ${{ inputs.working_directory || '.' }}
-        # No continue-on-error here to ensure next steps run
 
-      - name: 📤 Upload code review results
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-review-results
-          path: ${{ inputs.working_directory || '.' }}/code_review_results.md
-          retention-days: 14 # Keep artifacts for 14 days
-        if: always() # This ensures results are always uploaded
-
-      - name: 💬 Comment code review results on PR
-        if: github.event_name == 'pull_request'
+      - name: 📝 Post review comment
+        if: github.event_name == 'pull_request' && steps.code_review.outputs.review_passed != ''
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const path = process.env['WORKING_DIRECTORY'] || '.';
-            const resultsPath = `${path}/code_review_results.md`;
-            let commentBody;
-            try {
-              commentBody = fs.readFileSync(resultsPath, 'utf8');
-            } catch (e) {
-              commentBody = '⚠️ Code review results could not be read.';
-            }
-            try {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: commentBody
+            const reviewContent = fs.readFileSync('code_review_results.md', 'utf8');
+            
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Claude AI Code Review Results')
+            );
+            
+            const commentBody = reviewContent;
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: botComment.id,
+                body: commentBody,
               });
-            } catch (error) {
-              console.error('Error posting comment. Make sure PAT token has correct scopes: (repo:status, public_repo, repo_deployment):', error.message);
-              core.warning('Failed to post PR comment. Verify PAT token has required scopes: (repo:status, public_repo, repo_deployment)');
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body: commentBody,
+              });
             }
-          # SECURITY NOTE: Full repo access is required here ('repo' scope) to post PR comments
-          # from within a workflow context, which cannot be done with the default GITHUB_TOKEN
-          github-token: ${{ secrets.PAT }}
-        env:
-          WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
 
-      - name: 📊 Set job status output
-        id: set_status
+      - name: 📤 Upload review results
         if: always()
-        run: |
-          if [ "${{ steps.code_review.outputs.review_passed }}" == "false" ]; then
-            echo "status=failed" >> $GITHUB_OUTPUT
-            echo "⚠️ Code review found issues (non-blocking)"
-          else
-            echo "status=passed" >> $GITHUB_OUTPUT
-            echo "✅ Code review passed"
-          fi
-        shell: bash
-  claude_security_scan:
-    name: 🛡️ Claude Security Scan
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-code-review-results
+          path: code_review_results.md
+          retention-days: 30
+
+  ai_security_scan:
+    name: 🛡️ AI Security Analysis
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'claude_security_scan') }}
-    continue-on-error: true  # AI scanner is non-blocking
-    outputs:
-      security_passed: ${{ steps.security_scan.outputs.security_passed }}
-      security_status: ${{ steps.set_status.outputs.status }}
-    # This job uses Claude AI to scan code for security vulnerabilities.
-    # It will NOT block the workflow if issues are found (continue-on-error: true).
-    # Results are uploaded as artifacts and posted as PR comments for visibility.
+    timeout-minutes: 10
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'ai_security_scan') }}
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 📦 Setup dependencies
+        uses: ./.github/actions/setup-dependencies
         with:
           node-version: ${{ inputs.node_version }}
-          cache: ${{ inputs.package_manager }}
+          package-manager: ${{ inputs.package_manager }}
+          working-directory: ${{ inputs.working_directory }}
 
       - name: 🤖 Install Claude CLI
         run: |
-          # Use npm as the default package manager if not specified
-          PACKAGE_MANAGER="${{ inputs.package_manager }}"
-          if [ -z "$PACKAGE_MANAGER" ]; then
-            PACKAGE_MANAGER="npm"
-            echo "Package manager not specified, using npm as default"
-          fi
-
-          if [ "$PACKAGE_MANAGER" = "npm" ]; then
+          if [ "${{ inputs.package_manager }}" = "npm" ]; then
             npm install -g @anthropic-ai/claude-code
-          elif [ "$PACKAGE_MANAGER" = "yarn" ]; then
+          elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
             yarn global add @anthropic-ai/claude-code
-          elif [ "$PACKAGE_MANAGER" = "bun" ]; then
+          elif [ "${{ inputs.package_manager }}" = "bun" ]; then
             bun add -g @anthropic-ai/claude-code
-          else
-            echo "Unsupported package manager: $PACKAGE_MANAGER"
-            exit 1
           fi
 
-      - name: 📝 Create security scan prompt
-        run: |
-          # Check if guidelines file exists in the repository and use it
-          if [ -f ".github/workflows/security_scan_guidelines.md" ]; then
-            cat .github/workflows/security_scan_guidelines.md > security_prompt.txt
-            echo "Using custom guidelines from .github/workflows/security_scan_guidelines.md"
-          else
-            # Fallback to default guidelines
-            echo "You are a cybersecurity expert specializing in code security. Analyze this code for security vulnerabilities including:" > security_prompt.txt
-            echo "" >> security_prompt.txt
-            echo "1. Injection vulnerabilities (SQL, command, etc.)" >> security_prompt.txt
-            echo "2. Insecure authentication or authorization" >> security_prompt.txt
-            echo "3. Sensitive data exposure or improper handling" >> security_prompt.txt
-            echo "4. Incorrect use of cryptography" >> security_prompt.txt
-            echo "5. Insecure configuration" >> security_prompt.txt
-            echo "6. Hard-coded credentials or secrets" >> security_prompt.txt
-            echo "7. Path traversal vulnerabilities" >> security_prompt.txt
-            echo "8. Insecure deserialization" >> security_prompt.txt
-            echo "9. Insufficient logging and monitoring" >> security_prompt.txt
-            echo "10. Cross-site scripting (XSS) or CSRF" >> security_prompt.txt
-            echo "11. Dependency vulnerabilities" >> security_prompt.txt
-            echo "12. Use of unsafe or deprecated functions" >> security_prompt.txt
-            echo "" >> security_prompt.txt
-            echo "IMPORTANT GUIDELINES:" >> security_prompt.txt
-            echo "- ONLY FAIL the scan for issues of severity 'high' or above " >> security_prompt.txt
-            echo "- IGNORE any files that would be excluded by .gitignore (e.g., node_modules/, dist/, build/, coverage/)" >> security_prompt.txt
-            echo "- IGNORE package-lock.json files" >> security_prompt.txt
-            echo "- DO NOT review generated files, compiled code, or third-party dependencies" >> security_prompt.txt
-            echo "- Focus only on legitimate security issues in actual application code" >> security_prompt.txt
-            echo "" >> security_prompt.txt
-            echo "For each issue found, provide:" >> security_prompt.txt
-            echo "- The specific location of the vulnerability" >> security_prompt.txt
-            echo "- The severity level (Critical, High, Medium, Low)" >> security_prompt.txt
-            echo "- A clear explanation of the vulnerability" >> security_prompt.txt
-            echo "- A recommended fix or mitigation strategy" >> security_prompt.txt
-            echo "" >> security_prompt.txt
-            echo "End your review with \"VERDICT: PASS\" if the code is secure and follows best practices." >> security_prompt.txt
-            echo "End your review with \"VERDICT: FAIL\" if there are security issues that must be fixed." >> security_prompt.txt
-            echo "Using default security guidelines"
-          fi
-
-      - name: 🔍 Run Claude security scan
+      - name: 🛡️ Run Claude security scan
         id: security_scan
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -1092,827 +487,298 @@ jobs:
           # Check if ANTHROPIC_API_KEY is set
           if [ -z "$ANTHROPIC_API_KEY" ]; then
             echo "⚠️ ANTHROPIC_API_KEY is not set. Skipping Claude security scan."
-            echo "security_passed=true" >> $GITHUB_OUTPUT
+            echo "scan_passed=true" >> $GITHUB_OUTPUT
 
-            # Create a minimal report for artifact upload using echo instead of heredoc
-            echo "# Claude Security Scan Results" > security_scan_summary.md
-            echo "" >> security_scan_summary.md
-            echo "⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**" >> security_scan_summary.md
-            echo "" >> security_scan_summary.md
-            echo "Claude security scan was skipped because the ANTHROPIC_API_KEY secret is not set." >> security_scan_summary.md
-            echo "To enable AI-powered security scanning, please add the ANTHROPIC_API_KEY secret to your repository or workflow." >> security_scan_summary.md
+            # Create a minimal report using echo
+            echo "# Claude AI Security Scan Results" > security_scan_results.md
+            echo "" >> security_scan_results.md
+            echo "⚠️ **SKIPPED: ANTHROPIC_API_KEY not provided**" >> security_scan_results.md
+            echo "" >> security_scan_results.md
+            echo "Claude security scan was skipped because the ANTHROPIC_API_KEY secret is not set." >> security_scan_results.md
 
             exit 0
           fi
 
-          echo "🔒 Running Claude security scan on changed files"
+          # Create security scan prompt using echo
+          echo "Perform a security analysis on the codebase. Focus on:" > security_prompt.txt
+          echo "- Hardcoded secrets and credentials" >> security_prompt.txt
+          echo "- SQL injection vulnerabilities" >> security_prompt.txt
+          echo "- XSS vulnerabilities" >> security_prompt.txt
+          echo "- Insecure dependencies" >> security_prompt.txt
+          echo "- Authentication/authorization issues" >> security_prompt.txt
+          echo "- Data exposure risks" >> security_prompt.txt
 
-          mkdir -p security_scan_results
-          SECURITY_ISSUES_FOUND=0
+          # Check if security guidelines exist and append
+          if [ -f ".github/workflows/security_scan_guidelines.md" ]; then
+            cat .github/workflows/security_scan_guidelines.md >> security_prompt.txt
+          elif [ -f ".github/security_scan_guidelines.md" ]; then
+            cat .github/security_scan_guidelines.md >> security_prompt.txt
+          fi
 
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # For pull requests, check all relevant changes
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$|\.yml$' || echo "")
+          # Add file list to scan
+          echo "" >> security_prompt.txt
+          echo "Files to analyze:" >> security_prompt.txt
+          find . -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" -o -name "*.json" | grep -v node_modules | head -100 >> security_prompt.txt
+
+          # Run Claude security scan
+          if claude-code scan --prompt "$(cat security_prompt.txt)" > security_scan_results.md 2>&1; then
+            echo "✅ Security scan completed"
+            echo "scan_passed=true" >> $GITHUB_OUTPUT
           else
-            # For pushes, check the latest commit
-            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | \
-                          grep -v -E 'node_modules/|dist/|build/|coverage/|package-lock\.json$|package\.json$|\.md$|\.yml$' || echo "")
+            echo "❌ Security issues found"
+            echo "scan_passed=false" >> $GITHUB_OUTPUT
           fi
-
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No relevant files changed to scan"
-            echo "security_passed=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "Found changed files to scan: $CHANGED_FILES"
-
-          # Create summary report
-          echo "# Claude Security Scan Results" > security_scan_summary.md
-          echo "Scan completed at: $(date)" >> security_scan_summary.md
-          echo "" >> security_scan_summary.md
-
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "## Pull Request #${{ github.event.pull_request.number }}" >> security_scan_summary.md
-            echo "" >> security_scan_summary.md
-            echo "- Title: ${{ github.event.pull_request.title }}" >> security_scan_summary.md
-            echo "- Author: ${{ github.event.pull_request.user.login }}" >> security_scan_summary.md
-            echo "- Branch: ${{ github.head_ref }}" >> security_scan_summary.md
-          else
-            echo "## Latest Commit: $(git rev-parse --short HEAD)" >> security_scan_summary.md
-            echo "" >> security_scan_summary.md
-            echo "- Author: $(git log -1 --pretty=format:'%an <%ae>')" >> security_scan_summary.md
-            echo "- Date: $(git log -1 --pretty=format:'%ad' --date=format:'%Y-%m-%d %H:%M:%S')" >> security_scan_summary.md
-            echo "- Message: $(git log -1 --pretty=format:'%s')" >> security_scan_summary.md
-          fi
-          echo "" >> security_scan_summary.md
-          echo "## Files Scanned" >> security_scan_summary.md
-          echo "" >> security_scan_summary.md
-
-          # Add TOC to markdown file
-          for FILE in $CHANGED_FILES; do
-            SAFENAME=$(echo "$FILE" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
-            echo "- [${FILE}](#${SAFENAME})" >> security_scan_summary.md
-          done
-          echo "" >> security_scan_summary.md
-
-          for FILE in $CHANGED_FILES; do
-            SAFENAME=$(echo "$FILE" | sed 's/\//_/g')
-            echo "Scanning $FILE for security issues..."
-
-            # Check if file exists and has content
-            if [ -f "$FILE" ] && [ -s "$FILE" ]; then
-              # Sanitize file path to prevent command injection
-              if [[ ! "$FILE" =~ [^a-zA-Z0-9_./-] ]]; then
-                # Run security scan on the file
-                review_output=$(cat "$FILE" | claude -p "$(cat security_prompt.txt)" --output-format json)
-              else
-                echo "Skipping file with potentially unsafe path: $FILE"
-                continue
-              fi
-
-              # Extract the review text
-              review_text=$(echo "$review_output" | jq -r ".result")
-
-              # Save to file
-              echo "$review_text" > "security_scan_results/${SAFENAME}_scan.md"
-
-              # Print formatted review
-              echo "===================== SECURITY SCAN FOR $FILE ====================="
-              echo "$review_text"
-              echo "=================================================================="
-              echo ""
-
-              # Add to markdown file
-              ANCHOR_NAME=$(echo "$FILE" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
-              echo "<a id=\"${ANCHOR_NAME}\"></a>" >> security_scan_summary.md
-              echo "## $FILE" >> security_scan_summary.md
-              echo "" >> security_scan_summary.md
-              echo "$(echo "$review_text" | sed 's/VERDICT: PASS/✅ VERDICT: PASS/g' | sed 's/VERDICT: FAIL/❌ VERDICT: FAIL/g')" >> security_scan_summary.md
-              echo "" >> security_scan_summary.md
-
-              # Check for verdict
-              if echo "$review_text" | grep -q "VERDICT: FAIL"; then
-                echo "❌ SECURITY ISSUES FOUND IN $FILE"
-                SECURITY_ISSUES_FOUND=1
-              else
-                echo "✅ $FILE passed security scan"
-              fi
-            else
-              echo "File $FILE does not exist or is empty, skipping."
-            fi
-          done
-
-          # Add summary to the markdown file
-          echo "## Summary" >> security_scan_summary.md
-          echo "" >> security_scan_summary.md
-          if [ $SECURITY_ISSUES_FOUND -eq 1 ]; then
-            echo "⚠️ **SECURITY SCAN FOUND ISSUES: Security vulnerabilities were identified. While not blocking the workflow, these should be addressed.**" >> security_scan_summary.md
-            echo "" >> security_scan_summary.md
-            echo "🛡️ **Note:** AI security scan is non-blocking and provides recommendations only." >> security_scan_summary.md
-            # Set output for use in subsequent steps
-            echo "security_passed=false" >> $GITHUB_OUTPUT
-          else
-            echo "✅ **SECURITY SCAN PASSED: No security issues found!**" >> security_scan_summary.md
-            # Set output for use in subsequent steps
-            echo "security_passed=true" >> $GITHUB_OUTPUT
-          fi
-
-          echo "Security scan complete. Results saved to security_scan_summary.md"
-        working-directory: ${{ inputs.working_directory || '.' }}
 
       - name: 📤 Upload security scan results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: security-scan-results
-          path: ${{ inputs.working_directory || '.' }}/security_scan_summary.md
-          retention-days: 14 # Keep artifacts for 14 days
-        if: always() # This ensures results are always uploaded
-        env:
-          WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
+          name: ai-security-scan-results
+          path: security_scan_results.md
+          retention-days: 30
 
-      - name: 💬 Comment security scan results on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+  sonarcloud:
+    name: 🔍 SonarCloud SAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'sonarcloud') }}
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
         with:
-          script: |
-            const fs = require('fs');
-            const path = process.env['WORKING_DIRECTORY'] || '.';
-            const summaryPath = `${path}/security_scan_summary.md`;
-            let commentBody;
-            try {
-              commentBody = fs.readFileSync(summaryPath, 'utf8');
-            } catch (e) {
-              commentBody = '⚠️ Security scan summary could not be read.';
-            }
-            try {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: commentBody
-              });
-            } catch (error) {
-              console.error('Error posting comment. Make sure PAT token has correct scopes: (repo:status, public_repo, repo_deployment):', error.message);
-              core.warning('Failed to post PR comment. Verify PAT token has required scopes: (repo:status, public_repo, repo_deployment)');
-            }
-          # SECURITY NOTE: Full repo access is required here ('repo' scope) to post PR comments
-          # from within a workflow context, which cannot be done with the default GITHUB_TOKEN
-          github-token: ${{ secrets.PAT }}
+          fetch-depth: 0  # Full depth for proper analysis
+
+      - name: 🔍 Check for SonarCloud token
+        id: check_token
         env:
-          WORKING_DIRECTORY: ${{ inputs.working_directory || '.' }}
-
-      - name: 📊 Set job status output
-        id: set_status
-        if: always()
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          if [ "${{ steps.security_scan.outputs.security_passed }}" == "false" ]; then
-            echo "status=failed" >> $GITHUB_OUTPUT
-            echo "⚠️ Security scan found issues (non-blocking)"
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "⚠️ SONAR_TOKEN is not set. Skipping SonarCloud analysis."
+            echo "skip=true" >> $GITHUB_OUTPUT
           else
-            echo "status=passed" >> $GITHUB_OUTPUT
-            echo "✅ Security scan passed"
+            echo "skip=false" >> $GITHUB_OUTPUT
           fi
-        shell: bash
 
-  # Summary job to collect AI scanner results
-  ai_scanners_summary:
-    name: 📊 AI Scanners Summary
+      - name: 📊 SonarCloud Scan
+        if: steps.check_token.outputs.skip != 'true'
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # Project configuration should be in sonar-project.properties
+          # or passed as args here
+          args: >
+            -Dsonar.organization=${{ github.repository_owner }}
+            -Dsonar.projectKey=${{ github.repository_owner }}_${{ github.event.repository.name }}
+
+      - name: 📊 SonarCloud Scan Skipped
+        if: steps.check_token.outputs.skip == 'true'
+        run: |
+          echo "::warning::SonarCloud analysis skipped - SONAR_TOKEN not configured"
+          echo "To enable SonarCloud analysis, add SONAR_TOKEN to your repository secrets"
+
+  snyk:
+    name: 🛡️ Snyk Dependency Scan
     runs-on: ubuntu-latest
-    if: always() && (needs.code_quality_check.result != 'skipped' || needs.claude_security_scan.result != 'skipped')
-    needs: [code_quality_check, claude_security_scan]
+    timeout-minutes: 10
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'snyk') }}
+
     steps:
-      - name: 📝 Generate AI scanners summary
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          node-version: ${{ inputs.node_version }}
+          package-manager: ${{ inputs.package_manager }}
+          working-directory: ${{ inputs.working_directory }}
+
+      - name: 🔍 Check for Snyk token
+        id: check_token
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
-          echo "# 🤖 AI Scanners Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Status Overview" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Code Quality Check status
-          if [ "${{ needs.code_quality_check.result }}" == "skipped" ]; then
-            echo "- 🤖 **Code Quality Check**: ⏭️ Skipped" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.code_quality_check.outputs.review_status }}" == "failed" ]; then
-            echo "- 🤖 **Code Quality Check**: ⚠️ Issues Found (non-blocking)" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.code_quality_check.outputs.review_status }}" == "passed" ]; then
-            echo "- 🤖 **Code Quality Check**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          if [ -z "$SNYK_TOKEN" ]; then
+            echo "⚠️ SNYK_TOKEN is not set. Skipping Snyk scan."
+            echo "skip=true" >> $GITHUB_OUTPUT
           else
-            echo "- 🤖 **Code Quality Check**: ❓ Unknown status" >> $GITHUB_STEP_SUMMARY
+            echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-          # Security Scan status
-          if [ "${{ needs.claude_security_scan.result }}" == "skipped" ]; then
-            echo "- 🛡️ **Security Scan**: ⏭️ Skipped" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.claude_security_scan.outputs.security_status }}" == "failed" ]; then
-            echo "- 🛡️ **Security Scan**: ⚠️ Issues Found (non-blocking)" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.claude_security_scan.outputs.security_status }}" == "passed" ]; then
-            echo "- 🛡️ **Security Scan**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- 🛡️ **Security Scan**: ❓ Unknown status" >> $GITHUB_STEP_SUMMARY
-          fi
+      - name: 🛡️ Run Snyk to check for vulnerabilities
+        if: steps.check_token.outputs.skip != 'true'
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📝 Notes" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- AI scanners are **non-blocking** and provide recommendations only" >> $GITHUB_STEP_SUMMARY
-          echo "- Review the artifacts for detailed findings" >> $GITHUB_STEP_SUMMARY
-          echo "- Consider addressing high-priority issues before merging" >> $GITHUB_STEP_SUMMARY
+      - name: 🛡️ Snyk Scan Skipped
+        if: steps.check_token.outputs.skip == 'true'
+        run: |
+          echo "::warning::Snyk scan skipped - SNYK_TOKEN not configured"
+          echo "To enable Snyk vulnerability scanning, add SNYK_TOKEN to your repository secrets"
 
-          # Overall recommendation
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🎯 Recommendation" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ "${{ needs.code_quality_check.outputs.review_status }}" == "failed" ] || [ "${{ needs.claude_security_scan.outputs.security_status }}" == "failed" ]; then
-            echo "⚠️ **AI scanners found issues.** While not blocking, we recommend reviewing the findings before proceeding." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "✅ **All AI scanners passed!** No issues detected." >> $GITHUB_STEP_SUMMARY
-          fi
-
-  # Enterprise security tools summary
-  security_tools_summary:
-    name: 🔒 Security Tools Summary
+  gitguardian:
+    name: 🔐 GitGuardian Secret Scan
     runs-on: ubuntu-latest
-    if: always() && (needs.sonarcloud.result != 'skipped' || needs.snyk.result != 'skipped' || needs.secret_scanning.result != 'skipped' || needs.license_compliance.result != 'skipped')
-    needs: [sonarcloud, snyk, secret_scanning, license_compliance]
+    timeout-minutes: 5
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'gitguardian') }}
+
     steps:
-      - name: 📝 Generate security tools summary
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full depth for proper scanning
+
+      - name: 🔍 Check for GitGuardian API key
+        id: check_token
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
         run: |
-          echo "# 🔒 Enterprise Security Tools Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # SonarCloud SAST status
-          if [ "${{ needs.sonarcloud.result }}" == "skipped" ]; then
-            echo "- 🔍 **SonarCloud SAST**: ⏭️ Skipped (no token)" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.sonarcloud.result }}" == "success" ]; then
-            echo "- 🔍 **SonarCloud SAST**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          if [ -z "$GITGUARDIAN_API_KEY" ]; then
+            echo "⚠️ GITGUARDIAN_API_KEY is not set. Skipping GitGuardian scan."
+            echo "skip=true" >> $GITHUB_OUTPUT
           else
-            echo "- 🔍 **SonarCloud SAST**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-          # Snyk Dependency Scan status
-          if [ "${{ needs.snyk.result }}" == "skipped" ]; then
-            echo "- 🛡️ **Snyk Dependency Scan**: ⏭️ Skipped (no token)" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.snyk.result }}" == "success" ]; then
-            echo "- 🛡️ **Snyk Dependency Scan**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+      - name: 🔐 GitGuardian scan
+        if: steps.check_token.outputs.skip != 'true'
+        uses: GitGuardian/ggshield-action@v1.31.0
+        env:
+          GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
+          GITHUB_PUSH_BASE_SHA: ${{ github.event.base_sha }}
+          GITHUB_PULL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+      - name: 🔐 GitGuardian Scan Skipped
+        if: steps.check_token.outputs.skip == 'true'
+        run: |
+          echo "::warning::GitGuardian scan skipped - GITGUARDIAN_API_KEY not configured"
+          echo "To enable secret detection, add GITGUARDIAN_API_KEY to your repository secrets"
+
+  fossa:
+    name: 📜 FOSSA License Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ !inputs.skip_security && !contains(inputs.skip_jobs, 'fossa') }}
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup dependencies
+        uses: ./.github/actions/setup-dependencies
+        with:
+          node-version: ${{ inputs.node_version }}
+          package-manager: ${{ inputs.package_manager }}
+          working-directory: ${{ inputs.working_directory }}
+
+      - name: 🔍 Check for FOSSA API key
+        id: check_token
+        env:
+          FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
+        run: |
+          if [ -z "$FOSSA_API_KEY" ]; then
+            echo "⚠️ FOSSA_API_KEY is not set. Skipping FOSSA scan."
+            echo "skip=true" >> $GITHUB_OUTPUT
           else
-            echo "- 🛡️ **Snyk Dependency Scan**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-          # GitGuardian Secret Detection status
-          if [ "${{ needs.secret_scanning.result }}" == "skipped" ]; then
-            echo "- 🔐 **GitGuardian Secret Detection**: ⏭️ Skipped (no token)" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.secret_scanning.result }}" == "success" ]; then
-            echo "- 🔐 **GitGuardian Secret Detection**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- 🔐 **GitGuardian Secret Detection**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
-          fi
+      - name: 📜 Run FOSSA Scan
+        if: steps.check_token.outputs.skip != 'true'
+        uses: fossas/fossa-action@v1.3.3
+        with:
+          api-key: ${{ secrets.FOSSA_API_KEY }}
 
-          # FOSSA License Compliance status
-          if [ "${{ needs.license_compliance.result }}" == "skipped" ]; then
-            echo "- 📜 **FOSSA License Compliance**: ⏭️ Skipped (no token)" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.license_compliance.result }}" == "success" ]; then
-            echo "- 📜 **FOSSA License Compliance**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- 📜 **FOSSA License Compliance**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
-          fi
+      - name: 📜 FOSSA Scan Skipped
+        if: steps.check_token.outputs.skip == 'true'
+        run: |
+          echo "::warning::FOSSA scan skipped - FOSSA_API_KEY not configured"
+          echo "To enable license compliance checking, add FOSSA_API_KEY to your repository secrets"
 
+  # Summary job that depends on all other jobs
+  quality_summary:
+    name: 📋 Quality Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [
+      lint,
+      typecheck,
+      format_check,
+      test_unit,
+      test_integration,
+      test_e2e,
+      test_coverage,
+      ai_code_review,
+      ai_security_scan,
+      sonarcloud,
+      snyk,
+      gitguardian,
+      fossa
+    ]
+
+    steps:
+      - name: 📊 Check results
+        run: |
+          echo "## 📋 Quality Check Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📊 Security Posture" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Count active tools
-          ACTIVE_TOOLS=0
-          PASSED_TOOLS=0
-
-          if [ "${{ needs.sonarcloud.result }}" != "skipped" ]; then
-            ACTIVE_TOOLS=$((ACTIVE_TOOLS + 1))
-            if [ "${{ needs.sonarcloud.result }}" == "success" ]; then
-              PASSED_TOOLS=$((PASSED_TOOLS + 1))
+          
+          # Function to check job status
+          check_job() {
+            local job_name=$1
+            local job_result=$2
+            local emoji=$3
+            
+            if [ "$job_result" = "success" ]; then
+              echo "$emoji ✅ $job_name: Passed" >> $GITHUB_STEP_SUMMARY
+            elif [ "$job_result" = "failure" ]; then
+              echo "$emoji ❌ $job_name: Failed" >> $GITHUB_STEP_SUMMARY
+            elif [ "$job_result" = "cancelled" ]; then
+              echo "$emoji ⏭️ $job_name: Cancelled" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "$emoji ⏭️ $job_name: Skipped" >> $GITHUB_STEP_SUMMARY
             fi
-          fi
-
-          if [ "${{ needs.snyk.result }}" != "skipped" ]; then
-            ACTIVE_TOOLS=$((ACTIVE_TOOLS + 1))
-            if [ "${{ needs.snyk.result }}" == "success" ]; then
-              PASSED_TOOLS=$((PASSED_TOOLS + 1))
-            fi
-          fi
-
-          if [ "${{ needs.secret_scanning.result }}" != "skipped" ]; then
-            ACTIVE_TOOLS=$((ACTIVE_TOOLS + 1))
-            if [ "${{ needs.secret_scanning.result }}" == "success" ]; then
-              PASSED_TOOLS=$((PASSED_TOOLS + 1))
-            fi
-          fi
-
-          if [ "${{ needs.license_compliance.result }}" != "skipped" ]; then
-            ACTIVE_TOOLS=$((ACTIVE_TOOLS + 1))
-            if [ "${{ needs.license_compliance.result }}" == "success" ]; then
-              PASSED_TOOLS=$((PASSED_TOOLS + 1))
-            fi
-          fi
-
-          echo "- **Active Security Tools**: $ACTIVE_TOOLS / 4" >> $GITHUB_STEP_SUMMARY
-          echo "- **Passed Checks**: $PASSED_TOOLS / $ACTIVE_TOOLS" >> $GITHUB_STEP_SUMMARY
-
-          if [ $ACTIVE_TOOLS -gt 0 ]; then
-            SCORE=$((PASSED_TOOLS * 100 / ACTIVE_TOOLS))
-            echo "- **Security Score**: $SCORE%" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🔧 Configuration" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "To enable additional security tools, add the following secrets to your repository:" >> $GITHUB_STEP_SUMMARY
-          echo "- \`SONAR_TOKEN\` - [Get from SonarCloud](https://sonarcloud.io/)" >> $GITHUB_STEP_SUMMARY
-          echo "- \`SNYK_TOKEN\` - [Get from Snyk](https://app.snyk.io/)" >> $GITHUB_STEP_SUMMARY
-          echo "- \`GITGUARDIAN_API_KEY\` - [Get from GitGuardian](https://dashboard.gitguardian.com/)" >> $GITHUB_STEP_SUMMARY
-          echo "- \`FOSSA_API_KEY\` - [Get from FOSSA](https://app.fossa.com/)" >> $GITHUB_STEP_SUMMARY
-
+          }
+          
+          # Check each job
+          check_job "Lint" "${{ needs.lint.result }}" "🧹"
+          check_job "Type Check" "${{ needs.typecheck.result }}" "🔍"
+          check_job "Format Check" "${{ needs.format_check.result }}" "💅"
+          check_job "Unit Tests" "${{ needs.test_unit.result }}" "🧪"
+          check_job "Integration Tests" "${{ needs.test_integration.result }}" "🧪"
+          check_job "E2E Tests" "${{ needs.test_e2e.result }}" "🎯"
+          check_job "Code Coverage" "${{ needs.test_coverage.result }}" "📊"
+          check_job "AI Code Review" "${{ needs.ai_code_review.result }}" "🤖"
+          check_job "AI Security Scan" "${{ needs.ai_security_scan.result }}" "🛡️"
+          check_job "SonarCloud" "${{ needs.sonarcloud.result }}" "🔍"
+          check_job "Snyk" "${{ needs.snyk.result }}" "🛡️"
+          check_job "GitGuardian" "${{ needs.gitguardian.result }}" "🔐"
+          check_job "FOSSA" "${{ needs.fossa.result }}" "📜"
+          
           # Overall status
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🎯 Overall Status" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ $ACTIVE_TOOLS -eq 0 ]; then
-            echo "⚠️ **No security tools are active.** Configure tokens to enable security scanning." >> $GITHUB_STEP_SUMMARY
-          elif [ $PASSED_TOOLS -eq $ACTIVE_TOOLS ]; then
-            echo "✅ **All active security tools passed!**" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ]; then
+            echo "## ❌ Overall Status: Failed" >> $GITHUB_STEP_SUMMARY
+            exit 1
           else
-            echo "❌ **Some security tools failed.** Review the results above and address any issues." >> $GITHUB_STEP_SUMMARY
+            echo "## ✅ Overall Status: Passed" >> $GITHUB_STEP_SUMMARY
           fi
 
-  # Compliance validation job
-  compliance_validation:
-    name: ✅ Compliance Validation
-    runs-on: ubuntu-latest
-    if: ${{ inputs.compliance_framework != 'none' }}
-    needs: [lint, typecheck, test, test_unit, test_integration, test_e2e, format, build, npm_security_scan, sonarcloud, snyk, secret_scanning, license_compliance]
-    steps:
-      - name: 📋 Validate compliance framework
-        id: validate_framework
+      - name: 🚨 Fail if any required checks failed
+        if: |
+          contains(needs.*.result, 'failure') &&
+          (needs.lint.result == 'failure' ||
+           needs.typecheck.result == 'failure' ||
+           needs.test_unit.result == 'failure' ||
+           needs.test_integration.result == 'failure' ||
+           needs.test_e2e.result == 'failure')
         run: |
-          echo "🏢 Validating compliance for framework: ${{ inputs.compliance_framework }}"
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# 🏢 Compliance Validation Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Framework**: ${{ inputs.compliance_framework }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Date**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
-          echo "**Run ID**: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-      - name: 🔍 SOC 2 Control Validation
-        if: contains(inputs.compliance_framework, 'soc2')
-        run: |
-          echo "## SOC 2 Type II Controls" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # CC6.1 - Logical and Physical Access Controls
-          if [ "${{ needs.secret_scanning.result }}" == "success" ] || [ "${{ needs.secret_scanning.result }}" == "skipped" ]; then
-            echo "✅ **CC6.1**: No hardcoded credentials detected" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **CC6.1**: Secret scanning failed - potential credential exposure" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # CC7.1 - System Operations
-          if [ "${{ needs.npm_security_scan.result }}" == "success" ] && [ "${{ needs.snyk.result }}" == "success" ]; then
-            echo "✅ **CC7.1**: Vulnerability management controls validated" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ **CC7.1**: Security scanning incomplete - manual review required" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # CC7.2 - System Monitoring
-          echo "✅ **CC7.2**: Audit logging enabled (retention: ${{ inputs.audit_retention_days }} days)" >> $GITHUB_STEP_SUMMARY
-
-          # CC8.1 - Change Management
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "✅ **CC8.1**: Change management process followed (PR #${{ github.event.pull_request.number }})" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ **CC8.1**: Direct push to branch - review change management policy" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-      - name: 🔍 ISO 27001 Control Validation
-        if: contains(inputs.compliance_framework, 'iso27001')
-        run: |
-          echo "## ISO 27001:2022 Controls" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # A.8.1 - Asset Management
-          if [ "${{ needs.license_compliance.result }}" == "success" ]; then
-            echo "✅ **A.8.1**: Software asset inventory validated" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ **A.8.1**: License compliance check skipped" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # A.12.1 - Operational Security
-          if [ "${{ needs.sonarcloud.result }}" == "success" ]; then
-            echo "✅ **A.12.1**: Code quality and security controls validated" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ **A.12.1**: Static analysis skipped" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # A.14.2 - Security in Development
-          SECURITY_TESTS=0
-          [ "${{ needs.npm_security_scan.result }}" == "success" ] && SECURITY_TESTS=$((SECURITY_TESTS + 1))
-          [ "${{ needs.snyk.result }}" == "success" ] && SECURITY_TESTS=$((SECURITY_TESTS + 1))
-          [ "${{ needs.secret_scanning.result }}" == "success" ] && SECURITY_TESTS=$((SECURITY_TESTS + 1))
-
-          if [ $SECURITY_TESTS -ge 2 ]; then
-            echo "✅ **A.14.2**: Security testing in SDLC validated ($SECURITY_TESTS/3 tools)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **A.14.2**: Insufficient security testing ($SECURITY_TESTS/3 tools)" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-      - name: 🔍 HIPAA Control Validation
-        if: contains(inputs.compliance_framework, 'hipaa')
-        run: |
-          echo "## HIPAA Security Rule Controls" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Access Control - 164.312(a)(1)
-          echo "✅ **164.312(a)(1)**: Access controls implemented via GitHub permissions" >> $GITHUB_STEP_SUMMARY
-
-          # Audit Controls - 164.312(b)
-          echo "✅ **164.312(b)**: Audit logging enabled with ${{ inputs.audit_retention_days }}-day retention" >> $GITHUB_STEP_SUMMARY
-
-          # Integrity - 164.312(c)(1)
-          if [ "${{ needs.test.result }}" == "success" ]; then
-            echo "✅ **164.312(c)(1)**: Data integrity validated through testing" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **164.312(c)(1)**: Testing failed or skipped" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Transmission Security - 164.312(e)(1)
-          echo "✅ **164.312(e)(1)**: All transmissions use HTTPS/TLS" >> $GITHUB_STEP_SUMMARY
-
-          # PHI Detection Warning
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⚠️ **Note**: Automated PHI detection not implemented. Manual review required for PHI handling." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-      - name: 🔍 PCI-DSS Control Validation
-        if: contains(inputs.compliance_framework, 'pci-dss')
-        run: |
-          echo "## PCI-DSS v4.0 Requirements" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Requirement 2 - Default Passwords
-          if [ "${{ needs.secret_scanning.result }}" == "success" ]; then
-            echo "✅ **Req 2.2**: No hardcoded passwords detected" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Req 2.2**: Secret scanning incomplete" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Requirement 6 - Secure Development
-          if [ "${{ needs.sonarcloud.result }}" == "success" ]; then
-            echo "✅ **Req 6.3**: Secure coding practices validated" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ **Req 6.3**: Static analysis skipped" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Requirement 6.4 - Change Control
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "✅ **Req 6.4**: Change control process followed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ **Req 6.4**: Direct push detected" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Requirement 11 - Security Testing
-          if [ "${{ needs.npm_security_scan.result }}" == "success" ] && [ "${{ needs.snyk.result }}" == "success" ]; then
-            echo "✅ **Req 11.3**: Vulnerability scanning completed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Req 11.3**: Vulnerability scanning incomplete" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⚠️ **Note**: This validates security controls only. PCI compliance requires additional network and infrastructure controls." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-      - name: 📊 Generate compliance score
-        run: |
-          echo "## Compliance Score" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          TOTAL_CONTROLS=0
-          PASSED_CONTROLS=0
-
-          # Count quality checks
-          [ "${{ needs.lint.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-          [ "${{ needs.typecheck.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-          [ "${{ needs.test.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-          [ "${{ needs.build.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-          TOTAL_CONTROLS=$((TOTAL_CONTROLS + 4))
-
-          # Count security checks
-          [ "${{ needs.npm_security_scan.result }}" != "skipped" ] && TOTAL_CONTROLS=$((TOTAL_CONTROLS + 1))
-          [ "${{ needs.npm_security_scan.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-
-          [ "${{ needs.sonarcloud.result }}" != "skipped" ] && TOTAL_CONTROLS=$((TOTAL_CONTROLS + 1))
-          [ "${{ needs.sonarcloud.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-
-          [ "${{ needs.snyk.result }}" != "skipped" ] && TOTAL_CONTROLS=$((TOTAL_CONTROLS + 1))
-          [ "${{ needs.snyk.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-
-          [ "${{ needs.secret_scanning.result }}" != "skipped" ] && TOTAL_CONTROLS=$((TOTAL_CONTROLS + 1))
-          [ "${{ needs.secret_scanning.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-
-          [ "${{ needs.license_compliance.result }}" != "skipped" ] && TOTAL_CONTROLS=$((TOTAL_CONTROLS + 1))
-          [ "${{ needs.license_compliance.result }}" == "success" ] && PASSED_CONTROLS=$((PASSED_CONTROLS + 1))
-
-          if [ $TOTAL_CONTROLS -gt 0 ]; then
-            SCORE=$((PASSED_CONTROLS * 100 / TOTAL_CONTROLS))
-            echo "**Overall Compliance Score**: $SCORE% ($PASSED_CONTROLS/$TOTAL_CONTROLS controls passed)" >> $GITHUB_STEP_SUMMARY
-
-            if [ $SCORE -ge 90 ]; then
-              echo "🟢 **Status**: Excellent compliance posture" >> $GITHUB_STEP_SUMMARY
-            elif [ $SCORE -ge 70 ]; then
-              echo "🟡 **Status**: Good compliance posture with minor gaps" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "🔴 **Status**: Significant compliance gaps detected" >> $GITHUB_STEP_SUMMARY
-            fi
-          fi
-
-  # Audit logging job
-  audit_logger:
-    name: 📊 Audit Logger
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [install_dependencies, lint, typecheck, test, test_unit, test_integration, test_e2e, format, build, npm_security_scan, sonarcloud, snyk, secret_scanning, license_compliance, code_quality_check, claude_security_scan, compliance_validation]
-    steps:
-      - name: 📝 Generate audit log
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const auditLog = {
-              timestamp: new Date().toISOString(),
-              workflow: {
-                name: '${{ github.workflow }}',
-                run_id: '${{ github.run_id }}',
-                run_number: '${{ github.run_number }}',
-                run_attempt: '${{ github.run_attempt }}'
-              },
-              trigger: {
-                event: '${{ github.event_name }}',
-                actor: '${{ github.actor }}',
-                ref: '${{ github.ref }}',
-                sha: '${{ github.sha }}'
-              },
-              repository: {
-                name: '${{ github.repository }}',
-                owner: '${{ github.repository_owner }}',
-                visibility: '${{ github.event.repository.visibility }}'
-              },
-              compliance: {
-                framework: '${{ inputs.compliance_framework }}',
-                require_approval: ${{ inputs.require_approval }},
-                audit_retention_days: ${{ inputs.audit_retention_days }}
-              },
-              jobs: {
-                dependencies: {
-                  status: '${{ needs.install_dependencies.result }}',
-                  cache_hit: '${{ needs.install_dependencies.outputs.cache-hit }}'
-                },
-                quality: {
-                  lint: '${{ needs.lint.result }}',
-                  typecheck: '${{ needs.typecheck.result }}',
-                  test: '${{ needs.test.result }}',
-                  test_unit: '${{ needs.test_unit.result }}',
-                  test_integration: '${{ needs.test_integration.result }}',
-                  test_e2e: '${{ needs.test_e2e.result }}',
-                  format: '${{ needs.format.result }}',
-                  build: '${{ needs.build.result }}'
-                },
-                security: {
-                  npm_audit: '${{ needs.npm_security_scan.result }}',
-                  sonarcloud: '${{ needs.sonarcloud.result }}',
-                  snyk: '${{ needs.snyk.result }}',
-                  secret_scan: '${{ needs.secret_scanning.result }}',
-                  license_check: '${{ needs.license_compliance.result }}'
-                },
-                ai_scanners: {
-                  code_quality: '${{ needs.code_quality_check.result }}',
-                  security: '${{ needs.claude_security_scan.result }}'
-                },
-                compliance: '${{ needs.compliance_validation.result }}'
-              },
-              metadata: {
-                runner_os: '${{ runner.os }}',
-                runner_arch: '${{ runner.arch }}'
-              }
-            };
-
-            // Write to file
-            const fs = require('fs');
-            const filename = `audit-log-${auditLog.workflow.run_id}-${Date.now()}.json`;
-            fs.writeFileSync(filename, JSON.stringify(auditLog, null, 2));
-
-            console.log(`Audit log generated: ${filename}`);
-
-            // Add to job summary
-            core.summary.addHeading('📊 Audit Log Entry', 3);
-            core.summary.addCodeBlock(JSON.stringify(auditLog, null, 2), 'json');
-            await core.summary.write();
-
-            // Set output for artifact upload
-            core.setOutput('filename', filename);
-
-      - name: 📤 Upload audit log
-        uses: actions/upload-artifact@v4
-        with:
-          name: audit-log-${{ github.run_id }}
-          path: audit-log-*.json
-          retention-days: ${{ inputs.audit_retention_days }}
-
-      - name: 📊 Generate evidence package
-        if: ${{ inputs.generate_evidence_package == true }}
-        run: |
-          echo "📦 Generating compliance evidence package..."
-
-          # Create evidence directory
-          mkdir -p evidence-package
-
-          # Create evidence summary
-          cat > evidence-package/evidence-summary.md << EOF
-          # Compliance Evidence Package
-
-          **Generated**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          **Workflow Run**: ${{ github.run_id }}
-          **Repository**: ${{ github.repository }}
-          **Compliance Framework**: ${{ inputs.compliance_framework }}
-
-          ## Evidence Contents
-
-          1. **Audit Log**: Full workflow execution audit trail
-          2. **Security Scan Results**: Results from all security tools
-          3. **Test Reports**: Unit test execution results
-          4. **Build Artifacts**: Compiled output verification
-          5. **Approval Records**: Change approval documentation
-
-          ## Control Validation Summary
-
-          - Quality Controls: Validated through automated testing
-          - Security Controls: Validated through multiple scanning tools
-          - Change Management: Validated through PR process
-          - Audit Controls: Continuous logging with ${{ inputs.audit_retention_days }}-day retention
-
-          ## Attestation
-
-          This evidence package was automatically generated from workflow run ${{ github.run_id }}.
-          All artifacts are cryptographically signed by GitHub Actions.
-          EOF
-
-          echo "✅ Evidence package created"
-
-      - name: 📤 Upload evidence package
-        if: ${{ inputs.generate_evidence_package == true }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: compliance-evidence-${{ github.run_id }}
-          path: evidence-package/
-          retention-days: ${{ inputs.audit_retention_days }}
-
-  # Approval gate for production deployments
-  approval_gate:
-    name: 🚦 Approval Gate
-    runs-on: ubuntu-latest
-    if: ${{ inputs.require_approval == true && inputs.compliance_framework != 'none' && inputs.approval_environment != '' }}
-    needs: [compliance_validation]
-    environment:
-      name: ${{ inputs.approval_environment }}
-      # NOTE: This environment must be created in your repository before using this workflow
-      # To create it:
-      # 1. Go to Settings > Environments > New environment
-      # 2. Name it to match the approval_environment input (default: "production")
-      # 3. Add protection rules (required reviewers, deployment branches, etc.)
-    steps:
-      - name: 📝 Log approval
-        run: |
-          echo "# 🚦 Production Deployment Approval" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Approved by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Approval time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
-          echo "**Compliance framework**: ${{ inputs.compliance_framework }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow run**: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Approval Requirements Met" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Compliance validation passed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Security scans completed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Required approvers notified" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Audit trail generated" >> $GITHUB_STEP_SUMMARY
-
-      - name: 📊 Create approval record
-        run: |
-          # Create approval record for audit
-          cat > approval-record-${{ github.run_id }}.json << EOF
-          {
-            "approval_type": "production_deployment",
-            "approved_by": "${{ github.actor }}",
-            "approval_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "workflow_run_id": "${{ github.run_id }}",
-            "compliance_framework": "${{ inputs.compliance_framework }}",
-            "repository": "${{ github.repository }}",
-            "ref": "${{ github.ref }}",
-            "sha": "${{ github.sha }}"
-          }
-          EOF
-
-      - name: 📤 Upload approval record
-        uses: actions/upload-artifact@v4
-        with:
-          name: approval-record-${{ github.run_id }}
-          path: approval-record-*.json
-          retention-days: ${{ inputs.audit_retention_days }}
-
-  # Performance monitoring job
-  performance_summary:
-    name: ⚡ Performance Summary
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [install_dependencies, lint, typecheck, test, test_unit, test_integration, test_e2e, format, build, npm_security_scan, sonarcloud, snyk, secret_scanning, license_compliance, code_quality_check, claude_security_scan]
-    steps:
-      - name: 📊 Generate performance report
-        run: |
-          echo "# ⚡ Workflow Performance Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🏃 Execution Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Calculate total workflow time (approximation)
-          echo "- **Workflow Run ID**: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Triggered By**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Runner**: ${{ runner.os }} (${{ runner.arch }})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "## 📦 Dependency Caching" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ "${{ needs.install_dependencies.outputs.cache-hit }}" == "true" ]; then
-            echo "✅ **Cache Hit!** Dependencies loaded from cache." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Cache Miss** - Fresh dependency installation was required." >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Cache Key**: \`${{ needs.install_dependencies.outputs.cache-key }}\`" >> $GITHUB_STEP_SUMMARY
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🎯 Job Status Overview" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Job | Status | Type |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|--------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Install Dependencies | ${{ needs.install_dependencies.result }} | Setup |" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint | ${{ needs.lint.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
-          echo "| Type Check | ${{ needs.typecheck.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | ${{ needs.test.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
-          echo "| Unit Tests | ${{ needs.test_unit.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
-          echo "| Integration Tests | ${{ needs.test_integration.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
-          echo "| E2E Tests | ${{ needs.test_e2e.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
-          echo "| Format Check | ${{ needs.format.result }} | Quality |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ needs.build.result }} | Build |" >> $GITHUB_STEP_SUMMARY
-          echo "| NPM Security | ${{ needs.npm_security_scan.result }} | Security |" >> $GITHUB_STEP_SUMMARY
-          echo "| SonarCloud | ${{ needs.sonarcloud.result }} | Security |" >> $GITHUB_STEP_SUMMARY
-          echo "| Snyk | ${{ needs.snyk.result }} | Security |" >> $GITHUB_STEP_SUMMARY
-          echo "| Secret Scan | ${{ needs.secret_scanning.result }} | Security |" >> $GITHUB_STEP_SUMMARY
-          echo "| License Check | ${{ needs.license_compliance.result }} | Security |" >> $GITHUB_STEP_SUMMARY
-          echo "| Claude Code Review | ${{ needs.code_quality_check.result }} | AI |" >> $GITHUB_STEP_SUMMARY
-          echo "| Claude Security | ${{ needs.claude_security_scan.result }} | AI |" >> $GITHUB_STEP_SUMMARY
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 💡 Performance Tips" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- All jobs now share dependencies, reducing redundant installations" >> $GITHUB_STEP_SUMMARY
-          echo "- Quality checks (lint, typecheck, format) run in parallel" >> $GITHUB_STEP_SUMMARY
-          echo "- Security tools run in parallel where tokens are available" >> $GITHUB_STEP_SUMMARY
-          echo "- Dependency caching saves ~2-3 minutes on subsequent runs" >> $GITHUB_STEP_SUMMARY
-
-          # Count parallel jobs
-          QUALITY_JOBS=0
-          SECURITY_JOBS=0
-
-          [ "${{ needs.lint.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
-          [ "${{ needs.typecheck.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
-          [ "${{ needs.test.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
-          [ "${{ needs.test_unit.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
-          [ "${{ needs.test_integration.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
-          [ "${{ needs.test_e2e.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
-          [ "${{ needs.format.result }}" != "skipped" ] && QUALITY_JOBS=$((QUALITY_JOBS + 1))
-
-          [ "${{ needs.sonarcloud.result }}" != "skipped" ] && SECURITY_JOBS=$((SECURITY_JOBS + 1))
-          [ "${{ needs.snyk.result }}" != "skipped" ] && SECURITY_JOBS=$((SECURITY_JOBS + 1))
-          [ "${{ needs.secret_scanning.result }}" != "skipped" ] && SECURITY_JOBS=$((SECURITY_JOBS + 1))
-          [ "${{ needs.license_compliance.result }}" != "skipped" ] && SECURITY_JOBS=$((SECURITY_JOBS + 1))
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🚀 Optimization Metrics" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Parallel Quality Jobs**: $QUALITY_JOBS running concurrently" >> $GITHUB_STEP_SUMMARY
-          echo "- **Parallel Security Jobs**: $SECURITY_JOBS running concurrently" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dependency Installation**: Single shared installation" >> $GITHUB_STEP_SUMMARY
-          echo "- **Estimated Time Saved**: ~40% vs sequential execution" >> $GITHUB_STEP_SUMMARY
+          echo "::error::One or more required quality checks failed"
+          exit 1

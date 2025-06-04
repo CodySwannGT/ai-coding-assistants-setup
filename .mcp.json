@@ -32,6 +32,36 @@
       "command": "npx",
       "args": ["-y", "mcp-remote", "https://mcp.atlassian.com/v1/sse"]
     },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
+    "browsermcp": {
+      "command": "npx",
+      "args": ["@browsermcp/mcp@latest"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${workspaceFolder}"
+      ],
+      "autoApprove": [
+        "list_allowed_directories",
+        "get_file_info",
+        "search_files",
+        "list_directory",
+        "create_directory",
+        "tree",
+        "delete_file",
+        "move_file",
+        "copy_file",
+        "read_file",
+        "write_file",
+        "read_multiple_files"
+      ]
+    },
     "memory": {
       "command": "npx",
       "args": [

@@ -571,8 +571,10 @@ jobs:
 
       - name: 🔍 Check for SonarCloud token
         id: check_token
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+          if [ -z "$SONAR_TOKEN" ]; then
             echo "⚠️ SONAR_TOKEN is not set. Skipping SonarCloud analysis."
             echo "skip=true" >> $GITHUB_OUTPUT
           else
@@ -581,7 +583,7 @@ jobs:
 
       - name: 📊 SonarCloud Scan
         if: steps.check_token.outputs.skip != 'true'
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -591,6 +593,12 @@ jobs:
           args: >
             -Dsonar.organization=${{ github.repository_owner }}
             -Dsonar.projectKey=${{ github.repository_owner }}_${{ github.event.repository.name }}
+
+      - name: 📊 SonarCloud Scan Skipped
+        if: steps.check_token.outputs.skip == 'true'
+        run: |
+          echo "::warning::SonarCloud analysis skipped - SONAR_TOKEN not configured"
+          echo "To enable SonarCloud analysis, add SONAR_TOKEN to your repository secrets"
 
   snyk:
     name: 🛡️ Snyk Dependency Scan

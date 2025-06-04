@@ -40,8 +40,6 @@ on:
         type: string
         default: '.'
     secrets:
-      GITHUB_TOKEN:
-        required: false
       SONAR_TOKEN:
         required: false
       SNYK_TOKEN:

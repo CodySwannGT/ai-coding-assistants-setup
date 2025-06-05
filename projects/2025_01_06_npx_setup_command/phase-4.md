@@ -1,16 +1,18 @@
 # Phase 4: Documentation Generation
 
 ## Objective
-Generate comprehensive documentation by parsing template files and extracting configuration information.
+Generate comprehensive documentation by parsing template files and extracting configuration information, and ensure templates/docs/README.md matches the root README.md.
 
 ## Tasks
 
+- [ ] Copy the root README.md to src/templates/docs/README.md
 - [ ] Parse .env.example files for environment variables
 - [ ] Extract GitHub secrets from workflow files
 - [ ] Parse .mcp.json for MCP server configurations
 - [ ] Analyze .github/workflows for reusable workflows
-- [ ] Generate structured README.md in templates/docs/
+- [ ] Update templates/docs/README.md with extracted configuration data
 - [ ] Include usage examples for workflows
+- [ ] Ensure root README.md and templates/docs/README.md stay in sync
 
 ## Technical Specifications
 
@@ -35,33 +37,15 @@ const extractMCPServers = (mcpConfig) => {
 };
 ```
 
-**README.md Structure:**
-```markdown
-# AI Coding Assistants Setup - Configuration Reference
+**Implementation Note:**
+Per requirements.txt line 21-27, the generated documentation should include:
+- List of environment variables and their descriptions
+- List of commands and their descriptions
+- List of secrets and their descriptions and where they are stored
+- List of MCP servers and their descriptions
+- List of GitHub actions and their descriptions and how to use them as they are workflow callable
 
-## Environment Variables
-| Variable | Description | Required |
-|----------|-------------|----------|
-| ANTHROPIC_API_KEY | API key for Claude | Yes |
-
-## GitHub Secrets
-| Secret | Description | Used In |
-|--------|-------------|---------|
-| PAT | GitHub Personal Access Token | All workflows |
-
-## MCP Servers
-| Server | Description | Configuration |
-|--------|-------------|---------------|
-| memory | Persistent memory system | .mcp.json |
-
-## GitHub Actions
-| Workflow | Description | How to Use |
-|----------|-------------|------------|
-| quality.yml | Code quality checks | See example below |
-
-### Workflow Usage Examples
-...
-```
+The templates/docs/README.md should be kept in sync with the root README.md, with any dynamic content (from parsing) added to appropriate sections.
 
 ## Quality Assurance
 
@@ -77,7 +61,8 @@ const extractMCPServers = (mcpConfig) => {
 
 ## Expected Outcomes
 
-- Comprehensive README in templates/docs/
-- All configuration options documented
-- Clear usage examples for workflows
-- Easy reference for users setting up the project
+- templates/docs/README.md contains the same content as root README.md
+- All configuration options documented in the template README
+- Clear usage examples for workflows included
+- Template README ready to be copied to user projects
+- Both READMEs stay synchronized with project changes

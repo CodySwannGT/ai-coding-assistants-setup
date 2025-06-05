@@ -1,0 +1,8 @@
+# Ignore environment files with secrets
+.env
+.env.local
+.env.*.local
+
+# Ignore any backup files
+*.backup
+*.bak

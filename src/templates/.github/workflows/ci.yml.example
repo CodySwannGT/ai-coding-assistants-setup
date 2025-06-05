@@ -1,0 +1,29 @@
+name: 🔍 CI Quality Checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  quality:
+    name: 🔍 Quality Checks
+    # Reference to the quality checks workflow
+    uses: ./.github/workflows/quality.yml
+    with:
+      node_version: '20.x'
+      package_manager: 'npm'
+      skip_jobs: 'claude_security_scan,code_quality_check,test,test:unit,test:integration,test:e2e'
+    secrets:
+      PAT: ${{ secrets.PAT }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  create_sentry_issue_on_failure:
+    name: 🚨 Create Sentry Issue on Failure
+    needs: [quality]
+    if: ${{ failure() && !contains(github.event.head_commit.message, '[skip ci]') }}
+    uses: ./.github/workflows/create-sentry-issue-on-failure.yml
+    with:
+      workflow_name: 'CI Quality Checks'
+      failed_job: 'quality'
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+    secrets: inherit

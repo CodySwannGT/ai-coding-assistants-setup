@@ -5,8 +5,10 @@ import fs from 'fs-extra';
 import path from 'path';
 import { Feedback } from './utils/feedback.js';
 import { TemplateScanner } from './utils/template-scanner.js';
-import { FileMerger } from './utils/file-merger.js';
-import { updatePackageScripts, getExistingScripts } from './utils/package-scripts.js';
+import {
+  updatePackageScripts,
+  getExistingScripts,
+} from './utils/package-scripts.js';
 
 // Initialize the command line parser
 const program = new Command();
@@ -52,12 +54,14 @@ async function setupAiCodingAssistants(
 ): Promise<void> {
   // Welcome message
   Feedback.section('AI Coding Assistants Setup');
-  
+
   if (dryRun) {
     Feedback.warning('DRY RUN MODE - No files will be modified');
   }
-  
-  Feedback.info('Setting up AI coding assistants configuration in your project...');
+
+  Feedback.info(
+    'Setting up AI coding assistants configuration in your project...'
+  );
 
   // Get the current working directory
   const cwd = process.cwd();
@@ -93,7 +97,7 @@ async function setupAiCodingAssistants(
   if (dryRun) {
     Feedback.section('Files that would be copied:');
     let fileCount = 0;
-    for (const [source, target] of filesToCopy) {
+    for (const [_source, target] of filesToCopy) {
       const relativePath = path.relative(cwd, target);
       const exists = await fs.pathExists(target);
       if (exists) {
@@ -104,43 +108,55 @@ async function setupAiCodingAssistants(
       fileCount++;
     }
     Feedback.info(`\nTotal files: ${fileCount}`);
-    
+
     // Show what scripts would be added
     Feedback.info('\nPackage.json scripts that would be added:');
     const existingScripts = await getExistingScripts(cwd);
-    const requiredScripts = ['lint', 'typecheck', 'format:check', 'build', 'test', 'test:unit', 'test:integration', 'test:e2e'];
-    const missingScripts = requiredScripts.filter(script => !existingScripts || !existingScripts[script]);
+    const requiredScripts = [
+      'lint',
+      'typecheck',
+      'format:check',
+      'build',
+      'test',
+      'test:unit',
+      'test:integration',
+      'test:e2e',
+    ];
+    const missingScripts = requiredScripts.filter(
+      script => !existingScripts || !existingScripts[script]
+    );
     if (missingScripts.length > 0) {
       Feedback.info(`   ${missingScripts.join(', ')}`);
     } else {
       Feedback.info('   All required scripts already exist');
     }
-    
+
     Feedback.success('\nDry run completed - no files were modified');
     return;
   }
 
   // Copy files
   Feedback.section('Copying configuration files...');
-  
-  const fileMerger = new FileMerger();
+
   let copiedCount = 0;
   let skippedCount = 0;
-  
+
   for (const [source, target] of filesToCopy) {
     const relativePath = path.relative(cwd, target);
     const exists = await fs.pathExists(target);
-    
+
     if (exists && !force) {
       if (interactive) {
         const { default: inquirer } = await import('inquirer');
-        const { overwrite } = await inquirer.prompt([{
-          type: 'confirm',
-          name: 'overwrite',
-          message: `File ${relativePath} already exists. Overwrite?`,
-          default: false
-        }]);
-        
+        const { overwrite } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'overwrite',
+            message: `File ${relativePath} already exists. Overwrite?`,
+            default: false,
+          },
+        ]);
+
         if (!overwrite) {
           if (verbose) {
             Feedback.info(`   [SKIP] ${relativePath}`);
@@ -157,7 +173,7 @@ async function setupAiCodingAssistants(
         continue;
       }
     }
-    
+
     // Copy the file
     try {
       await fs.ensureDir(path.dirname(target));
@@ -179,16 +195,22 @@ async function setupAiCodingAssistants(
   if (skippedCount > 0) {
     Feedback.info(`Files skipped: ${skippedCount}`);
   }
-  
+
   Feedback.success('\nSetup completed successfully!');
-  
+
   // Show next steps
   Feedback.section('Next Steps');
   Feedback.info('1. Review the copied configuration files');
   Feedback.info('2. Install any needed dependencies:');
-  Feedback.info('   npm install --save-dev eslint prettier husky @commitlint/cli @commitlint/config-conventional');
-  Feedback.info('3. Update the placeholder npm scripts in package.json with your actual commands');
-  Feedback.info('4. Configure your API keys in .env and .claude/settings.local.json');
+  Feedback.info(
+    '   npm install --save-dev eslint prettier husky @commitlint/cli @commitlint/config-conventional'
+  );
+  Feedback.info(
+    '3. Update the placeholder npm scripts in package.json with your actual commands'
+  );
+  Feedback.info(
+    '4. Configure your API keys in .env and .claude/settings.local.json'
+  );
 }
 
 /**

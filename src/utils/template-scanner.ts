@@ -148,7 +148,7 @@ export class TemplateScanner {
         const rooTargetPath = path.join(this.targetDir, '.roo', 'mcp.json');
         // We need to use a different key since Map can't have duplicate keys
         // Using a modified path with a special prefix to ensure uniqueness
-        map.set(template.sourcePath + '.__roo_copy__', rooTargetPath);
+        map.set(`${template.sourcePath}.__roo_copy__`, rooTargetPath);
 
         if (this.verbose) {
           Feedback.info(

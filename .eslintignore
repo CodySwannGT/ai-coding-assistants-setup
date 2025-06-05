@@ -1,4 +1,15 @@
+# Ignore build output
+dist/
+node_modules/
+coverage/
+
 # Ignore Lambda asset directories
 lambda-assets/
 archived-code/
 chat/
+
+# Ignore template files
+src/templates/
+
+# Ignore config files
+jest.config.ts

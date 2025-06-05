@@ -4,9 +4,6 @@
 // extend expect with custom matchers
 // Example: expect.extend({...})
 
-// Set timeout for all tests
-jest.setTimeout(10000);
-
 // Mock console methods if needed
 // global.console = {
 //   ...console,

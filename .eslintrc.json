@@ -10,7 +10,7 @@
    ],
    "extends": [
       "plugin:@typescript-eslint/recommended",
-      "plugin:prettier/recommended"
+      "prettier"
    ],
    "root": true,
    "env": {
@@ -19,7 +19,10 @@
    },
    "ignorePatterns": [
       ".eslintrc.js",
-      "schema/entities/**/*"
+      "schema/entities/**/*",
+      "tests/**/*",
+      "**/*.test.ts",
+      "jest.config.ts"
    ],
    "rules": {
       "@typescript-eslint/no-non-null-assertion": "off",

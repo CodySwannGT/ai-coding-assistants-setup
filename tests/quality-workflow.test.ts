@@ -1,6 +1,11 @@
+import { describe, it, expect } from '@jest/globals';
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface WorkflowInput {
   description: string;

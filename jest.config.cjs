@@ -1,7 +1,6 @@
-import type { Config } from 'jest';
-
-const config: Config = {
-  preset: 'ts-jest',
+/** @type {import('jest').Config} */
+module.exports = {
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   testMatch: ['**/tests/**/*.test.ts'],
   collectCoverageFrom: [
@@ -20,10 +19,15 @@ const config: Config = {
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'tsconfig.json',
+      useESM: true,
+      tsconfig: {
+        module: 'esnext',
+        target: 'esnext',
+      },
     }],
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
+  extensionsToTreatAsEsm: ['.ts'],
 };
-
-export default config;

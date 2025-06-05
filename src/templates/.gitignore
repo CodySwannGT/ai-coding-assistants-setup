@@ -1,0 +1,79 @@
+node_modules/
+dist/
+cdk.out/
+cdk.out.tmp/
+.cdk.context.json
+.cdk.staging/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment variables
+.env
+
+# Test coverage
+coverage/
+**/.claude/settings.local.json
+
+# Playwright test artifacts
+**/playwright-report/
+**/test-results/
+
+# Compiled TypeScript
+lambdas/**/*.js
+lambdas/**/*.js.map
+!jest.config.js
+!commitlint.config.js
+!scripts/*.js
+
+# Temporary/experimental scripts (keep only core scripts)
+scripts/test-*.ts
+scripts/test-*.js
+scripts/*-example.*
+
+# Added by Claude Task Master
+logs
+*.log
+dev-debug.log
+# Dependency directories
+# Environment variables
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# OS specific
+.DS_Store
+# Task files
+
+.windsurfrules
+# AI Assistant files (shared configurations)
+# DO NOT ignore these files as they should be shared with the team
+# .mcp.json
+# .roo/mcp.json
+# .roo/rules/
+# CLAUDE.md
+# .roomodes
+# .roo/rules-*/
+
+# AI Assistant files (sensitive/personal configurations)
+.claude/credentials.json.enc
+.roo/credentials.json.enc
+.ai-credentials/
+.ai-credentials.json
+.env
+
+# .gitignore configuration for Task Master
+
+
+
+# Keep project structure while ignoring individual task files
+!tasks/tasks.json
+
+*.zip
+archived-code

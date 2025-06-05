@@ -1,0 +1,9 @@
+build
+node_modules
+.github
+*.json
+src/graphql
+src/graphql-generated
+public
+schema/entities
+archived-code/

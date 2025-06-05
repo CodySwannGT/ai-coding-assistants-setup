@@ -1,0 +1,4 @@
+# Ignore Lambda asset directories
+lambda-assets/
+archived-code/
+chat/

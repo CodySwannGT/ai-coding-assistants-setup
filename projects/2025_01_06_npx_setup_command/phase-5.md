@@ -55,12 +55,14 @@ npx ai-coding-assistants-setup --version
 ## Documentation
 
 - Update main README with:
-  - Installation: `npx ai-coding-assistants-setup`
-  - Options and flags
-  - What the tool does
-  - Before/after examples
-- Add troubleshooting section
-- Include demo GIF if possible
+  - New "Quick Start" section at the top with: `npx ai-coding-assistants-setup`
+  - Explanation that this automates the entire setup process
+  - Options and flags (--dry-run, --help)
+  - What files get copied and modified
+  - Before/after examples showing package.json changes
+  - Keep existing manual setup as "Manual Setup" section
+- Add troubleshooting section for common issues
+- Include demo GIF if possible showing the setup process
 
 ## Expected Outcomes
 

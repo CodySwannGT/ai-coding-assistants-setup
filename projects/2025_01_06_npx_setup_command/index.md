@@ -12,6 +12,7 @@
 - Handle user interactions gracefully with clear prompts
 - Preserve existing user configurations when possible
 - No complex testing needed - this is a straightforward file copying utility
+- Update the existing README.md to include the npx command as the primary setup method
 
 ## Project Phases
 

@@ -47,6 +47,9 @@ Set up the basic NPX command structure with proper package.json configuration an
 ## Documentation
 
 - Update main README.md with npx usage instructions
+  - Add npx installation command: `npx ai-coding-assistants-setup`
+  - Update the setup section to mention the automated setup option
+  - Keep existing manual setup instructions as an alternative
 - Document development setup with npm link
 
 ## Expected Outcomes

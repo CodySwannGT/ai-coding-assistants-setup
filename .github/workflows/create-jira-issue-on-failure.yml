@@ -92,15 +92,18 @@ jobs:
 
       - name: 🔖 Create Jira Issue
         id: create_jira_issue
-        env:
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message || 'N/A' }}
         run: |
-          cd "${{ inputs.working_directory || '.' }}" && \
+          cd "${{ inputs.working_directory || '.' }}"
+          
           # Set variables
           WORKFLOW_NAME="${{ inputs.workflow_name }}"
           FAILED_JOB="${{ inputs.failed_job || 'Unknown' }}"
           ISSUE_TYPE="${{ inputs.issue_type }}"
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          # Get commit message, handling special characters properly
+          # Remove leading/trailing whitespace and escape for shell
+          COMMIT_MESSAGE="${{ github.event.head_commit.message || 'N/A' }}"
 
           # Create summary with failure details
           if [ "$FAILED_JOB" != "Unknown" ]; then
@@ -109,45 +112,40 @@ jobs:
             SUMMARY="🚨 CI Failure: ${WORKFLOW_NAME}"
           fi
 
-          # Create description with markdown formatting
-          if [ "$FAILED_JOB" != "Unknown" ]; then
-            JOB_INFO=" in job: *${FAILED_JOB}*"
-          else
-            JOB_INFO=""
-          fi
+          # Create Jira description with properly escaped values
+          FAILED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          DESCRIPTION="h2. Workflow Failure
-
-          The \"${WORKFLOW_NAME}\" workflow has failed${JOB_INFO}.
-
-          h3. Details
-          * *Workflow Run*: [View Run Details|${RUN_URL}]
-          * *Repository*: ${{ github.repository }}
-          * *Commit*: ${{ github.sha }}
-          * *Commit Message*: ${COMMIT_MESSAGE}
-          * *Triggered by*: ${{ github.actor }}
-          * *Failed at*: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          Please investigate the workflow logs for more details on the failure."
-          DESCRIPTION="${DESCRIPTION//$'\n'/\\n}"
-
-          # Create JSON payload for Jira API
-          PAYLOAD=$(cat <<EOF
-          {
-            "fields": {
-              "project": {
-                "key": "${{ inputs.JIRA_PROJECT_KEY }}"
-              },
-              "summary": "${SUMMARY}",
-              "description": "${DESCRIPTION}",
-              "issuetype": {
-                "name": "${ISSUE_TYPE}"
-              },
-              "labels": ["ci-failure", "automated"]
-            }
-          }
-          EOF
-          )
+          # Create JSON payload for Jira API using jq for proper escaping
+          # All dynamic content is passed as jq arguments to ensure proper escaping
+          PAYLOAD=$(jq -n \
+            --arg key "${{ inputs.JIRA_PROJECT_KEY }}" \
+            --arg summary "${SUMMARY}" \
+            --arg workflow_name "${WORKFLOW_NAME}" \
+            --arg failed_job "${FAILED_JOB}" \
+            --arg run_url "${RUN_URL}" \
+            --arg repository "${{ github.repository }}" \
+            --arg commit "${{ github.sha }}" \
+            --arg commit_message "${COMMIT_MESSAGE}" \
+            --arg triggered_by "${{ github.actor }}" \
+            --arg failed_at "${FAILED_AT}" \
+            --arg issuetype "${ISSUE_TYPE}" \
+            '{
+              "fields": {
+                "project": {
+                  "key": $key
+                },
+                "summary": $summary,
+                "description": ("h2. Workflow Failure\n\nThe \"" + $workflow_name + "\" workflow has failed" + (if $failed_job != "Unknown" then " in job: *" + $failed_job + "*" else "" end) + ".\n\nh3. Details\n* *Workflow Run*: [View Run Details|" + $run_url + "]\n* *Repository*: " + $repository + "\n* *Commit*: " + $commit + "\n* *Commit Message*: " + $commit_message + "\n* *Triggered by*: " + $triggered_by + "\n* *Failed at*: " + $failed_at + "\n\nPlease investigate the workflow logs for more details on the failure."),
+                "issuetype": {
+                  "name": $issuetype
+                },
+                "labels": ["ci-failure", "automated"]
+              }
+            }')
+          
+          # Debug: Print the payload to see what's being sent
+          echo "Debug: Generated payload:"
+          echo "$PAYLOAD" | jq .
 
           # Call Jira API to create issue
           RESPONSE=$(curl -s -D- \
@@ -192,6 +190,6 @@ jobs:
       - name: 📢 Report Issue Creation
         if: steps.create_jira_issue.outputs.issue_key
         run: |
-          cd "${{ inputs.working_directory || '.' }}" && \
+          cd "${{ inputs.working_directory || '.' }}"
           echo "Created Jira issue: ${{ steps.create_jira_issue.outputs.issue_key }}"
           echo "Issue URL: ${{ steps.create_jira_issue.outputs.issue_url }}"

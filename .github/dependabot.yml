@@ -1,49 +1,289 @@
 version: 2
 updates:
+  # Main Node.js dependencies
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      interval: daily
+      time: "09:00"
+      timezone: "America/New_York"
     groups:
-      development-dependencies:
-        dependency-type: development
+      # Critical security updates (immediate)
+      security-updates:
+        applies-to: security-updates
         patterns:
           - '*'
+      # High-priority frameworks and infrastructure
+      infrastructure:
+        dependency-type: production
+        patterns:
+          - 'aws-cdk*'
+          - '@aws-cdk/*'
+          - 'constructs'
+          - 'serverless*'
+          - '@serverless/*'
+          - '@nestjs/*'
+          - 'nestjs*'
+          - 'expo*'
+          - '@expo/*'
+        update-types:
+          - patch
+          - minor
+      # AWS ecosystem (coordinated updates)
+      aws-ecosystem:
+        patterns:
+          - '@aws-sdk/*'
+          - 'aws-*'
+          - '@aws-*'
+        update-types:
+          - patch
+          - minor
+      # Testing frameworks (coordinated updates)
+      testing-frameworks:
+        patterns:
+          - 'jest*'
+          - '@jest/*'
+          - 'playwright*'
+          - '@playwright/*'
+          - '@testing-library/*'
+          - 'vitest*'
+          - '@vitest/*'
+        update-types:
+          - patch
+          - minor
+      # Database and data handling
+      database:
+        dependency-type: production
+        patterns:
+          - 'pg*'
+          - 'mysql*'
+          - 'redis*'
+          - 'mongodb*'
+          - 'typeorm*'
+          - 'prisma*'
+          - '@prisma/*'
+          - 'mongoose*'
+        update-types:
+          - patch
+          - minor
+      # Production dependencies (general)
       production-dependencies:
         dependency-type: production
         patterns:
           - '*'
-    versioning-strategy: increase
+        exclude-patterns:
+          - 'aws-cdk*'
+          - '@aws-cdk/*'
+          - 'constructs'
+          - 'serverless*'
+          - '@serverless/*'
+          - '@nestjs/*'
+          - 'nestjs*'
+          - 'expo*'
+          - '@expo/*'
+          - '@aws-sdk/*'
+          - 'aws-*'
+          - '@aws-*'
+          - 'pg*'
+          - 'mysql*'
+          - 'redis*'
+          - 'mongodb*'
+          - 'typeorm*'
+          - 'prisma*'
+          - '@prisma/*'
+          - 'mongoose*'
+        update-types:
+          - patch
+          - minor
+      # Development dependencies
+      development-dependencies:
+        dependency-type: development
+        patterns:
+          - '@types/*'
+          - 'eslint*'
+          - 'prettier*'
+          - 'ts-*'
+          - 'typescript'
+          - '@typescript-eslint/*'
+          - 'husky*'
+          - 'lint-staged*'
+        update-types:
+          - patch
+          - minor
+    versioning-strategy: increase-if-necessary
     allow:
       - dependency-type: direct
       - dependency-type: indirect
-    open-pull-requests-limit: 10
+    ignore:
+      # Pin critical infrastructure versions that require manual testing
+      - dependency-name: "aws-cdk-lib"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "constructs"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@nestjs/core"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "serverless"
+        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 15
+    target-branch: main
     labels:
       - dependencies
       - security
-    reviewers:
-      - CodySwannGT
-    assignees:
-      - CodySwannGT
+      - npm
+    # Note: Reviewers and assignees should be configured at the repository level
+    # via GitHub's repository settings or branch protection rules for consistency
     commit-message:
-      prefix: chore
-      prefix-development: chore
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
       include: scope
+    pull-request-branch-name:
+      separator: "/"
+
+  # GitHub Actions
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: "America/New_York"
     groups:
-      github-actions:
+      # Core GitHub Actions
+      github-actions-core:
+        patterns:
+          - 'actions/*'
+          - 'github/*'
+        update-types:
+          - patch
+          - minor
+      # Security and analysis
+      security-actions:
+        patterns:
+          - 'github/codeql-action'
+          - 'ossf/scorecard-action'
+          - 'securecodewarrior/github-action-add-sarif'
+          - 'step-security/*'
+        update-types:
+          - patch
+          - minor
+      # Infrastructure and deployment
+      infrastructure-actions:
+        patterns:
+          - 'aws-actions/*'
+          - 'azure/*'
+          - 'google-github-actions/*'
+          - 'hashicorp/*'
+        update-types:
+          - patch
+          - minor
+      # Third-party actions
+      third-party-actions:
         patterns:
           - '*'
+        exclude-patterns:
+          - 'actions/*'
+          - 'github/*'
+          - 'aws-actions/*'
+          - 'azure/*'
+          - 'google-github-actions/*'
+          - 'hashicorp/*'
+        update-types:
+          - patch
+          - minor
+    ignore:
+      # Pin major versions of critical actions
+      - dependency-name: "actions/checkout"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "actions/setup-node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "actions/cache"
+        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 5
+    target-branch: main
     labels:
       - dependencies
       - github-actions
-    reviewers:
-      - CodySwannGT
-    assignees:
-      - CodySwannGT
+      - ci-cd
     commit-message:
-      prefix: ci
+      prefix: "ci(deps)"
       include: scope
+
+  # Docker (if Dockerfiles exist)
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "11:00"
+      timezone: "America/New_York"
+    ignore:
+      # Pin base image major versions for stability
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "alpine"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "ubuntu"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "debian"
+        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 3
+    target-branch: main
+    labels:
+      - dependencies
+      - docker
+      - infrastructure
+    commit-message:
+      prefix: "chore(docker)"
+      include: scope
+
+  # Terraform (if .tf files exist)
+  - package-ecosystem: terraform
+    directory: /
+    schedule:
+      interval: weekly
+      day: thursday
+      time: "10:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 3
+    target-branch: main
+    labels:
+      - dependencies
+      - terraform
+      - infrastructure
+    commit-message:
+      prefix: "chore(terraform)"
+      include: scope
+
+# Enterprise Configuration Guidelines:
+# 
+# SETUP INSTRUCTIONS:
+# 1. Repository Settings: Configure default reviewers in Settings > General > Pull Requests
+# 2. Branch Protection: Set up required reviews on main branch
+# 3. CODEOWNERS: Create .github/CODEOWNERS file for automatic review assignment
+# 4. Labels: Ensure all labels exist in the repository
+# 5. Milestones: Create "Dependencies Update" milestone if desired
+#
+# SECURITY FEATURES:
+# - Daily security updates with immediate priority
+# - Major version pinning for critical infrastructure
+# - Staggered scheduling to avoid overwhelming teams
+# - Comprehensive ecosystem coverage
+#
+# CUSTOMIZATION:
+# - Add/remove dependency patterns based on your tech stack
+# - Adjust timezone to match your team's location  
+# - Modify scheduling intervals based on team capacity
+# - Update ignore rules for project-specific requirements
+#
+# FRAMEWORK PRIORITIES (configured above):
+# 1. Security updates (daily, immediate)
+# 2. Infrastructure: CDK, Serverless, NestJS, Expo
+# 3. AWS ecosystem (coordinated updates)
+# 4. Testing: Jest, Playwright, Testing Library
+# 5. Database: PostgreSQL, Redis, TypeORM, Prisma
+# 6. Production dependencies (general)
+# 7. Development dependencies (lowest priority)

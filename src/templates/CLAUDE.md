@@ -6,6 +6,50 @@
 ## Complete Documentation
 @docs/
 
+IMPORTANT: Prefer small files and functions to reduce token and context usage.
+
+## Project Standards
+Prefer immutable data structures, functional programming patterns, and TypeScript for type safety.
+Follow best practices for clean, modular and maintainable code while also keeping the solutions simple and efficient.
+
+See @package.json for dependencies, scripts and package manager.
+
+
+Follow lint rules found in one of the following files:
+- @eslint.config.js (flat config - new format)
+- @.eslintrc.js
+- @.eslintrc.cjs
+- @.eslintrc.yaml
+- @.eslintrc.yml
+- @.eslintrc.json
+- @.eslintrc
+- @package.json (eslintConfig field)
+
+Follow formatting rules found in one of the following files:
+- @prettier.config.js
+- @.prettierrc.js
+- @.prettierrc.cjs
+- @.prettierrc.yaml
+- @.prettierrc.yml
+- @.prettierrc.json
+- @.prettierrc
+- @package.json (prettier field)
+
+Follow TypeScript rules found in one of the following files:
+- @tsconfig.json
+- @tsconfig.cjs.json
+- @tsconfig.mjs.json
+
+Follow commit message conventions found in:
+- @.commitlintrc.js
+- @.commitlintrc.cjs
+- @.commitlintrc.yaml
+- @.commitlintrc.yml
+- @.commitlintrc.json
+- @.commitlintrc
+- @package.json (commitlint field)
+- @commitlint.config.js
+
 ## Memory System Integration
 
 I'm configured to use a dual memory system - both this CLAUDE.md file and a knowledge graph stored at `.ai/memory.jsonl`. This enables persistent memory across conversations and tools.
@@ -61,12 +105,12 @@ These global rules apply across all modes:
 
 ### Mode-Specific Context
 
-When working on tasks, I should:
+When working on tasks:
 
 1. Identify the appropriate mode from .roomodes based on the task
 2. Apply both:
-   - Global rules from .roo/rules/
-   - Mode-specific rules from .roo/rules-{mode}/
+   - Global rules from @.roo/rules/
+   - Mode-specific rules from @.roo/rules-{mode}/
 3. Store mode-specific memories appropriately tagged in the knowledge graph
 4. Adapt my capabilities and behavior according to the mode's definition
 

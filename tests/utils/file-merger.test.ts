@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import fs from 'fs-extra';
 import path from 'path';
 import { FileMerger, MergeOption } from '../../src/utils/file-merger';

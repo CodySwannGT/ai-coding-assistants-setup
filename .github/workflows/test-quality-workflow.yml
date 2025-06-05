@@ -1,0 +1,138 @@
+name: Test Quality Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_scenario:
+        description: 'Test scenario to run'
+        required: true
+        type: choice
+        options:
+          - 'basic-quality-checks'
+          - 'ai-scanners-only'
+          - 'security-tools-only'
+          - 'compliance-soc2'
+          - 'compliance-all'
+          - 'performance-test'
+          - 'skip-everything'
+
+jobs:
+  # Test 1: Basic quality checks only
+  test-basic-quality:
+    if: ${{ github.event.inputs.test_scenario == 'basic-quality-checks' }}
+    name: Test Basic Quality Checks
+    uses: ./.github/workflows/quality.yml
+    with:
+      skip_security: true
+      skip_jobs: 'code_quality_check,claude_security_scan'
+    secrets: inherit
+
+  # Test 2: AI scanners only (should continue on failure)
+  test-ai-scanners:
+    if: ${{ github.event.inputs.test_scenario == 'ai-scanners-only' }}
+    name: Test AI Scanners Non-Blocking
+    uses: ./.github/workflows/quality.yml
+    with:
+      skip_jobs: 'lint,typecheck,test,format,build,npm_security_scan,sonarcloud,snyk,secret_scanning,license_compliance'
+    secrets: inherit
+
+  # Test 3: Security tools only
+  test-security-tools:
+    if: ${{ github.event.inputs.test_scenario == 'security-tools-only' }}
+    name: Test Security Tools
+    uses: ./.github/workflows/quality.yml
+    with:
+      skip_jobs: 'lint,typecheck,test,format,build,code_quality_check,claude_security_scan'
+    secrets: inherit
+
+  # Test 4: SOC 2 compliance mode
+  test-compliance-soc2:
+    if: ${{ github.event.inputs.test_scenario == 'compliance-soc2' }}
+    name: Test SOC 2 Compliance
+    uses: ./.github/workflows/quality.yml
+    with:
+      compliance_framework: 'soc2'
+      audit_retention_days: 7  # Short retention for testing
+      generate_evidence_package: true
+    secrets: inherit
+
+  # Test 5: All compliance frameworks
+  test-compliance-all:
+    if: ${{ github.event.inputs.test_scenario == 'compliance-all' }}
+    name: Test All Compliance Frameworks
+    strategy:
+      matrix:
+        framework: ['soc2', 'iso27001', 'hipaa', 'pci-dss']
+    uses: ./.github/workflows/quality.yml
+    with:
+      compliance_framework: ${{ matrix.framework }}
+      audit_retention_days: 1
+      generate_evidence_package: true
+    secrets: inherit
+
+  # Test 6: Performance test (cache effectiveness)
+  test-performance:
+    if: ${{ github.event.inputs.test_scenario == 'performance-test' }}
+    name: Test Performance Optimizations
+    strategy:
+      matrix:
+        run: [1, 2]  # Run twice to test caching
+    uses: ./.github/workflows/quality.yml
+    with:
+      skip_security: true  # Focus on performance
+    secrets: inherit
+
+  # Test 7: Skip everything
+  test-skip-all:
+    if: ${{ github.event.inputs.test_scenario == 'skip-everything' }}
+    name: Test Skip All Jobs
+    uses: ./.github/workflows/quality.yml
+    with:
+      skip_lint: true
+      skip_typecheck: true
+      skip_test: true
+      skip_format: true
+      skip_build: true
+      skip_security: true
+    secrets: inherit
+
+  # Validation job to check test results
+  validate-results:
+    name: Validate Test Results
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [test-basic-quality, test-ai-scanners, test-security-tools, test-compliance-soc2, test-compliance-all, test-performance, test-skip-all]
+    steps:
+      - name: Check test scenario results
+        run: |
+          echo "# Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Scenario**: ${{ github.event.inputs.test_scenario }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          case "${{ github.event.inputs.test_scenario }}" in
+            "basic-quality-checks")
+              echo "✅ Basic quality checks should run without security tools" >> $GITHUB_STEP_SUMMARY
+              ;;
+            "ai-scanners-only")
+              echo "✅ AI scanners should run and not block workflow on failure" >> $GITHUB_STEP_SUMMARY
+              ;;
+            "security-tools-only")
+              echo "✅ Security tools should run (if tokens configured)" >> $GITHUB_STEP_SUMMARY
+              ;;
+            "compliance-soc2")
+              echo "✅ SOC 2 compliance validation should run with evidence generation" >> $GITHUB_STEP_SUMMARY
+              ;;
+            "compliance-all")
+              echo "✅ All compliance frameworks should be validated" >> $GITHUB_STEP_SUMMARY
+              ;;
+            "performance-test")
+              echo "✅ Second run should show cache hits for dependencies" >> $GITHUB_STEP_SUMMARY
+              ;;
+            "skip-everything")
+              echo "✅ All jobs should be skipped" >> $GITHUB_STEP_SUMMARY
+              ;;
+          esac
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the individual workflow runs above for detailed results." >> $GITHUB_STEP_SUMMARY

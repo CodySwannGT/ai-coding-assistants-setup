@@ -1,5 +1,15 @@
 {
   "mcpServers": {
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firecrawl-mcp"
+      ],
+      "env": {
+        "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+      }
+    },
     "github": {
       "command": "docker",
       "args": [
@@ -30,8 +40,11 @@
         "-y",
         "mcp-knowledge-graph",
         "--memory-path",
-        "${MEMORY_PATH}"
+        ".ai/memory.jsonl"
       ],
+      "env": {
+        "MEMORY_PATH": ".ai/memory.jsonl"
+      },
       "autoapprove": [
         "create_entities",
         "create_relations",
@@ -63,7 +76,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "brave-search-mcp-server"
+        "@modelcontextprotocol/server-brave-search"
       ],
       "env": {
         "BRAVE_API_KEY": "${BRAVE_API_KEY}"

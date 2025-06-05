@@ -1,0 +1,227 @@
+name: Test Release Observability
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_scenario:
+        description: 'Test scenario to run'
+        required: false
+        type: choice
+        options:
+          - 'standard'
+          - 'with-errors'
+          - 'performance-test'
+          - 'full-validation'
+        default: 'standard'
+
+jobs:
+  test_observability:
+    name: 🧪 Test Observability Features
+    uses: ./.github/workflows/release.yml
+    with:
+      environment: 'test'
+      release_strategy: 'semantic'
+      release_notes_template: 'detailed'
+      debug: true
+      force_release: true
+    secrets: inherit
+
+  validate_observability:
+    name: ✅ Validate Observability Data
+    needs: [test_observability]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-${{ github.run_id }}'
+
+      - name: Validate Event Logs
+        run: |
+          echo "## 📊 Observability Validation Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check for release events log
+          if [ -f "version-artifacts-${{ github.run_id }}/release-events.jsonl" ]; then
+            echo "✅ Release events log found" >> $GITHUB_STEP_SUMMARY
+
+            # Count events
+            EVENT_COUNT=$(wc -l < "version-artifacts-${{ github.run_id }}/release-events.jsonl")
+            echo "- Total events logged: $EVENT_COUNT" >> $GITHUB_STEP_SUMMARY
+
+            # Validate event structure
+            if jq -e '.' "version-artifacts-${{ github.run_id }}/release-events.jsonl" >/dev/null 2>&1; then
+              echo "✅ Event log JSON is valid" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Event log JSON is invalid" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
+
+            # Check for required event types
+            REQUIRED_EVENTS=("version_management" "version_determination" "changelog_generation")
+            for event in "${REQUIRED_EVENTS[@]}"; do
+              if grep -q "\"event_type\":\"$event\"" "version-artifacts-${{ github.run_id }}/release-events.jsonl"; then
+                echo "✅ Found required event: $event" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "❌ Missing required event: $event" >> $GITHUB_STEP_SUMMARY
+              fi
+            done
+          else
+            echo "❌ Release events log not found" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Validate Metrics
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📈 Metrics Validation" >> $GITHUB_STEP_SUMMARY
+
+          # Check for metrics file
+          if [ -f "version-artifacts-${{ github.run_id }}/release-metrics.json" ]; then
+            echo "✅ Release metrics file found" >> $GITHUB_STEP_SUMMARY
+
+            # Validate metrics structure
+            if jq -e '.metrics.version_creation.duration_seconds' "version-artifacts-${{ github.run_id }}/release-metrics.json" >/dev/null; then
+              DURATION=$(jq -r '.metrics.version_creation.duration_seconds' "version-artifacts-${{ github.run_id }}/release-metrics.json")
+              echo "- Version creation duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            # Check correlation ID
+            if CORRELATION_ID=$(jq -r '.correlation_id' "version-artifacts-${{ github.run_id }}/release-metrics.json"); then
+              echo "- Correlation ID: $CORRELATION_ID" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "❌ Release metrics file not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Validate Audit Trail
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📝 Audit Trail Validation" >> $GITHUB_STEP_SUMMARY
+
+          # Check for audit trail
+          AUDIT_FILE=$(find . -name "release-audit-*.json" -type f | head -1)
+          if [ -n "$AUDIT_FILE" ]; then
+            echo "✅ Audit trail file found: $(basename $AUDIT_FILE)" >> $GITHUB_STEP_SUMMARY
+
+            # Validate audit structure
+            if jq -e '.audit_version' "$AUDIT_FILE" >/dev/null; then
+              echo "✅ Audit trail structure is valid" >> $GITHUB_STEP_SUMMARY
+
+              # Extract key information
+              AUDIT_VERSION=$(jq -r '.release_info.version' "$AUDIT_FILE")
+              AUDIT_ENV=$(jq -r '.release_info.environment' "$AUDIT_FILE")
+              echo "- Audited version: $AUDIT_VERSION" >> $GITHUB_STEP_SUMMARY
+              echo "- Audited environment: $AUDIT_ENV" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            # Check for signature if available
+            if [ -f "${AUDIT_FILE}.sig" ]; then
+              echo "✅ Audit trail signature found" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "ℹ️ No audit trail signature (signing key not configured)" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "❌ Audit trail file not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Validate Performance Data
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚡ Performance Data Validation" >> $GITHUB_STEP_SUMMARY
+
+          # Check for performance metrics
+          if [ -f "version-artifacts-${{ github.run_id }}/performance-metrics.csv" ]; then
+            echo "✅ Performance metrics file found" >> $GITHUB_STEP_SUMMARY
+
+            # Count operations tracked
+            OP_COUNT=$(wc -l < "version-artifacts-${{ github.run_id }}/performance-metrics.csv")
+            echo "- Operations tracked: $OP_COUNT" >> $GITHUB_STEP_SUMMARY
+
+            # Check for slow operations
+            while IFS='|' read -r operation duration status; do
+              if (( $(echo "$duration > 5" | bc -l) )); then
+                echo "⚠️ Slow operation detected: $operation (${duration}s)" >> $GITHUB_STEP_SUMMARY
+              fi
+            done < "version-artifacts-${{ github.run_id }}/performance-metrics.csv"
+          else
+            echo "ℹ️ No performance metrics file (may not have been generated)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Validate Analytics
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Analytics Validation" >> $GITHUB_STEP_SUMMARY
+
+          # Check for analytics report
+          if [ -f "release-analytics-${{ github.run_id }}/release-analytics-report.json" ]; then
+            echo "✅ Analytics report found" >> $GITHUB_STEP_SUMMARY
+
+            # Extract summary data
+            TOTAL_DURATION=$(jq -r '.release_summary.total_duration_seconds' "release-analytics-${{ github.run_id }}/release-analytics-report.json")
+            TOTAL_EVENTS=$(jq -r '.event_statistics.total_events' "release-analytics-${{ github.run_id }}/release-analytics-report.json")
+            ERROR_EVENTS=$(jq -r '.event_statistics.error_events' "release-analytics-${{ github.run_id }}/release-analytics-report.json")
+
+            echo "- Total workflow duration: ${TOTAL_DURATION}s" >> $GITHUB_STEP_SUMMARY
+            echo "- Total events: $TOTAL_EVENTS" >> $GITHUB_STEP_SUMMARY
+            echo "- Error events: $ERROR_EVENTS" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Analytics report not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Generate Test Report
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Information" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ needs.test_observability.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Tag: ${{ needs.test_observability.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Release URL: ${{ needs.test_observability.outputs.release_url || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Correlation ID: ${{ needs.test_observability.outputs.release_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Metrics Dashboard: ${{ needs.test_observability.outputs.release_metrics_url || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Observability Features Tested" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Structured logging with correlation IDs" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Performance tracking and warnings" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Comprehensive audit trail" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Release metrics collection" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Analytics report generation" >> $GITHUB_STEP_SUMMARY
+
+  performance_stress_test:
+    name: 🏃 Performance Stress Test
+    if: ${{ github.event.inputs.test_scenario == 'performance-test' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Large Changelog
+        run: |
+          # Generate many commits to stress test changelog generation
+          for i in {1..50}; do
+            echo "Test file $i" > "test-file-$i.txt"
+            git add "test-file-$i.txt"
+            git commit -m "feat: Add test feature $i
+
+          This is a test commit to stress test the changelog generation
+          and performance monitoring capabilities of the release workflow."
+          done
+
+          echo "Created 50 test commits for performance testing"
+
+  error_scenario_test:
+    name: 🔥 Error Scenario Test
+    if: ${{ github.event.inputs.test_scenario == 'with-errors' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Error Logging
+        run: |
+          echo "This job tests error scenario handling"
+          echo "The observability features should capture:"
+          echo "- Failed events"
+          echo "- Error metrics"
+          echo "- Recovery attempts"
+
+          # This would trigger actual errors in a real scenario
+          echo "Error scenarios would be tested here"

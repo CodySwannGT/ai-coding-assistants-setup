@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { createInterface } from 'readline';
-import { Feedback } from './feedback';
+import { Feedback } from './feedback.js';
 
 /**
  * Options for file merging

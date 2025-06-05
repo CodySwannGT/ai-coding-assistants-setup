@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { Feedback } from './feedback';
+import { Feedback } from './feedback.js';
 
 /**
  * Object to represent a template file

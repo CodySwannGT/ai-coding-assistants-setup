@@ -2,11 +2,17 @@
   "name": "ai-coding-assistants-setup",
   "version": "2.0.5",
   "description": "Setup tool for integrating AI coding assistants into development workflows",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "ai-coding-assistants-setup": "./dist/index.js"
+    "ai-coding-assistants-setup": "./bin/index.js"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "dist/"
+  ],
   "scripts": {
     "build": "tsc",
     "postbuild": "chmod +x dist/index.js",
@@ -56,6 +62,7 @@
     "jsonschema": "^1.4.1",
     "micromatch": "^4.0.5",
     "ora": "^7.0.1",
+    "prompts": "^2.4.2",
     "semver": "^7.5.4",
     "winston": "^3.11.0"
   },
@@ -63,6 +70,7 @@
     "@commitlint/cli": "^18.4.3",
     "@commitlint/config-conventional": "^18.4.3",
     "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "9.0.8",
     "@types/jest": "^29.5.12",
     "@types/js-yaml": "4.0.9",
     "@types/node": "^20.11.16",

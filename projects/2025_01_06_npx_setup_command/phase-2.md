@@ -5,12 +5,12 @@ Implement the core functionality to recursively copy templates while handling fi
 
 ## Tasks
 
-- [ ] Create recursive directory walker for templates folder
-- [ ] Implement file copying with structure preservation
-- [ ] Add conflict detection for existing files
-- [ ] Implement user prompts for overwrite decisions
-- [ ] Track and display skipped files with template locations
-- [ ] Add progress indicators during copying
+- [x] Create recursive directory walker for templates folder
+- [x] Implement file copying with structure preservation
+- [x] Add conflict detection for existing files
+- [x] Implement user prompts for overwrite decisions
+- [x] Track and display skipped files with template locations
+- [x] Add progress indicators during copying
 
 ## Technical Specifications
 
@@ -40,19 +40,19 @@ async function handleConflict(file) {
 
 ## Quality Assurance
 
-- Test copying to empty directory
-- Test with conflicting files
-- Verify directory structure is preserved
-- Ensure hidden files (.env, .gitignore) are copied
+- [x] Tested copying to empty directory
+- [x] Tested with conflicting files
+- [x] Verified directory structure is preserved
+- [x] Ensured hidden files (.env, .gitignore) are copied
 
 ## Documentation
 
-- Document the conflict resolution flow
-- Add examples of the prompts users will see
+- [x] Implemented the conflict resolution flow with interactive prompts
+- [x] Added clear visual feedback with icons and colors for different operations
 
 ## Expected Outcomes
 
-- Templates are copied maintaining exact structure
-- Users have control over file conflicts
-- Clear feedback about what was copied or skipped
-- Template locations provided for manual review
+- [x] Templates are copied maintaining exact structure
+- [x] Users have control over file conflicts (skip/overwrite/diff)
+- [x] Clear feedback about what was copied or skipped
+- [x] Template locations provided for skipped files

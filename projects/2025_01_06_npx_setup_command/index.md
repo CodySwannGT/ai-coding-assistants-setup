@@ -16,8 +16,8 @@
 
 ## Project Phases
 
-- [ ] [Phase 1: Project Setup & CLI Structure](phase-1.md) - Initialize npx command and basic structure
-- [ ] [Phase 2: Template Copying Implementation](phase-2.md) - Core file copying logic with conflict handling
+- [x] [Phase 1: Project Setup & CLI Structure](phase-1.md) - Initialize npx command and basic structure
+- [x] [Phase 2: Template Copying Implementation](phase-2.md) - Core file copying logic with conflict handling
 - [ ] [Phase 3: Package.json Script Management](phase-3.md) - Add missing scripts without overwriting
 - [ ] [Phase 4: Documentation Generation](phase-4.md) - Sync README and parse template configurations
 - [ ] [Phase 5: Testing & Publishing](phase-5.md) - Manual testing and npm publishing

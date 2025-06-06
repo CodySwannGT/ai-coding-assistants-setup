@@ -60,12 +60,19 @@ jobs:
     if: ${{ needs.determine_environment.outputs.environment == 'main' && !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: 🏷️ Wait for tag to be available
         run: |
           echo "Waiting for tag ${{ needs.release.outputs.tag }} to be available..."
           for i in {1..30}; do
-            if git ls-remote --tags origin | grep -q "refs/tags/${{ needs.release.outputs.tag }}"; then
+            git fetch --tags
+            if git tag --list | grep -q "^${{ needs.release.outputs.tag }}$"; then
               echo "Tag ${{ needs.release.outputs.tag }} is now available"
+              git checkout ${{ needs.release.outputs.tag }}
               break
             fi
             echo "Attempt $i/30: Tag not found yet, waiting 10 seconds..."
@@ -73,16 +80,10 @@ jobs:
           done
           
           # Final check
-          if ! git ls-remote --tags origin | grep -q "refs/tags/${{ needs.release.outputs.tag }}"; then
+          if [ "$(git describe --exact-match --tags 2>/dev/null)" != "${{ needs.release.outputs.tag }}" ]; then
             echo "Error: Tag ${{ needs.release.outputs.tag }} is still not available after 5 minutes"
             exit 1
           fi
-
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ needs.release.outputs.tag }}
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4

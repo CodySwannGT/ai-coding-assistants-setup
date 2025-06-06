@@ -1018,10 +1018,22 @@ jobs:
             -d "$RELEASE_DATA" \
             "https://api.github.com/repos/${{ github.repository }}/releases")
 
+          # Check if the request was successful
+          if echo "$RESPONSE" | jq -e '.message' > /dev/null 2>&1; then
+            echo "Error creating release: $(echo "$RESPONSE" | jq -r '.message')"
+            echo "Full response: $RESPONSE"
+            exit 1
+          fi
+
           # Extract release information
           echo "$RESPONSE" | jq -r '.html_url' > .release_url
           echo "$RESPONSE" | jq -r '.id' > .release_id
           echo "$RESPONSE" | jq -r '.upload_url' > .upload_url
+
+          # Verify the tag was created
+          echo "Release created successfully!"
+          echo "Release URL: $(cat .release_url)"
+          echo "Tag: ${{ needs.version.outputs.tag }}"
 
           echo "html_url=$(cat .release_url)" >> $GITHUB_OUTPUT
           echo "id=$(cat .release_id)" >> $GITHUB_OUTPUT

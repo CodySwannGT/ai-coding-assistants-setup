@@ -63,7 +63,20 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.release.outputs.tag }}
+          fetch-depth: 0
+
+      - name: 🏷️ Fetch latest tag
+        run: |
+          # Fetch all tags from remote
+          git fetch --tags
+          
+          # Checkout the specific tag created by the release job
+          if [ -n "${{ needs.release.outputs.tag }}" ]; then
+            echo "Checking out tag: ${{ needs.release.outputs.tag }}"
+            git checkout ${{ needs.release.outputs.tag }}
+          else
+            echo "No tag output from release job, using current commit"
+          fi
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4

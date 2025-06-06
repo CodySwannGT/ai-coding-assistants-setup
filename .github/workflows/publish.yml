@@ -57,7 +57,7 @@ jobs:
   publish_npm:
     name: 📦 Publish to npm
     needs: [determine_environment, release]
-    if: ${{ needs.determine_environment.outputs.environment == 'main' && !contains(github.event.head_commit.message, '[skip ci]') && needs.release.outputs.release_url != '' }}
+    if: ${{ needs.determine_environment.outputs.environment == 'main' && !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
       - name: 🏷️ Wait for tag to be available

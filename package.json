@@ -1,6 +1,6 @@
 {
   "name": "ai-coding-assistants-setup",
-  "version": "2.0.3",
+  "version": "2.0.7",
   "description": "Setup tool for integrating AI coding assistants into development workflows",
   "type": "module",
   "main": "dist/index.js",

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.7](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v2.0.6...v2.0.7) (2025-05-19)
+
+### [2.0.6](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v2.0.5...v2.0.6) (2025-05-18)
+
 ### [2.0.5](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v2.0.4...v2.0.5) (2025-05-18)
 
 ### [2.0.4](https://github.com/CodySwannGT/ai-coding-assistants-setup/compare/v2.0.3...v2.0.4) (2025-05-18)

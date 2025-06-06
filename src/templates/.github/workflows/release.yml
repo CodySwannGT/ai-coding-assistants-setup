@@ -467,6 +467,12 @@ jobs:
 
           export VERSION TAG="v$VERSION"
 
+          # Update package.json with new version
+          if [ -f package.json ]; then
+            npm version $VERSION --no-git-tag-version --allow-same-version
+            echo "Updated package.json to version $VERSION"
+          fi
+
           log_release_event "version_determination" "completed" "Version determined successfully" \
             "version" "$VERSION" \
             "bump_type" "${BUMP_TYPE:-custom}"
@@ -911,6 +917,12 @@ jobs:
   github_release:
     name: 🎉 Create GitHub Release
     needs: [release_init, version, release_signing, release_attestation]
+    if: |
+      always() &&
+      !cancelled() &&
+      needs.version.result == 'success' &&
+      needs.release_attestation.result == 'success' &&
+      (needs.release_signing.result == 'success' || needs.release_signing.result == 'skipped')
     runs-on: ubuntu-latest
     outputs:
       release_url: ${{ steps.create_release.outputs.html_url }}
@@ -1012,10 +1024,22 @@ jobs:
             -d "$RELEASE_DATA" \
             "https://api.github.com/repos/${{ github.repository }}/releases")
 
+          # Check if the request was successful
+          if echo "$RESPONSE" | jq -e '.message' > /dev/null 2>&1; then
+            echo "Error creating release: $(echo "$RESPONSE" | jq -r '.message')"
+            echo "Full response: $RESPONSE"
+            exit 1
+          fi
+
           # Extract release information
           echo "$RESPONSE" | jq -r '.html_url' > .release_url
           echo "$RESPONSE" | jq -r '.id' > .release_id
           echo "$RESPONSE" | jq -r '.upload_url' > .upload_url
+
+          # Verify the tag was created
+          echo "Release created successfully!"
+          echo "Release URL: $(cat .release_url)"
+          echo "Tag: ${{ needs.version.outputs.tag }}"
 
           echo "html_url=$(cat .release_url)" >> $GITHUB_OUTPUT
           echo "id=$(cat .release_id)" >> $GITHUB_OUTPUT
@@ -1179,7 +1203,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       always() &&
-      (needs.version.result == 'success' || needs.version.result == 'skipped') &&
+      (needs.version.result == 'success' || needs.version.result == 'skipped') && 
       needs.checks_jira_setup.outputs.has_jira_setup == 'true'
     needs: [version, checks_jira_setup]
     outputs:
@@ -1472,8 +1496,7 @@ jobs:
           1. Review the release at ${{ needs.github_release.outputs.release_url || 'GitHub Releases page' }}
           2. Verify signatures if applicable
           3. Review compliance report
-          4. Deploy using your deployment workflow
-          5. Run load tests if needed
+          4. Monitor deployment if applicable
           EOF
 
           # Set workflow status

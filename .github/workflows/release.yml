@@ -911,6 +911,12 @@ jobs:
   github_release:
     name: 🎉 Create GitHub Release
     needs: [release_init, version, release_signing, release_attestation]
+    if: |
+      always() &&
+      !cancelled() &&
+      needs.version.result == 'success' &&
+      needs.release_attestation.result == 'success' &&
+      (needs.release_signing.result == 'success' || needs.release_signing.result == 'skipped')
     runs-on: ubuntu-latest
     outputs:
       release_url: ${{ steps.create_release.outputs.html_url }}

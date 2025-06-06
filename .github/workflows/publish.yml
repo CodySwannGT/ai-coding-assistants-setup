@@ -104,6 +104,15 @@ jobs:
       - name: 🏗️ Build package
         run: npm run build
 
+      - name: 📝 Update package version
+        run: |
+          # Update package.json to match the release version
+          VERSION="${{ needs.release.outputs.version }}"
+          if [ -n "$VERSION" ]; then
+            echo "Updating package.json to version $VERSION"
+            npm version $VERSION --no-git-tag-version --allow-same-version
+          fi
+
       - name: 🔍 Check npm token
         id: check-npm-token
         run: |

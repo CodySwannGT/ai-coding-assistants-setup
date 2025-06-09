@@ -146,6 +146,19 @@ async function setupAiCodingAssistants(
     const exists = await fs.pathExists(target);
 
     if (exists && !force) {
+      // Check if files are identical
+      const sourceContent = await fs.readFile(source, 'utf-8');
+      const targetContent = await fs.readFile(target, 'utf-8');
+
+      if (sourceContent === targetContent) {
+        // Files are identical, skip silently
+        if (verbose) {
+          Feedback.info(`   [SKIP] ${relativePath} (identical)`);
+        }
+        skippedCount++;
+        continue;
+      }
+
       if (interactive) {
         const { default: inquirer } = await import('inquirer');
         const { overwrite } = await inquirer.prompt([

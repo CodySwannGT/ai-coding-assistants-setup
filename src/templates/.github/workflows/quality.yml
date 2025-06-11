@@ -597,8 +597,8 @@ jobs:
               exit $exit_code
             fi
           elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
-            # Yarn audit doesn't support audit-level, so we need to parse output
-            yarn audit --groups dependencies --json | jq -r '.advisories | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | .value' > high_vulns.json
+            # Yarn audit outputs newline-delimited JSON, so we need to parse each line
+            yarn audit --groups dependencies --json | jq -r 'select(.type == "auditAdvisory") | select(.data.advisory.severity == "high" or .data.advisory.severity == "critical") | .data.advisory' > high_vulns.json
             if [ -s high_vulns.json ]; then
               echo "::error::Found high or critical vulnerabilities:"
               cat high_vulns.json

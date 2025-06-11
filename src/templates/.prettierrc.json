@@ -9,7 +9,14 @@
   "semi": true,
   "singleQuote": false,
   "quoteProps": "as-needed",
-  "parser": "typescript",
   "htmlWhitespaceSensitivity": "css",
-  "singleAttributePerLine": false
+  "singleAttributePerLine": false,
+  "overrides": [
+    {
+      "files": "*.md",
+      "options": {
+        "parser": "markdown"
+      }
+    }
+  ]
 }

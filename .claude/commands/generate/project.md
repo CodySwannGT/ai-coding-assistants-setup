@@ -6,9 +6,10 @@ Using $ARGUMENTS as the base for the project, follow these steps to create a new
 - Create a new directory in `projects/` called `YYYY_MM_DD_<PROJECT_NAME>` with today's date and a descriptive name for `PROJECT_NAME`.
 
 ## IMPORTANT:
+
 - Think really hard about the requirements given to you and make sure you understand them completely. If you don't, ask for clarification.
 - Ensure the plan is detailed enough so you can start on it at any point with no prior memory or context of what happened previously.
-- Break the requirements down into clear, actionable phases and tasks. 
+- Break the requirements down into clear, actionable phases and tasks.
 - Create a new file for each phase in newly created directory, e.g., `YYYY_MM_DD_<PROJECT_NAME>/phase-1.md`, `phase-2.md`, etc.
 - Create an `index.md` file in the new directory that links to each phase with a brief description of what it covers.
 - The `index.md` file should also include the project rules and conventions and project name.
@@ -25,15 +26,13 @@ Using $ARGUMENTS as the base for the project, follow these steps to create a new
 - After completing a phase, verify with the human that the phase is done and they are satisfied with the result.
 - If they are, clear the .ai/memory.jsonl file and move the task to `/projects/done` and the commit changes with a conventional commit message like `feat: complete phase 1 of <PROJECT_NAME>`. Also mark the phase as complete in the `index.md` file.
 
-## Required AWS Profile and Context
-- AWS Profile: `gemini-dev-v2`
-- CDK Context: `--context env=dev --context dev-account=017820663466`
-
 ## Quality Assurance Requirement
 
 **MANDATORY**: After EVERY task completion, the following quality checks MUST pass before moving on:
+**IMPORTANT**: Check package.json for the correct pacakge maanager and replace `npm run` as needed.
 
 ### 1. Code Quality Checks
+
 ```bash
 # Run ALL quality checks - NO EXCEPTIONS
 npm run lint          # Must pass with zero errors
@@ -43,6 +42,7 @@ npm run build         # Must build successfully
 ```
 
 ### 2. Test Execution
+
 ```bash
 # Run ALL tests - Cannot skip or say "out of scope"
 npm run test:unit     # All unit tests must pass
@@ -51,16 +51,10 @@ npm run test:snapshot    # All snapshot tests must pass
 npm run test:e2e      # E2E tests must pass (if applicable)
 ```
 
-### 3. CDK Validation
-```bash
-# Validate infrastructure changes
-npx cdk synth         # Must synthesize without errors
-npx cdk diff          # Review all changes
-```
-
-
 ### 4. Failure Protocol
+
 If ANY test fails:
+
 1. STOP immediately - do not proceed to next task
 2. Fix the failing test/code
 3. Re-run ALL quality checks

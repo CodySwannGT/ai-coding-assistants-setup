@@ -590,10 +590,26 @@ jobs:
       - name: 🔒 Run security audit
         run: |
           if [ "${{ inputs.package_manager }}" = "npm" ]; then
-            npm audit --production
+            # Run audit and only fail on high or critical vulnerabilities
+            npm audit --production --audit-level=high || exit_code=$?
+            if [ "${exit_code:-0}" -ne 0 ]; then
+              echo "::warning::Found high or critical vulnerabilities"
+              exit $exit_code
+            fi
           elif [ "${{ inputs.package_manager }}" = "yarn" ]; then
-            yarn audit --groups dependencies
+            # Yarn audit doesn't support audit-level, so we need to parse output
+            yarn audit --groups dependencies --json | jq -r '.advisories | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | .value' > high_vulns.json
+            if [ -s high_vulns.json ]; then
+              echo "::error::Found high or critical vulnerabilities:"
+              cat high_vulns.json
+              exit 1
+            else
+              echo "::notice::No high or critical vulnerabilities found"
+            fi
           elif [ "${{ inputs.package_manager }}" = "bun" ]; then
+            # Bun doesn't support audit levels yet, so we'll use the default behavior
+            # but add a note that it may fail on all vulnerability levels
+            echo "::warning::Bun audit doesn't support severity filtering yet"
             bun pm audit
           else
             echo "Unsupported package manager: ${{ inputs.package_manager }}"

@@ -62,8 +62,20 @@ jobs:
               ((ERRORS++))
             fi
 
-            # Action lint (disabled due to shellcheck integration issues)
-            echo "⚠️ Actions validation skipped: $workflow" >> $GITHUB_STEP_SUMMARY
+            # Action lint (ignoring shellcheck warnings)
+            if actionlint -shellcheck= "$workflow" >/dev/null 2>&1; then
+              echo "✅ Actions valid: $workflow" >> $GITHUB_STEP_SUMMARY
+            else
+              # Run again to capture actual errors (not shellcheck warnings)
+              actionlint_output=$(actionlint -shellcheck= "$workflow" 2>&1 || true)
+              if echo "$actionlint_output" | grep -q "error:"; then
+                echo "❌ Actions invalid: $workflow" >> $GITHUB_STEP_SUMMARY
+                echo "$actionlint_output" >> $GITHUB_STEP_SUMMARY
+                ((ERRORS++))
+              else
+                echo "✅ Actions valid (warnings ignored): $workflow" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
           done
 
           if [ $ERRORS -gt 0 ]; then

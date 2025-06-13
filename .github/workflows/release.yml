@@ -111,7 +111,7 @@ on:
         value: ${{ jobs.release_init.outputs.correlation_id }}
       release_metrics_url:
         description: 'URL to release metrics dashboard'
-        value: 'N/A'
+        value: ${{ jobs.release_analytics.outputs.dashboard_url }}
       signed:
         description: 'Whether the release was signed'
         value: ${{ jobs.release_signing.outputs.signed }}
@@ -467,12 +467,6 @@ jobs:
 
           export VERSION TAG="v$VERSION"
 
-          # Update package.json with new version
-          if [ -f package.json ]; then
-            npm version $VERSION --no-git-tag-version --allow-same-version
-            echo "Updated package.json to version $VERSION"
-          fi
-
           log_release_event "version_determination" "completed" "Version determined successfully" \
             "version" "$VERSION" \
             "bump_type" "${BUMP_TYPE:-custom}"
@@ -644,7 +638,7 @@ jobs:
           gpg --list-secret-keys
 
           # Configure git
-          git config --global user.signingkey "${{ secrets.SIGNING_KEY_ID || 'release-bot' }}"
+          git config --global user.signingkey "${{ secrets.SIGNING_KEY_ID || secrets.RELEASE_SIGNING_KEY_ID }}"
           git config --global commit.gpgsign true
           git config --global tag.gpgsign true
 
@@ -661,7 +655,7 @@ jobs:
             if [ -f "$file" ]; then
               # Create detached signature
               gpg --armor --detach-sign \
-                --local-user "${{ secrets.SIGNING_KEY_ID || 'release-bot' }}" \
+                --local-user "${{ secrets.SIGNING_KEY_ID || secrets.RELEASE_SIGNING_KEY_ID }}" \
                 --output "$sig_file" \
                 "$file"
 
@@ -766,7 +760,7 @@ jobs:
   # Release attestation
   release_attestation:
     name: 📜 Release Attestation
-    needs: [release_init, version, quality, release_approval, release_signing]
+    needs: [release_init, version, quality, release_signing]
     if: always() && !cancelled() && needs.version.result == 'success'
     runs-on: ubuntu-latest
     outputs:
@@ -1239,7 +1233,6 @@ jobs:
         release_init,
         version,
         quality,
-        release_approval,
         release_signing,
         release_attestation,
         github_release,

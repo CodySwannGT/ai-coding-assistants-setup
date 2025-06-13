@@ -635,7 +635,7 @@ jobs:
           gpg --list-secret-keys
 
           # Configure git
-          git config --global user.signingkey "${{ secrets.SIGNING_KEY_ID || secrets.RELEASE_SIGNING_KEY_ID }}"
+          git config --global user.signingkey "${{ secrets.SIGNING_KEY_ID }}"
           git config --global commit.gpgsign true
           git config --global tag.gpgsign true
 
@@ -652,7 +652,7 @@ jobs:
             if [ -f "$file" ]; then
               # Create detached signature
               gpg --armor --detach-sign \
-                --local-user "${{ secrets.SIGNING_KEY_ID || secrets.RELEASE_SIGNING_KEY_ID }}" \
+                --local-user "${{ secrets.SIGNING_KEY_ID }}" \
                 --output "$sig_file" \
                 "$file"
 
@@ -757,7 +757,7 @@ jobs:
   # Release attestation
   release_attestation:
     name: 📜 Release Attestation
-    needs: [release_init, version, quality, release_signing]
+    needs: [release_init, version, quality, release_signing, release_approval]
     if: always() && !cancelled() && needs.version.result == 'success'
     runs-on: ubuntu-latest
     outputs:
@@ -1235,6 +1235,7 @@ jobs:
         github_release,
         sentry_release,
         jira_release,
+        release_approval,
       ]
     if: always()
     runs-on: ubuntu-latest

@@ -1203,7 +1203,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       always() &&
-      (needs.version.result == 'success' || needs.version.result == 'skipped') && 
+      (needs.version.result == 'success' || needs.version.result == 'skipped') &&
       !cancelled() &&
       needs.checks_jira_setup.outputs.has_jira_setup == 'true'
     needs: [version, checks_jira_setup]

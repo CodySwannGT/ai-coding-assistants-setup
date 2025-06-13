@@ -305,9 +305,9 @@ jobs:
     name: 📦 Version Management
     needs: [release_init, quality, release_approval]
     if: |
-      always() && 
-      !cancelled() && 
-      needs.quality.result == 'success' && 
+      always() &&
+      !cancelled() &&
+      needs.quality.result == 'success' &&
       (needs.release_approval.result == 'success' || needs.release_approval.result == 'skipped')
     runs-on: ubuntu-latest
     outputs:
@@ -772,8 +772,8 @@ jobs:
     name: 📜 Release Attestation
     needs: [release_init, version, quality, release_signing]
     if: |
-      always() && 
-      !cancelled() && 
+      always() &&
+      !cancelled() &&
       needs.version.result == 'success' &&
       (needs.release_signing.result == 'success' || needs.release_signing.result == 'skipped')
     runs-on: ubuntu-latest
@@ -929,15 +929,9 @@ jobs:
       always() &&
       !cancelled() &&
       needs.version.result == 'success' &&
-      needs.release_attestation.result == 'success' &&
-      (needs.release_signing.result == 'success' || needs.release_signing.result == 'skipped')
-    runs-on: ubuntu-latest
-    if: |
-      always() && 
-      !cancelled() && 
-      needs.version.result == 'success' &&
       (needs.release_signing.result == 'success' || needs.release_signing.result == 'skipped') &&
       (needs.release_attestation.result == 'success' || needs.release_attestation.result == 'skipped')
+    runs-on: ubuntu-latest
     outputs:
       release_url: ${{ steps.create_release.outputs.html_url }}
       release_id: ${{ steps.create_release.outputs.id }}
@@ -1232,8 +1226,8 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       always() &&
-      (needs.version.result == 'success' || needs.version.result == 'skipped') && 
       !cancelled() &&
+      needs.version.result == 'success' &&
       needs.checks_jira_setup.outputs.has_jira_setup == 'true'
     needs: [version, checks_jira_setup]
     outputs:

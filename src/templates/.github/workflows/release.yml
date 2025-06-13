@@ -109,9 +109,6 @@ on:
       release_id:
         description: 'Release correlation ID for tracking'
         value: ${{ jobs.release_init.outputs.correlation_id }}
-      release_metrics_url:
-        description: 'URL to release metrics dashboard'
-        value: ${{ jobs.release_analytics.outputs.dashboard_url }}
       signed:
         description: 'Whether the release was signed'
         value: ${{ jobs.release_signing.outputs.signed }}

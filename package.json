@@ -91,11 +91,12 @@
     "typescript": "^5.3.3"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
+    "*.{js,ts,tsx}": [
+      "eslint --quiet --cache --fix"
     ],
-    "*.{md,json}": "prettier --write"
+    "*.{json,js,ts,jsx,tsx,html,md}": [
+      "prettier --write"
+    ]
   },
   "repository": {
     "type": "git",

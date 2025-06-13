@@ -29,48 +29,48 @@ on:
       workflow_name:
         required: true
         type: string
-        description: 'Name of the workflow that failed'
+        description: "Name of the workflow that failed"
       failed_job:
         required: false
         type: string
-        description: 'Name of the job that failed (optional)'
+        description: "Name of the job that failed (optional)"
       SENTRY_ORG:
         required: true
         type: string
-        description: 'Sentry organization slug (e.g., your-company)'
+        description: "Sentry organization slug (e.g., your-company)"
       SENTRY_PROJECT:
         required: true
         type: string
-        description: 'Sentry project slug (e.g., serverless-knowledge-platform)'
+        description: "Sentry project slug (e.g., serverless-knowledge-platform)"
       environment:
         required: false
         type: string
-        default: 'production'
-        description: 'Environment where the failure occurred'
+        default: "production"
+        description: "Environment where the failure occurred"
       level:
         required: false
         type: string
-        default: 'error'
-        description: 'Sentry issue level (debug, info, warning, error, fatal)'
+        default: "error"
+        description: "Sentry issue level (debug, info, warning, error, fatal)"
       node_version:
-        description: 'Node.js version to use'
+        description: "Node.js version to use"
         required: false
-        default: '20.x'
+        default: "20.x"
         type: string
       package_manager:
-        description: 'Package manager to use (npm, yarn, or bun)'
+        description: "Package manager to use (npm, yarn, or bun)"
         required: false
-        default: 'npm'
+        default: "npm"
         type: string
       working_directory:
-        description: 'Directory to run commands in (if not root)'
+        description: "Directory to run commands in (if not root)"
         required: false
-        default: ''
+        default: ""
         type: string
     secrets:
       SENTRY_AUTH_TOKEN:
         required: true
-        description: 'Sentry Auth Token with project:write scope'
+        description: "Sentry Auth Token with project:write scope"
 
 # Concurrency is managed by the parent workflow that calls this one
 # This avoids deadlocks between parent and child workflows
@@ -94,27 +94,27 @@ jobs:
         id: create_sentry_issue
         run: |
           cd "${{ inputs.working_directory || '.' }}"
-          
+
           # Set variables
           WORKFLOW_NAME="${{ inputs.workflow_name }}"
           FAILED_JOB="${{ inputs.failed_job || 'Unknown' }}"
           ENVIRONMENT="${{ inputs.environment }}"
           LEVEL="${{ inputs.level }}"
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          
+
           # Get commit message, handling special characters properly
           COMMIT_MESSAGE="${{ github.event.head_commit.message || 'N/A' }}"
-          
+
           # Create error message
           if [ "$FAILED_JOB" != "Unknown" ]; then
             ERROR_MESSAGE="CI/CD Workflow Failure: ${WORKFLOW_NAME} - ${FAILED_JOB}"
           else
             ERROR_MESSAGE="CI/CD Workflow Failure: ${WORKFLOW_NAME}"
           fi
-          
+
           # Get current timestamp in ISO format
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
-          
+
           # Create JSON payload for Sentry API using jq for proper escaping
           PAYLOAD=$(jq -n \
             --arg message "${ERROR_MESSAGE}" \
@@ -167,25 +167,58 @@ jobs:
               },
               "fingerprint": ["github-actions", $workflow_name, $failed_job]
             }')
-          
+
           # Debug: Print the payload to see what'\''s being sent (without sensitive data)
           echo "Debug: Generated payload:"
           echo "$PAYLOAD" | jq 'del(.extra.commit_message)' | head -20
           
-          # Call Sentry API to create issue
-          RESPONSE=$(curl -s -w "\n%{http_code}" \
+          # Debug: Print Sentry configuration
+          echo "Debug: SENTRY_ORG=${{ inputs.SENTRY_ORG }}"
+          echo "Debug: SENTRY_PROJECT=${{ inputs.SENTRY_PROJECT }}"
+          echo "Debug: API URL=https://sentry.io/api/0/projects/${{ inputs.SENTRY_ORG }}/${{ inputs.SENTRY_PROJECT }}/store/"
+
+          # First, let's get the DSN for this project
+          DSN_RESPONSE=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.SENTRY_AUTH_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -X POST \
-            --data "${PAYLOAD}" \
-            "https://sentry.io/api/0/projects/${{ inputs.SENTRY_ORG }}/${{ inputs.SENTRY_PROJECT }}/store/")
+            "https://sentry.io/api/0/projects/${{ inputs.SENTRY_ORG }}/${{ inputs.SENTRY_PROJECT }}/keys/")
           
+          DSN_STATUS=$(echo "$DSN_RESPONSE" | tail -n1)
+          DSN_BODY=$(echo "$DSN_RESPONSE" | head -n -1)
+          
+          if [ "$DSN_STATUS" = "200" ]; then
+            # Extract the DSN from the first key
+            DSN=$(echo "$DSN_BODY" | jq -r '.[0].dsn.public // empty')
+            echo "Debug: Found DSN: ${DSN:0:50}..." # Show first 50 chars for security
+            
+            # Parse DSN to get the project ID and key
+            if [[ $DSN =~ https://([^@]+)@([^/]+)/([0-9]+) ]]; then
+              SENTRY_KEY="${BASH_REMATCH[1]}"
+              SENTRY_HOST="${BASH_REMATCH[2]}"
+              PROJECT_ID="${BASH_REMATCH[3]}"
+              
+              # Call Sentry API to create issue using the store endpoint with proper auth
+              RESPONSE=$(curl -s -w "\n%{http_code}" \
+                -H "X-Sentry-Auth: Sentry sentry_version=7, sentry_key=$SENTRY_KEY" \
+                -H "Content-Type: application/json" \
+                -X POST \
+                --data "${PAYLOAD}" \
+                "https://${SENTRY_HOST}/api/${PROJECT_ID}/store/")
+            else
+              echo "Error: Could not parse DSN"
+              exit 1
+            fi
+          else
+            echo "Error: Could not retrieve project DSN. Status: $DSN_STATUS"
+            echo "Response: $DSN_BODY"
+            exit 1
+          fi
+
           # Extract HTTP status code from response
           HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
           RESPONSE_BODY=$(echo "$RESPONSE" | head -n -1)
-          
+
           echo "HTTP Status: $HTTP_STATUS"
-          
+
           if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "201" ]; then
             # Extract issue ID from response
             ISSUE_ID=$(echo "$RESPONSE_BODY" | jq -r '.id // empty')

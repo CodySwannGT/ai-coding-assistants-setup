@@ -471,6 +471,12 @@ jobs:
 
           export VERSION TAG="v$VERSION"
 
+          # Update package.json with new version
+          if [ -f package.json ]; then
+            npm version $VERSION --no-git-tag-version --allow-same-version
+            echo "Updated package.json to version $VERSION"
+          fi
+
           log_release_event "version_determination" "completed" "Version determined successfully" \
             "version" "$VERSION" \
             "bump_type" "${BUMP_TYPE:-custom}"

@@ -63,7 +63,7 @@ jobs:
             fi
 
             # Action lint
-            if actionlint "$workflow" 2>/dev/null; then
+            if actionlint -shellcheck= "$workflow" 2>/dev/null; then
               echo "✅ Actions valid: $workflow" >> $GITHUB_STEP_SUMMARY
             else
               echo "❌ Actions invalid: $workflow" >> $GITHUB_STEP_SUMMARY

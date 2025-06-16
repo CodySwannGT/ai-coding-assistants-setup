@@ -167,6 +167,100 @@ The following scripts will be added (existing scripts are preserved):
 
 These are placeholder scripts that ensure your CI/CD workflows can run immediately. Replace them with your actual commands as you implement each tool.
 
+### Customizing Lint and Format Rules
+
+The setup creates **default configuration files** for ESLint and Prettier, but **projects are free to customize or replace these entirely** with their own rules:
+
+#### ESLint Configuration
+
+The default `.eslintrc.json` provides basic rules, but you can:
+
+```bash
+# Replace with your existing ESLint config
+cp your-existing/.eslintrc.json .eslintrc.json
+
+# Or extend/modify the generated config
+# Edit .eslintrc.json to add your custom rules, plugins, and extends
+```
+
+**Example custom configuration:**
+
+```json
+{
+  "extends": [
+    "eslint:recommended",
+    "@typescript-eslint/recommended",
+    "your-company/eslint-config"
+  ],
+  "plugins": ["your-custom-plugin"],
+  "rules": {
+    "your-custom-rule": "error",
+    "indent": ["error", 2],
+    "quotes": ["error", "single"]
+  }
+}
+```
+
+#### Prettier Configuration
+
+The default `.prettierrc.json` uses standard formatting, but you can:
+
+```bash
+# Replace with your existing Prettier config
+cp your-existing/.prettierrc.json .prettierrc.json
+
+# Or customize the generated config
+# Edit .prettierrc.json with your team's preferences
+```
+
+**Example custom configuration:**
+
+```json
+{
+  "semi": false,
+  "singleQuote": true,
+  "tabWidth": 4,
+  "trailingComma": "all",
+  "printWidth": 100,
+  "useTabs": false
+}
+```
+
+#### Using Existing Configuration
+
+If your project already has lint/format configurations:
+
+1. **Keep your existing files** - The setup won't overwrite existing `.eslintrc.*` or `.prettierrc.*` files
+2. **Update package.json scripts** - Ensure your `lint` and `format:check` scripts work with your configurations
+3. **Verify CI compatibility** - Test that your custom rules work with the CI/CD workflows
+
+#### Framework-Specific Configurations
+
+The setup supports any ESLint/Prettier configuration, including:
+
+- **React**: `eslint-plugin-react`, `@typescript-eslint/parser`
+- **Vue**: `eslint-plugin-vue`, `@vue/eslint-config-prettier`
+- **Angular**: `@angular-eslint/eslint-plugin`
+- **Node.js**: `eslint-plugin-node`
+- **Custom company standards**: Your internal ESLint configs
+
+#### Validation
+
+After customizing your rules, verify they work with the CI system:
+
+```bash
+# Test your custom lint configuration
+npm run lint
+
+# Test your custom format configuration
+npm run format:check
+
+# Run a complete quality check
+npm run test && npm run lint && npm run format:check
+```
+
+The AI Coding Assistants Setup provides the **infrastructure and automation**, while giving you **complete freedom** to define your code style and quality standards.
+
 ### Optional Dependencies
 
 After running the setup, you may want to install these development tools that the configuration files support:
@@ -481,6 +575,8 @@ Performance validation:
 ## 📚 Documentation
 
 - [Environment Variables Reference](./docs/ENVIRONMENT_VARS.md) - Complete list of all environment variables and secrets
+- [GitHub Repository Setup Guide](./docs/GITHUB_SETUP.md) - Comprehensive GitHub CLI commands for branch protection, status checks, and Copilot configuration
+- [Third-Party Services Setup Guide](./docs/THIRD_PARTY_SETUP.md) - CLI-based setup instructions for Jira, Sentry, SonarCloud, Snyk, K6, and other integrations
 
 ### 🚀 Deployment and Load Testing Pattern
 

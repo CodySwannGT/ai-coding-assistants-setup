@@ -1,21 +1,24 @@
 # Project Context and Configuration
 
 ## Project Overview
+
 @README.md
 
 ## Complete Documentation
+
 @docs/
 
 IMPORTANT: Prefer small files and functions to reduce token and context usage.
 
 ## Project Standards
+
 Prefer immutable data structures, functional programming patterns, and TypeScript for type safety.
 Follow best practices for clean, modular and maintainable code while also keeping the solutions simple and efficient.
 
 See @package.json for dependencies, scripts and package manager.
 
-
 Follow lint rules found in one of the following files:
+
 - @eslint.config.js (flat config - new format)
 - @.eslintrc.js
 - @.eslintrc.cjs
@@ -26,6 +29,7 @@ Follow lint rules found in one of the following files:
 - @package.json (eslintConfig field)
 
 Follow formatting rules found in one of the following files:
+
 - @prettier.config.js
 - @.prettierrc.js
 - @.prettierrc.cjs
@@ -36,11 +40,13 @@ Follow formatting rules found in one of the following files:
 - @package.json (prettier field)
 
 Follow TypeScript rules found in one of the following files:
+
 - @tsconfig.json
 - @tsconfig.cjs.json
 - @tsconfig.mjs.json
 
 Follow commit message conventions found in:
+
 - @.commitlintrc.js
 - @.commitlintrc.cjs
 - @.commitlintrc.yaml
@@ -57,11 +63,13 @@ I'm configured to use a dual memory system - both this CLAUDE.md file and a know
 ### Memory System Guidelines
 
 1. **Initialization Process**
+
    - At the start of each conversation, silently use `read_graph` to load existing memories
    - Cross-reference information from both this file and the knowledge graph
    - Build a complete mental model combining both sources
 
 2. **Memory Collection Strategy**
+
    - While conversing, identify important information to preserve:
      - Project architecture and patterns
      - Coding standards and conventions
@@ -70,12 +78,14 @@ I'm configured to use a dual memory system - both this CLAUDE.md file and a know
      - Decision rationales and technical context
 
 3. **Memory Storage Protocol**
+
    - For important information:
      - Update this CLAUDE.md file when using `/memory` commands
      - Simultaneously update the knowledge graph using its MCP tools
      - Structure information properly in both systems
 
 4. **Memory Graph Structure**
+
    - **Entities**: Create for major components, people, or concepts
      - Main entity types: Project, Component, User, Mode
      - Be specific and consistent in naming
@@ -94,11 +104,13 @@ I'm configured to use a dual memory system - both this CLAUDE.md file and a know
 ## RooCode Integration
 
 ### Modes Configuration
+
 The project uses the following custom modes defined in:
 
 @.roomodes
 
 ### Global Rules
+
 These global rules apply across all modes:
 
 @.roo/rules/
@@ -124,6 +136,38 @@ RooCode is also configured to use the same knowledge graph at `.ai/memory.jsonl`
 4. Recognize and utilize memories created by RooCode
 5. Create memories that RooCode can access using the defined structure
 
+## Git Commit and PR Requirements
+
+**IMPORTANT**: This project enforces AI-only commits and PRs through git hooks.
+
+### When creating commits:
+
+- Always include the Claude signature in your commit messages
+- The commit MUST contain: `Co-Authored-By: Claude <noreply@anthropic.com>`
+- This is automatically added when using `/git-commit` command
+
+### When creating Pull Requests:
+
+- Always include the AI signature in the PR body
+- The PR body MUST contain: `🤖 Generated with [Claude Code](https://claude.ai/code)`
+- Include this signature at the end of your PR description
+- The pre-push hook will block pushes if the PR doesn't have AI signatures
+
+### Example PR body format:
+
+```
+## Summary
+- Brief description of changes
+
+## Changes
+- List of specific changes made
+
+## Test plan
+- How to test these changes
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+```
+
 ## Working Instructions
 
 When assisting with this project:
@@ -135,3 +179,4 @@ When assisting with this project:
 5. Continuously update both memory systems with new information
 6. Follow the role definition and constraints of the selected mode
 7. Always maintain context across conversations through memory synchronization
+8. Always use AI signatures in commits and PRs as required by git hooks

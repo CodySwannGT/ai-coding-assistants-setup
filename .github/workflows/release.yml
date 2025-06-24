@@ -301,7 +301,11 @@ jobs:
   version:
     name: 📦 Version Management
     needs: [release_init, quality, release_approval]
-    if: always() && !cancelled() && needs.quality.result == 'success' && (needs.release_approval.result == 'success' || needs.release_approval.result == 'skipped')
+    if: |
+      always() &&
+      !cancelled() &&
+      needs.quality.result == 'success' &&
+      (needs.release_approval.result == 'success' || needs.release_approval.result == 'skipped')
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -758,7 +762,11 @@ jobs:
   release_attestation:
     name: 📜 Release Attestation
     needs: [release_init, version, quality, release_signing, release_approval]
-    if: always() && !cancelled() && needs.version.result == 'success'
+    if: |
+      always() &&
+      !cancelled() &&
+      needs.version.result == 'success' &&
+      (needs.release_signing.result == 'success' || needs.release_signing.result == 'skipped')
     runs-on: ubuntu-latest
     outputs:
       attestation_created: ${{ steps.attestation.outputs.created }}

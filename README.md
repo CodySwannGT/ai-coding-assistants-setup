@@ -46,6 +46,42 @@ npx ai-coding-assistants-setup --verbose           # Show detailed output
 
 AI Coding Assistants Setup is a comprehensive toolkit that transforms your development workflow with enterprise-grade automation, quality assurance, and AI-powered assistance. This project provides production-ready configurations for Claude Code, Roo Code, and other AI assistants, along with automated workflows for code quality, security scanning, performance testing, and release management.
 
+### 🎯 The Philosophy: AI-First Development with Guardrails
+
+This project embodies a dual-purpose philosophy that revolutionizes how teams work with AI:
+
+#### 1. **Making AI Development Easier** 🚀
+
+We remove friction from AI-assisted development by providing:
+
+- **Pre-configured AI environments** with optimal settings for Claude Code and Roo Code
+- **Context-aware configurations** (CLAUDE.md, .roomodes) that help AI understand your project
+- **Persistent memory systems** that maintain context across AI conversations
+- **MCP server integrations** for enhanced AI capabilities (GitHub, AWS docs, browsers, etc.)
+- **Custom AI commands and workflows** tailored for common development tasks
+
+#### 2. **Enforcing Quality Guardrails on AI Output** 🛡️
+
+We ensure AI-generated code meets enterprise standards through:
+
+- **Automated quality checks** that validate AI's code (linting, formatting, type safety)
+- **Multi-layered security scanning** to catch vulnerabilities AI might introduce
+- **AI-powered code reviews** where AI reviews its own output for best practices
+- **Commit/PR enforcement** that tracks and requires AI attribution
+- **Compliance frameworks** for regulated industries (SOC2, ISO27001, HIPAA)
+- **Performance monitoring** to ensure AI's code meets production standards
+
+#### The Result: "Use AI for Everything, Verify Everything"
+
+This creates a virtuous cycle where:
+
+- Developers get **10x productivity** from AI assistance
+- Teams maintain **enterprise-grade quality** standards
+- Organizations gain **full auditability** of AI contributions
+- Code remains **consistent and maintainable** across human and AI developers
+
+The **AI-only commit/PR enforcement** is a perfect example - it encourages teams to leverage AI for all development while ensuring complete transparency and traceability of AI-generated code.
+
 ### 🤖 AI Coding Assistants
 
 #### Claude Code
@@ -115,6 +151,7 @@ AI Coding Assistants Setup is a comprehensive toolkit that transforms your devel
 
 - **Pre-commit Hooks**: Automated linting, formatting, and security checks
 - **Commit Message Standards**: Conventional commits with Jira integration
+- **AI-Only Development**: Enforces AI-generated commits and pull requests
 - **Branch Protection**: Automated checks before allowing merges
 - **Change Detection**: Smart workflows that only run when needed
 
@@ -261,6 +298,58 @@ npm run test && npm run lint && npm run format:check
 
 The AI Coding Assistants Setup provides the **infrastructure and automation**, while giving you **complete freedom** to define your code style and quality standards.
 
+### AI-Only Development Mode
+
+This setup includes an innovative feature that enforces AI-generated commits and pull requests through git hooks. This ensures consistent, high-quality code contributions while leveraging AI capabilities.
+
+#### How It Works
+
+1. **Commit Enforcement** (`.husky/commit-msg`):
+
+   - Blocks commits that don't include AI signatures
+   - Requires commits to include patterns like:
+     - `Co-Authored-By: Claude <noreply@anthropic.com>`
+     - `Generated with Claude Code`
+     - GitHub Copilot signatures
+     - 🤖 emoji indicators
+
+2. **PR Enforcement** (`.husky/pre-push`):
+   - Checks for AI-generated PRs before allowing pushes
+   - Verifies PR body contains AI signatures
+   - Requires GitHub CLI (`gh`) for PR verification
+   - Gracefully handles non-GitHub repos
+
+#### Benefits
+
+- **Consistency**: All code follows AI-assisted best practices
+- **Quality**: Leverages AI for better code structure and documentation
+- **Automation**: Reduces manual coding errors
+- **Compliance**: Ensures team adheres to AI-first development
+
+#### Usage
+
+When using Claude Code:
+
+```bash
+# Commits automatically include the required signature
+/git-commit
+
+# PRs created through Claude include the signature
+# The PR body will contain: 🤖 Generated with [Claude Code](https://claude.ai/code)
+```
+
+#### Disabling AI Enforcement
+
+If you want to allow human-generated commits/PRs, simply remove or modify the hooks:
+
+```bash
+# To disable commit enforcement
+rm .husky/commit-msg
+
+# To disable PR enforcement
+rm .husky/pre-push
+```
+
 ### Optional Dependencies
 
 After running the setup, you may want to install these development tools that the configuration files support:
@@ -329,7 +418,8 @@ Copy these files and directories to your project:
 #### Git Hooks
 
 - `.husky/pre-commit` - Pre-commit checks (linting, formatting, tests)
-- `.husky/commit-msg` - Commit message validation and Jira key detection
+- `.husky/commit-msg` - Commit message validation, Jira key detection, and AI-generated commit enforcement
+- `.husky/pre-push` - Pre-push checks to ensure PRs are AI-generated
 
 #### Claude Configuration
 
@@ -574,6 +664,8 @@ Performance validation:
 
 ## 📚 Documentation
 
+- [Git Hooks Documentation](./docs/GIT_HOOKS.md) - Detailed guide to Git hooks including AI-only development enforcement
+- [Quality Workflow Documentation](./docs/QUALITY.md) - Comprehensive guide to the quality.yml workflow with all jobs, inputs, and features
 - [Environment Variables Reference](./docs/ENVIRONMENT_VARS.md) - Complete list of all environment variables and secrets
 - [GitHub Repository Setup Guide](./docs/GITHUB_SETUP.md) - Comprehensive GitHub CLI commands for branch protection, status checks, and Copilot configuration
 - [Third-Party Services Setup Guide](./docs/THIRD_PARTY_SETUP.md) - CLI-based setup instructions for Jira, Sentry, SonarCloud, Snyk, K6, and other integrations

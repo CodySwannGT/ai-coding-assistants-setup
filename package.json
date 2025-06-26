@@ -94,7 +94,7 @@
     "*.{js,ts,tsx}": [
       "eslint --quiet --cache --fix"
     ],
-    "*.{json,js,ts,jsx,tsx,html,md}": [
+    "*.{json,js,ts,jsx,tsx,html,md,yml,yaml}": [
       "prettier --write"
     ]
   },

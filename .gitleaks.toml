@@ -1,0 +1,27 @@
+# Gitleaks configuration file
+# https://github.com/gitleaks/gitleaks#configuration
+
+[extend]
+# useDefault will extend the base configuration with the default gitleaks config
+useDefault = true
+
+[allowlist]
+# Add paths that should be ignored during scanning
+paths = [
+  ".gitleaks.toml",
+  ".env.example",
+  ".env.template",
+  "examples/",
+  "fixtures/",
+  "testdata/",
+  "docs/",
+]
+
+
+# Additional custom rules can be added here
+# [[rules]]
+# id = "custom-rule"
+# description = "Custom rule description"
+# regex = '''your-regex-pattern'''
+# keywords = ["keyword1", "keyword2"]
+

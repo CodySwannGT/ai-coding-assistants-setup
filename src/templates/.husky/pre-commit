@@ -20,6 +20,38 @@ fi
 
 echo "📦 Using package manager: $PACKAGE_MANAGER"
 
+# Check for Gitleaks and run secret detection
+echo "🔐 Checking for secrets with Gitleaks..."
+if command -v gitleaks >/dev/null 2>&1; then
+  # Run gitleaks on staged files
+  gitleaks protect --staged --redact -v
+  if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Secrets detected in staged files!"
+    echo ""
+    echo "Please remove any secrets from your code before committing."
+    echo "If this is a false positive, you can add it to .gitleaksignore"
+    echo ""
+    exit 1
+  fi
+  echo "✅ No secrets detected"
+else
+  echo ""
+  echo "⚠️  WARNING: Gitleaks is not installed!"
+  echo ""
+  echo "Gitleaks helps prevent secrets from being committed to your repository."
+  echo ""
+  echo "To install Gitleaks:"
+  echo "  macOS:    brew install gitleaks"
+  echo "  Windows:  scoop install gitleaks  # or choco install gitleaks"
+  echo "  Linux:    See https://github.com/gitleaks/gitleaks#installing"
+  echo ""
+  echo "After installation, your commits will be automatically scanned for secrets."
+  echo ""
+  echo "Continuing without secret scanning..."
+  echo ""
+fi
+
 # Run type check on entire project (can't be done incrementally)
 echo "🔍 Running type check..."
 $RUNNER typecheck

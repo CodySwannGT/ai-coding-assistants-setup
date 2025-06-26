@@ -68,7 +68,7 @@
     "winston": "^3.11.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^18.4.3",
+    "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^18.4.3",
     "@types/fs-extra": "^11.0.4",
     "@types/inquirer": "9.0.8",

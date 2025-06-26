@@ -17,6 +17,10 @@ yarn-error.log*
 coverage/
 **/.claude/settings.local.json
 
+# Gitleaks
+gitleaks-report.json
+gitleaks-report.sarif
+
 # Playwright test artifacts
 **/playwright-report/
 **/test-results/

@@ -14,6 +14,7 @@ The project uses [Husky](https://typicode.github.io/husky/) to manage Git hooks 
 
 **Checks performed**:
 
+- Secret detection with Gitleaks (if installed)
 - Linting (`npm run lint`)
 - Code formatting (`npm run format:check`)
 - Type checking (`npm run typecheck`)
@@ -25,6 +26,21 @@ The project uses [Husky](https://typicode.github.io/husky/) to manage Git hooks 
 - Only runs checks if the corresponding scripts exist in package.json
 - Provides clear feedback on which checks are running
 - Shows helpful error messages when checks fail
+
+#### Secret Detection with Gitleaks
+
+The pre-commit hook includes automated secret scanning using Gitleaks:
+
+- **Automatic detection**: Scans staged files for secrets before commit
+- **Graceful fallback**: If Gitleaks isn't installed, shows a warning but continues
+- **Configuration**: Uses `.gitleaks.toml` for custom rules and `.gitleaksignore` for false positives
+- **Installation instructions**: Provides platform-specific installation commands
+
+To install Gitleaks:
+
+- macOS: `brew install gitleaks`
+- Windows: `scoop install gitleaks` or `choco install gitleaks`
+- Linux: See [Gitleaks installation guide](https://github.com/gitleaks/gitleaks#installing)
 
 **To skip** (use sparingly):
 

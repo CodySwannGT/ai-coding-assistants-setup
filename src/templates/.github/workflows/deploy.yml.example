@@ -179,7 +179,7 @@ jobs:
                 echo "The AWS account needs to be bootstrapped for CDK deployments."
                 echo "Please run the following command locally with appropriate credentials:"
                 echo ""
-                echo "export AWS_PROFILE=gemini-dev-v2"
+                echo "export AWS_PROFILE=xxxxxx"
                 echo "npx cdk bootstrap aws://$AWS_ACCOUNT_ID/us-east-1"
                 echo ""
                 echo "Then re-run this workflow."

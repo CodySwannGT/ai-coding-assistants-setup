@@ -25,7 +25,7 @@ if ! gh repo view &> /dev/null; then
 fi
 
 # Check if there's an open PR for this branch
-PR_INFO=$(gh pr view --json number,body,author 2>/dev/null || echo "")
+PR_INFO=$(gh pr view --json number 2>/dev/null || echo "")
 
 if [ -z "$PR_INFO" ]; then
   # No PR exists yet, check if we're creating one
@@ -41,8 +41,8 @@ if [ -z "$PR_INFO" ]; then
   exit 0
 fi
 
-# Extract PR body with better error handling
-PR_BODY=$(echo "$PR_INFO" | jq -r '.body // ""' 2>/dev/null || echo "")
+# Extract PR body using gh's built-in jq functionality
+PR_BODY=$(gh pr view --json body --jq '.body' 2>/dev/null || echo "")
 if [ -z "$PR_BODY" ] && [ -n "$PR_INFO" ]; then
   echo ""
   echo "❌ Error parsing PR information from GitHub"
@@ -61,7 +61,7 @@ if [ -z "$PR_BODY" ] && [ -n "$PR_INFO" ]; then
   exit 1
 fi
 
-PR_AUTHOR=$(echo "$PR_INFO" | jq -r '.author.login // ""' 2>/dev/null || echo "")
+PR_AUTHOR=$(gh pr view --json author --jq '.author.login' 2>/dev/null || echo "")
 
 # Check for AI-generated PR patterns
 AI_PR_PATTERNS=(

@@ -132,3 +132,7 @@ When assisting with this project:
 6. Follow the role definition and constraints of the selected mode
 7. Always maintain context across conversations through memory synchronization
 8. Always use AI signatures in commits and PRs as required by git hooks
+
+# CRITICAL
+
+1. Do not attempt to bypass any hooks or rules or checks suchas as no-verify or force push

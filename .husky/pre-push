@@ -41,9 +41,27 @@ if [ -z "$PR_INFO" ]; then
   exit 0
 fi
 
-# Extract PR body
-PR_BODY=$(echo "$PR_INFO" | jq -r '.body // ""')
-PR_AUTHOR=$(echo "$PR_INFO" | jq -r '.author.login // ""')
+# Extract PR body with better error handling
+PR_BODY=$(echo "$PR_INFO" | jq -r '.body // ""' 2>/dev/null || echo "")
+if [ -z "$PR_BODY" ] && [ -n "$PR_INFO" ]; then
+  echo ""
+  echo "❌ Error parsing PR information from GitHub"
+  echo ""
+  echo "This might be due to:"
+  echo "  - Invalid JSON response from GitHub API"
+  echo "  - Network connectivity issues"
+  echo "  - GitHub API rate limiting"
+  echo ""
+  echo "Try running: gh pr view --json number,body,author"
+  echo "If that fails, you may need to:"
+  echo "  1. Re-authenticate with: gh auth login"
+  echo "  2. Check your internet connection"
+  echo "  3. Wait a few minutes if rate limited"
+  echo ""
+  exit 1
+fi
+
+PR_AUTHOR=$(echo "$PR_INFO" | jq -r '.author.login // ""' 2>/dev/null || echo "")
 
 # Check for AI-generated PR patterns
 AI_PR_PATTERNS=(

@@ -1,0 +1,11 @@
+# Gitleaks ignore file
+# Add false positives here, one per line
+# Format: <file>:<line>:<commit>:<secret>
+#
+# Example:
+# path/to/file.js:aws_access_key_id = "AKIAIOSFODNN7EXAMPLE":
+# README.md:export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:
+#
+# You can also ignore entire files or paths:
+# tests/fixtures/*
+# **/*test*

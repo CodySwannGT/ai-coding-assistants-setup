@@ -4,131 +4,128 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: "Target environment for the release"
+        description: 'Target environment for the release'
         required: true
         type: string
       skip_jobs:
-        description: "Comma-separated list of jobs to skip (test,type-check,lint,format,audit,cdk-synth)"
+        description: 'Comma-separated list of jobs to skip (test,type-check,lint,format,audit,cdk-synth)'
         required: false
         type: string
-        default: ""
+        default: ''
       force_release:
-        description: "Force create a release even if no changes detected"
+        description: 'Force create a release even if no changes detected'
         required: false
         type: boolean
         default: false
       release_strategy:
-        description: "Version strategy: standard-version, semantic, calendar, custom"
+        description: 'Version strategy: standard-version, semantic, calendar, custom'
         required: false
         type: string
-        default: "standard-version"
+        default: 'standard-version'
       prerelease:
-        description: "Create pre-release (alpha, beta, rc)"
+        description: 'Create pre-release (alpha, beta, rc)'
         required: false
         type: string
-        default: ""
+        default: ''
       custom_version:
-        description: "Custom version number (only for custom strategy)"
+        description: 'Custom version number (only for custom strategy)'
         required: false
         type: string
-        default: ""
+        default: ''
       jira_project_key:
-        description: "JIRA project key for release creation"
+        description: 'JIRA project key for release creation'
         required: false
         type: string
-        default: ""
+        default: ''
       release_notes_template:
-        description: "Template for release notes (default, detailed, security)"
+        description: 'Template for release notes (default, detailed, security)'
         required: false
         type: string
-        default: "default"
+        default: 'default'
       debug:
-        description: "Enable debug logging"
+        description: 'Enable debug logging'
         required: false
         type: boolean
         default: false
       require_approval:
-        description: "Require approval before creating release"
+        description: 'Require approval before creating release'
         required: false
         type: boolean
         default: false
       approval_environment:
-        description: "GitHub environment for approval (if require_approval is true)"
+        description: 'GitHub environment for approval (if require_approval is true)'
         required: false
         type: string
-        default: ""
+        default: ''
       require_signatures:
-        description: "Require signed releases (needs RELEASE_SIGNING_KEY secret)"
+        description: 'Require signed releases (needs RELEASE_SIGNING_KEY secret)'
         required: false
         type: boolean
         default: false
       check_dependencies:
-        description: "Check service dependencies before release"
+        description: 'Check service dependencies before release'
         required: false
         type: boolean
         default: false
       override_blackout:
-        description: "Override blackout period restrictions"
+        description: 'Override blackout period restrictions'
         required: false
         type: boolean
         default: false
       emergency_release:
-        description: "Mark as emergency release"
+        description: 'Mark as emergency release'
         required: false
         type: boolean
         default: false
       generate_sbom:
-        description: "Generate Software Bill of Materials"
+        description: 'Generate Software Bill of Materials'
         required: false
         type: boolean
         default: false
       node_version:
-        description: "Node.js version to use"
+        description: 'Node.js version to use'
         required: true
         type: string
       package_manager:
-        description: "Package manager to use (npm, yarn, pnpm)"
+        description: 'Package manager to use (npm, yarn, pnpm)'
         required: false
         type: string
-        default: "npm"
+        default: 'npm'
       sourcemaps:
-        description: "Path to source maps for Sentry release (optional)"
+        description: 'Path to source maps for Sentry release (optional)'
         required: false
         type: string
-        default: ""
+        default: ''
     outputs:
       version:
-        description: "The new version number"
+        description: 'The new version number'
         value: ${{ jobs.version.outputs.version }}
       tag:
-        description: "The new version tag"
+        description: 'The new version tag'
         value: ${{ jobs.version.outputs.tag }}
       release_url:
-        description: "URL of the created GitHub release"
+        description: 'URL of the created GitHub release'
         value: ${{ jobs.github_release.outputs.release_url }}
       release_id:
-        description: "Release correlation ID for tracking"
+        description: 'Release correlation ID for tracking'
         value: ${{ jobs.release_init.outputs.correlation_id }}
-      release_metrics_url:
-        description: "URL to release metrics dashboard"
-        value: ${{ jobs.release_analytics.outputs.dashboard_url }}
       signed:
-        description: "Whether the release was signed"
+        description: 'Whether the release was signed'
         value: ${{ jobs.release_signing.outputs.signed }}
       attestation_url:
-        description: "URL to release attestation"
+        description: 'URL to release attestation'
         value: ${{ jobs.release_attestation.outputs.attestation_url }}
       compliance_status:
-        description: "Compliance validation status"
+        description: 'Compliance validation status'
         value: ${{ jobs.release_compliance.outputs.status }}
       sentry_release_url:
-        description: "URL to Sentry release"
+        description: 'URL to Sentry release'
         value: ${{ jobs.sentry_release.outputs.sentry_release_url }}
       jira_release_created:
-        description: "Whether the Jira release was created"
+        description: 'Whether the Jira release was created'
         value: ${{ jobs.jira_release.outputs.jira_release_created }}
       jira_release_url:
-        description: "URL to Jira release"
+        description: 'URL to Jira release'
         value: ${{ jobs.jira_release.outputs.jira_release_url }}
     secrets:
       RELEASE_SIGNING_KEY:
@@ -305,9 +302,9 @@ jobs:
     name: 📦 Version Management
     needs: [release_init, quality, release_approval]
     if: |
-      always() && 
-      !cancelled() && 
-      needs.quality.result == 'success' && 
+      always() &&
+      !cancelled() &&
+      needs.quality.result == 'success' &&
       (needs.release_approval.result == 'success' || needs.release_approval.result == 'skipped')
     runs-on: ubuntu-latest
     outputs:
@@ -470,12 +467,6 @@ jobs:
           echo "bump_type=${BUMP_TYPE:-custom}" >> $GITHUB_OUTPUT
 
           export VERSION TAG="v$VERSION"
-
-          # Update package.json with new version
-          if [ -f package.json ]; then
-            npm version $VERSION --no-git-tag-version --allow-same-version
-            echo "Updated package.json to version $VERSION"
-          fi
 
           log_release_event "version_determination" "completed" "Version determined successfully" \
             "version" "$VERSION" \
@@ -648,7 +639,7 @@ jobs:
           gpg --list-secret-keys
 
           # Configure git
-          git config --global user.signingkey "${{ secrets.SIGNING_KEY_ID || secrets.RELEASE_SIGNING_KEY_ID }}"
+          git config --global user.signingkey "${{ secrets.SIGNING_KEY_ID }}"
           git config --global commit.gpgsign true
           git config --global tag.gpgsign true
 
@@ -665,7 +656,7 @@ jobs:
             if [ -f "$file" ]; then
               # Create detached signature
               gpg --armor --detach-sign \
-                --local-user "${{ secrets.SIGNING_KEY_ID || secrets.RELEASE_SIGNING_KEY_ID }}" \
+                --local-user "${{ secrets.SIGNING_KEY_ID }}" \
                 --output "$sig_file" \
                 "$file"
 
@@ -770,10 +761,10 @@ jobs:
   # Release attestation
   release_attestation:
     name: 📜 Release Attestation
-    needs: [release_init, version, quality, release_signing]
+    needs: [release_init, version, quality, release_signing, release_approval]
     if: |
-      always() && 
-      !cancelled() && 
+      always() &&
+      !cancelled() &&
       needs.version.result == 'success' &&
       (needs.release_signing.result == 'success' || needs.release_signing.result == 'skipped')
     runs-on: ubuntu-latest
@@ -921,7 +912,7 @@ jobs:
             release-attestation.json
           retention-days: 365
 
-  # Create GitHub Release - Now independent of signing/attestation (unless they fail)
+  # Create GitHub Release with enterprise features
   github_release:
     name: 🎉 Create GitHub Release
     needs: [release_init, version, release_signing, release_attestation]
@@ -929,15 +920,9 @@ jobs:
       always() &&
       !cancelled() &&
       needs.version.result == 'success' &&
-      needs.release_attestation.result == 'success' &&
-      (needs.release_signing.result == 'success' || needs.release_signing.result == 'skipped')
-    runs-on: ubuntu-latest
-    if: |
-      always() && 
-      !cancelled() && 
-      needs.version.result == 'success' &&
       (needs.release_signing.result == 'success' || needs.release_signing.result == 'skipped') &&
       (needs.release_attestation.result == 'success' || needs.release_attestation.result == 'skipped')
+    runs-on: ubuntu-latest
     outputs:
       release_url: ${{ steps.create_release.outputs.html_url }}
       release_id: ${{ steps.create_release.outputs.id }}
@@ -950,7 +935,7 @@ jobs:
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: "*-${{ github.run_id }}"
+          pattern: '*-${{ github.run_id }}'
 
       - name: Generate Release Notes
         id: release_notes
@@ -1038,22 +1023,10 @@ jobs:
             -d "$RELEASE_DATA" \
             "https://api.github.com/repos/${{ github.repository }}/releases")
 
-          # Check if the request was successful
-          if echo "$RESPONSE" | jq -e '.message' > /dev/null 2>&1; then
-            echo "Error creating release: $(echo "$RESPONSE" | jq -r '.message')"
-            echo "Full response: $RESPONSE"
-            exit 1
-          fi
-
           # Extract release information
           echo "$RESPONSE" | jq -r '.html_url' > .release_url
           echo "$RESPONSE" | jq -r '.id' > .release_id
           echo "$RESPONSE" | jq -r '.upload_url' > .upload_url
-
-          # Verify the tag was created
-          echo "Release created successfully!"
-          echo "Release URL: $(cat .release_url)"
-          echo "Tag: ${{ needs.version.outputs.tag }}"
 
           echo "html_url=$(cat .release_url)" >> $GITHUB_OUTPUT
           echo "id=$(cat .release_id)" >> $GITHUB_OUTPUT
@@ -1108,15 +1081,15 @@ jobs:
               "${UPLOAD_URL}?name=sbom.json"
           fi
 
-  # Sentry Release Creation - Now independent
+  # Sentry Release Creation
   sentry_release:
     name: 🚨 Create Sentry Release
-    needs: [release_init, version]
+    needs: [release_init, version, github_release]
     runs-on: ubuntu-latest
     if: |
       always() &&
       !cancelled() &&
-      needs.version.result == 'success'
+      needs.github_release.result == 'success'
     outputs:
       sentry_release_created: ${{ steps.set_outputs.outputs.created }}
       sentry_release_url: ${{ steps.set_outputs.outputs.url }}
@@ -1129,21 +1102,12 @@ jobs:
         id: check_config
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
         run: |
-          # Check if all required Sentry configuration is available
+          # Check if all required Sentry secrets are available
           if [ -z "$SENTRY_AUTH_TOKEN" ] || [ -z "$SENTRY_ORG" ] || [ -z "$SENTRY_PROJECT" ]; then
             echo "⚠️ Sentry configuration incomplete - skipping Sentry release" >> $GITHUB_STEP_SUMMARY
-            if [ -z "$SENTRY_AUTH_TOKEN" ]; then
-              echo "  - Missing: SENTRY_AUTH_TOKEN secret" >> $GITHUB_STEP_SUMMARY
-            fi
-            if [ -z "$SENTRY_ORG" ]; then
-              echo "  - Missing: SENTRY_ORG variable" >> $GITHUB_STEP_SUMMARY
-            fi
-            if [ -z "$SENTRY_PROJECT" ]; then
-              echo "  - Missing: SENTRY_PROJECT variable" >> $GITHUB_STEP_SUMMARY
-            fi
             echo "configured=false" >> $GITHUB_OUTPUT
             # Set default outputs for skipped job
             echo "created=false" >> $GITHUB_OUTPUT
@@ -1159,8 +1123,8 @@ jobs:
         uses: getsentry/action-release@v1
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
         with:
           environment: ${{ inputs.environment }}
           version: ${{ needs.version.outputs.version }}
@@ -1177,8 +1141,8 @@ jobs:
           if [ -n "${{ inputs.sourcemaps }}" ]; then
             echo "- **Source Maps**: Uploaded from \`${{ inputs.sourcemaps }}\`" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "- **Organization**: ${{ vars.SENTRY_ORG }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Project**: ${{ vars.SENTRY_PROJECT }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Organization**: ${{ secrets.SENTRY_ORG }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Project**: ${{ secrets.SENTRY_PROJECT }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Set Outputs
         if: always()
@@ -1187,7 +1151,7 @@ jobs:
           # Set outputs based on whether Sentry was configured and successful
           if [ "${{ steps.check_config.outputs.configured }}" == "true" ] && [ "${{ steps.sentry.outcome }}" == "success" ]; then
             echo "created=true" >> $GITHUB_OUTPUT
-            echo "url=https://sentry.io/organizations/${{ vars.SENTRY_ORG }}/releases/${{ needs.version.outputs.version }}/" >> $GITHUB_OUTPUT
+            echo "url=https://sentry.io/organizations/${{ secrets.SENTRY_ORG }}/releases/${{ needs.version.outputs.version }}/" >> $GITHUB_OUTPUT
           else
             echo "created=false" >> $GITHUB_OUTPUT
             echo "url=" >> $GITHUB_OUTPUT
@@ -1209,14 +1173,8 @@ jobs:
       - name: Check Jira Configuration
         id: check
         run: |
-          if [[ -z "${JIRA_AUTOMATION_WEBHOOK}" ]] || [[ -z "${{ vars.JIRA_PROJECT_KEY }}" ]]; then
-            echo "⚠️ Jira configuration incomplete - skipping Jira release" >> $GITHUB_STEP_SUMMARY
-            if [[ -z "${JIRA_AUTOMATION_WEBHOOK}" ]]; then
-              echo "  - Missing: JIRA_AUTOMATION_WEBHOOK secret" >> $GITHUB_STEP_SUMMARY
-            fi
-            if [[ -z "${{ vars.JIRA_PROJECT_KEY }}" ]]; then
-              echo "  - Missing: JIRA_PROJECT_KEY variable" >> $GITHUB_STEP_SUMMARY
-            fi
+          if [[ -z "${JIRA_AUTOMATION_WEBHOOK}" ]]; then
+            echo "⚠️ Jira automation webhook not configured - skipping Jira release" >> $GITHUB_STEP_SUMMARY
             echo "has_jira_setup=false" >> $GITHUB_OUTPUT
           else
             echo "✅ Jira configuration verified" >> $GITHUB_STEP_SUMMARY
@@ -1226,14 +1184,14 @@ jobs:
         env:
           JIRA_AUTOMATION_WEBHOOK: ${{ secrets[env.JIRA_AUTOMATION_WEBHOOK_NAME] }}
 
-  # Create Jira Release - Now independent
+  # Create Jira Release
   jira_release:
     name: 📋 Create Jira Release
     runs-on: ubuntu-latest
     if: |
       always() &&
-      (needs.version.result == 'success' || needs.version.result == 'skipped') && 
       !cancelled() &&
+      (needs.version.result == 'success' || needs.version.result == 'skipped') &&
       needs.checks_jira_setup.outputs.has_jira_setup == 'true'
     needs: [version, checks_jira_setup]
     outputs:
@@ -1286,6 +1244,7 @@ jobs:
         github_release,
         sentry_release,
         jira_release,
+        release_approval,
       ]
     if: always()
     runs-on: ubuntu-latest
@@ -1296,7 +1255,7 @@ jobs:
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: "*-${{ github.run_id }}"
+          pattern: '*-${{ github.run_id }}'
 
       - name: Compliance Validation
         id: compliance
@@ -1526,7 +1485,8 @@ jobs:
           1. Review the release at ${{ needs.github_release.outputs.release_url || 'GitHub Releases page' }}
           2. Verify signatures if applicable
           3. Review compliance report
-          4. Monitor deployment if applicable
+          4. Deploy using your deployment workflow
+          5. Run load tests if needed
           EOF
 
           # Set workflow status

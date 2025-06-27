@@ -1,0 +1,126 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Get current branch name
+BRANCH_NAME=$(git branch --show-current)
+
+# Skip checks for main/master branches (usually protected anyway)
+if [ "$BRANCH_NAME" = "main" ] || [ "$BRANCH_NAME" = "master" ]; then
+  exit 0
+fi
+
+echo "🔍 Checking for AI-generated PR requirements..."
+
+# Check if gh CLI is installed
+if ! command -v gh &> /dev/null; then
+  echo "⚠️  GitHub CLI (gh) not found. Skipping PR checks."
+  echo "   Install with: brew install gh (macOS) or see https://cli.github.com"
+  exit 0
+fi
+
+# Check if we're in a GitHub repo
+if ! gh repo view &> /dev/null; then
+  echo "⚠️  Not a GitHub repository or not authenticated. Skipping PR checks."
+  exit 0
+fi
+
+# Check if there's an open PR for this branch
+PR_INFO=$(gh pr view --json number,body,author 2>/dev/null || echo "")
+
+if [ -z "$PR_INFO" ]; then
+  # No PR exists yet, check if we're creating one
+  echo "ℹ️  No PR found for branch '$BRANCH_NAME'."
+  echo ""
+  echo "📝 When you create a PR, it must be created by an AI assistant."
+  echo "   Use one of these methods:"
+  echo "   - Claude Code: claude -> /git-commit -> create PR"
+  echo "   - GitHub Copilot CLI"
+  echo "   - Other AI tools that create PRs"
+  echo ""
+  echo "✅ Push allowed. Remember to use AI to create the PR!"
+  exit 0
+fi
+
+# Extract PR body with better error handling
+PR_BODY=$(echo "$PR_INFO" | jq -r '.body // ""' 2>/dev/null || echo "")
+if [ -z "$PR_BODY" ] && [ -n "$PR_INFO" ]; then
+  echo ""
+  echo "❌ Error parsing PR information from GitHub"
+  echo ""
+  echo "This might be due to:"
+  echo "  - Invalid JSON response from GitHub API"
+  echo "  - Network connectivity issues"
+  echo "  - GitHub API rate limiting"
+  echo ""
+  echo "Try running: gh pr view --json number,body,author"
+  echo "If that fails, you may need to:"
+  echo "  1. Re-authenticate with: gh auth login"
+  echo "  2. Check your internet connection"
+  echo "  3. Wait a few minutes if rate limited"
+  echo ""
+  exit 1
+fi
+
+PR_AUTHOR=$(echo "$PR_INFO" | jq -r '.author.login // ""' 2>/dev/null || echo "")
+
+# Check for AI-generated PR patterns
+AI_PR_PATTERNS=(
+  "Generated with Claude Code"
+  "Generated with \[Claude Code\]"
+  "🤖 Generated with"
+  "Created by Claude"
+  "Created by GitHub Copilot"
+  "AI-generated"
+  "🤖"
+  "Auto-generated PR"
+)
+
+# Check for bot authors
+BOT_AUTHORS=(
+  "dependabot"
+  "renovate"
+  "claude-ai"
+  "copilot"
+)
+
+AI_DETECTED=false
+
+# Check PR body for AI patterns
+for pattern in "${AI_PR_PATTERNS[@]}"; do
+  if echo "$PR_BODY" | grep -qiE "$pattern"; then
+    AI_DETECTED=true
+    break
+  fi
+done
+
+# Check if author is a known bot
+if [ "$AI_DETECTED" = false ]; then
+  for bot in "${BOT_AUTHORS[@]}"; do
+    if echo "$PR_AUTHOR" | grep -qiE "$bot"; then
+      AI_DETECTED=true
+      break
+    fi
+  done
+fi
+
+if [ "$AI_DETECTED" = false ]; then
+  echo ""
+  echo "❌ Non-AI-generated PR detected!"
+  echo ""
+  echo "This project requires all PRs to be created by an AI assistant."
+  echo ""
+  echo "Current PR appears to be manually created."
+  echo "Please close this PR and recreate it using:"
+  echo "  - Claude Code: Use /git-commit command"
+  echo "  - GitHub Copilot CLI: Use 'gh copilot pr create'"
+  echo "  - Other AI assistants that add appropriate signatures"
+  echo ""
+  echo "PR body must include one of these AI signatures:"
+  echo "  - 🤖 Generated with [Claude Code]"
+  echo "  - Created by GitHub Copilot"
+  echo "  - Other AI-generated indicators"
+  echo ""
+  exit 1
+fi
+
+echo "✅ AI-generated PR verified!"

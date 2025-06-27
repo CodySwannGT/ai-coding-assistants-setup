@@ -767,6 +767,12 @@ jobs:
           echo "::warning::GitGuardian secret detection skipped - GITGUARDIAN_API_KEY not configured"
           echo "To enable secret detection, add GITGUARDIAN_API_KEY to your repository secrets"
 
+      - name: 🔐 Gitleaks Secret Detection
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}  # Optional: for using premium features
+
   license_compliance:
     name: 📜 FOSSA License Check
     runs-on: ubuntu-latest

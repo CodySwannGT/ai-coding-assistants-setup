@@ -1067,7 +1067,7 @@ jobs:
 
       - name: 💬 Comment code review results on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
@@ -1344,7 +1344,7 @@ jobs:
 
       - name: 💬 Comment security scan results on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
@@ -1756,7 +1756,7 @@ jobs:
     needs: [install_dependencies, lint, typecheck, test, test_unit, test_integration, test_e2e, format, build, npm_security_scan, sonarcloud, snyk, secret_scanning, license_compliance, code_quality_check, claude_security_scan, compliance_validation]
     steps:
       - name: 📝 Generate audit log
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const auditLog = {

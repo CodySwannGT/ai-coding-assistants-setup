@@ -200,7 +200,7 @@ jobs:
         working-directory: ${{ inputs.working_directory || '.' }}
 
       - name: 📤 Upload dependencies artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: node-modules-${{ github.run_id }}
           path: |
@@ -549,7 +549,7 @@ jobs:
         working-directory: ${{ inputs.working_directory || '.' }}
 
       - name: 📤 Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success()
         with:
           name: build-output-${{ github.run_id }}
@@ -717,7 +717,7 @@ jobs:
 
       - name: 📤 Upload Snyk results
         if: steps.check_snyk.outputs.has_token == 'true' && always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: snyk-results
           path: snyk-results.json
@@ -1058,7 +1058,7 @@ jobs:
         # No continue-on-error here to ensure next steps run
 
       - name: 📤 Upload code review results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: code-review-results
           path: ${{ inputs.working_directory || '.' }}/code_review_results.md
@@ -1333,7 +1333,7 @@ jobs:
         working-directory: ${{ inputs.working_directory || '.' }}
 
       - name: 📤 Upload security scan results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: security-scan-results
           path: ${{ inputs.working_directory || '.' }}/security_scan_summary.md
@@ -1833,7 +1833,7 @@ jobs:
             core.setOutput('filename', filename);
 
       - name: 📤 Upload audit log
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: audit-log-${{ github.run_id }}
           path: audit-log-*.json
@@ -1881,7 +1881,7 @@ jobs:
 
       - name: 📤 Upload evidence package
         if: ${{ inputs.generate_evidence_package == true }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: compliance-evidence-${{ github.run_id }}
           path: evidence-package/
@@ -1934,7 +1934,7 @@ jobs:
           EOF
 
       - name: 📤 Upload approval record
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: approval-record-${{ github.run_id }}
           path: approval-record-*.json

@@ -568,7 +568,7 @@ jobs:
             "components" "$(jq '.components | length' sbom.json)"
 
       - name: Upload Version Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: version-artifacts-${{ github.run_id }}
           path: |
@@ -749,7 +749,7 @@ jobs:
 
       - name: Upload Signed Artifacts
         if: steps.sign.outputs.signed == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: signed-artifacts-${{ github.run_id }}
           path: |
@@ -904,7 +904,7 @@ jobs:
           echo "url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" >> $GITHUB_OUTPUT
 
       - name: Store Attestations
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: release-attestations-${{ needs.version.outputs.version }}
           path: |
@@ -1418,7 +1418,7 @@ jobs:
           tar -czf compliance-evidence-${{ needs.version.outputs.version }}.tar.gz compliance-evidence/
 
       - name: Store Compliance Evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: compliance-evidence-${{ needs.version.outputs.version }}
           path: compliance-evidence-${{ needs.version.outputs.version }}.tar.gz

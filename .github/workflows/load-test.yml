@@ -228,7 +228,7 @@ jobs:
       - name: Upload test results
         id: upload_results
         if: always() && inputs.upload_results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: k6-results-${{ inputs.environment }}-${{ inputs.test_scenario }}-${{ github.run_id }}
           path: k6-results/

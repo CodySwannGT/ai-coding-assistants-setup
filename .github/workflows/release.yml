@@ -594,7 +594,7 @@ jobs:
           ref: ${{ github.sha }}
 
       - name: Download Version Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: version-artifacts-${{ github.run_id }}
 
@@ -933,7 +933,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download All Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           pattern: '*-${{ github.run_id }}'
 
@@ -1252,7 +1252,7 @@ jobs:
       report_url: ${{ steps.compliance.outputs.report_url }}
     steps:
       - name: Download All Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           pattern: '*-${{ github.run_id }}'
 
